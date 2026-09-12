@@ -22,11 +22,14 @@ addressed.
 ├── Project.toml            package manifest and [compat]
 ├── activate.jl             activates and instantiates the root environment
 ├── src/
-│   └── AtmosphericDispersion.jl
+│   ├── AtmosphericDispersion.jl   module, includes and exports
+│   ├── sectors.jl          wind-rose sector geometry
+│   ├── stability.jl        Pasquill–Gifford stability classes
+│   └── windrose.jl         directional and stability joint frequencies
 ├── test/
 │   ├── Project.toml
 │   ├── activate.jl
-│   └── runtests.jl         unit tests + Aqua static QA
+│   └── runtests.jl         unit tests + Aqua, JET, ExplicitImports
 ├── docs/
 │   ├── Project.toml
 │   ├── activate.jl
@@ -53,20 +56,55 @@ julia --project=docs docs/make.jl                    # build the documentation
 julia -e 'using JuliaFormatter; format(".")'         # apply the committed style
 ```
 
+## The wind-direction convention
+
+A wind direction carries a convention that its magnitude does not reveal, and
+getting it wrong rotates a long-term dispersion field by half a turn while
+leaving every magnitude, sum rule and unit intact. Three things had to be fixed
+relative to the 2021 code, and they are independent of one another.
+
+**Sense.** ADMS, and every measured wind rose, gives the direction the wind
+blows *from*. The long-term sector-averaged formula weights by the frequency of
+wind blowing *towards* the receptor's sector. `WindRose` therefore takes the
+convention as a required argument — `BlowingFrom()` or `BlowingToward()` — and
+stores blowing-towards internally, so the formulae cannot be fed the wrong
+sense. There is no default.
+
+**Frame.** The 2021 code indexed sectors from `atan(y/x)`, counterclockwise from
+east. The compass runs clockwise from north. Mapping a cardinal table onto those
+indices is a reflection as well as a rotation, so a table indexed N, NNE, NE, …
+could not be fed in as k = 1, 2, 3, … under any sign convention.
+
+**Binning.** The 2021 sectors began at a sector edge, which put every cardinal
+direction exactly on a boundary, where `floor` on a ratio that came out one ulp
+low decided the bin. ESE and SE collapsed into one sector, SSW and SW into
+another, and two of the sixteen sectors became unreachable. Sectors here are
+centred on the cardinal directions and binned by rounding to the nearest centre,
+so a cardinal direction sits as far from a boundary as it can and bins exactly.
+
+The thesis anticipated this last hazard and `SectoareCerc.jl` was written to
+check it, but that script sampled a *random* point on the circle, which almost
+surely never lands on a boundary — so the test could not detect the failure it
+was written for. All sixteen cardinal directions, and both sides of every
+boundary, are now asserted explicitly.
+
 ## Status
 
-Scaffolding only. The solver is not yet written. What this branch will carry:
+Foundations in place and under test; the solver itself is not yet written.
+
+Done:
+
+- Sector geometry (`SectorGrid`), Pasquill classes, and the wind rose with its
+  explicit direction convention
+- Static QA in the suite: Aqua, JET, ExplicitImports
+
+Next:
 
 - TOML-driven configuration, validated on load, replacing hardcoded constants
-- The solver behind a typed, documented public interface, with thin script
+- Plume rise, Briggs dispersion parameters and building-wake corrections
+- Depletion, dry and wet deposition, resuspension
+- The three dilution regimes behind a typed public interface, with thin script
   entry points
-- **A corrected wind-rose sector convention.** The 2021 code numbers sectors
-  counterclockwise from East, starting at a sector edge. The meteorological
-  convention — which ADMS and the frequency tables of the governing norm both
-  follow — centres sector 1 on North, increases clockwise, and denotes the
-  direction the wind blows *from*. That is an axis rotation, a handedness flip
-  and a half-sector binning offset, and it propagates into every long-duration
-  result
 - Removal of the per-grid-point recomputation of building-equivalent geometry
   and of the DataFrame mask lookups in the innermost loops
 - Physics validation: dimensional analysis, limiting cases, and comparison
