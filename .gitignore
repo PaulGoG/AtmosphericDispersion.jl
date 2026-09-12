@@ -1,4 +1,7 @@
+# Libraries do not pin a manifest; each environment resolves against [compat].
 Manifest.toml
+
 /docs/build/
 /data/
 /plots/
+*.cov
