@@ -79,11 +79,30 @@ export wind_speed,
     SHORT_RELEASE_REFERENCE,
     SMOOTH_ROUGHNESS_LIMIT
 
+export StackSource,
+    Atmosphere,
+    buoyancy_flux,
+    momentum_flux,
+    stability_parameter,
+    STANDARD_GRAVITY,
+    DRY_AIR_SPECIFIC_HEAT
+export buoyancy_transition_distance,
+    final_buoyant_rise,
+    buoyant_rise,
+    final_momentum_rise,
+    momentum_rise,
+    combined_rise,
+    plume_rise,
+    BUOYANCY_FLUX_BREAKPOINT,
+    MECHANISM_BALANCE_TOLERANCE
+
 include("sectors.jl")
 include("stability.jl")
 include("windrose.jl")
 include("surfaces.jl")
 include("tables.jl")
 include("dispersion.jl")
+include("source.jl")
+include("plumerise.jl")
 
 end

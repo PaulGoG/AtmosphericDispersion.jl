@@ -371,6 +371,272 @@ using JET
         end
     end
 
+    @testset "Source and ambient state" begin
+        # The stack and atmosphere of the 2021 run.
+        stack = StackSource(;
+            height = 50.3,
+            diameter = 2.33,
+            exit_velocity = 10.0,
+            exit_density = 0.6,
+            exit_temperature = 324.0,
+        )
+        air = Atmosphere(;
+            reference_speed = 4.0,
+            temperature = 287.0,
+            density = 1.2,
+            lapse_rate = 2e-2,
+            surface = SURFACE_AGRICULTURAL,
+            roughness = ROUGHNESS_PASTURE,
+        )
+
+        @testset "fluxes" begin
+            F = buoyancy_flux(stack, air)
+            Fₘ = momentum_flux(stack, air)
+            @test F ≈ (1.2 - 0.6) / 1.2 * STANDARD_GRAVITY * 10.0 * (2.33 / 2)^2
+            @test Fₘ ≈ 0.6 / 1.2 * 10.0^2 * (2.33 / 2)^2
+            @test F > 0        # lighter than air, so buoyant
+            @test Fₘ > 0
+            # A plume denser than the ambient air has a negative buoyancy flux.
+            dense = StackSource(;
+                height = 50.3,
+                diameter = 2.33,
+                exit_velocity = 10.0,
+                exit_density = 2.0,
+                exit_temperature = 324.0,
+            )
+            @test buoyancy_flux(dense, air) < 0
+            @test_throws DomainError final_buoyant_rise(
+                buoyancy_flux(dense, air),
+                5.0,
+                1e-3,
+            )
+        end
+
+        @testset "stability parameter" begin
+            @test stability_parameter(air) > 0                     # inversion
+            # Zero exactly at the dry adiabatic lapse rate.
+            adiabatic = Atmosphere(;
+                reference_speed = 4.0,
+                temperature = 287.0,
+                density = 1.2,
+                lapse_rate = -STANDARD_GRAVITY / DRY_AIR_SPECIFIC_HEAT,
+                surface = SURFACE_AGRICULTURAL,
+                roughness = ROUGHNESS_PASTURE,
+            )
+            @test stability_parameter(adiabatic) ≈ 0 atol = 1e-12
+            # Negative in superadiabatic, genuinely unstable air.
+            unstable = Atmosphere(;
+                reference_speed = 4.0,
+                temperature = 287.0,
+                density = 1.2,
+                lapse_rate = -0.02,
+                surface = SURFACE_AGRICULTURAL,
+                roughness = ROUGHNESS_PASTURE,
+            )
+            @test stability_parameter(unstable) < 0
+            # The dry adiabatic lapse rate is about 9.8 K per km.
+            @test STANDARD_GRAVITY / DRY_AIR_SPECIFIC_HEAT ≈ 0.00976 atol = 1e-5
+        end
+
+        @testset "validation" begin
+            @test_throws ArgumentError StackSource(;
+                height = 0,
+                diameter = 2.33,
+                exit_velocity = 10.0,
+                exit_density = 0.6,
+                exit_temperature = 324.0,
+            )
+            @test_throws ArgumentError StackSource(;
+                height = 50.3,
+                diameter = -1,
+                exit_velocity = 10.0,
+                exit_density = 0.6,
+                exit_temperature = 324.0,
+            )
+            @test_throws ArgumentError StackSource(;
+                height = 50.3,
+                diameter = 2.33,
+                exit_velocity = -1,
+                exit_density = 0.6,
+                exit_temperature = 324.0,
+            )
+            @test_throws ArgumentError Atmosphere(;
+                reference_speed = -1,
+                temperature = 287.0,
+                density = 1.2,
+                lapse_rate = 0.0,
+                surface = SURFACE_WATER,
+                roughness = ROUGHNESS_PASTURE,
+            )
+            @test_throws ArgumentError Atmosphere(;
+                reference_speed = 4.0,
+                temperature = 0,
+                density = 1.2,
+                lapse_rate = 0.0,
+                surface = SURFACE_WATER,
+                roughness = ROUGHNESS_PASTURE,
+            )
+            @test_throws ArgumentError Atmosphere(;
+                reference_speed = 4.0,
+                temperature = 287.0,
+                density = 1.2,
+                lapse_rate = NaN,
+                surface = SURFACE_WATER,
+                roughness = ROUGHNESS_PASTURE,
+            )
+        end
+    end
+
+    @testset "Plume rise" begin
+        stack = StackSource(;
+            height = 50.3,
+            diameter = 2.33,
+            exit_velocity = 10.0,
+            exit_density = 0.6,
+            exit_temperature = 324.0,
+        )
+        air = Atmosphere(;
+            reference_speed = 4.0,
+            temperature = 287.0,
+            density = 1.2,
+            lapse_rate = 2e-2,
+            surface = SURFACE_AGRICULTURAL,
+            roughness = ROUGHNESS_PASTURE,
+        )
+        F = buoyancy_flux(stack, air)
+        Fₘ = momentum_flux(stack, air)
+        S = stability_parameter(air)
+
+        @testset "transition distance" begin
+            @test buoyancy_transition_distance(10.0) ≈ 14 * 10.0^(5 / 8)
+            @test buoyancy_transition_distance(100.0) ≈ 34 * 100.0^(2 / 5)
+            @test buoyancy_transition_distance(0.0) == 0
+            # Continuous enough across the breakpoint to be a sane correlation.
+            below = buoyancy_transition_distance(BUOYANCY_FLUX_BREAKPOINT - 1e-9)
+            above = buoyancy_transition_distance(BUOYANCY_FLUX_BREAKPOINT)
+            @test abs(below - above) / below < 0.1
+            @test_throws DomainError buoyancy_transition_distance(-1.0)
+        end
+
+        @testset "rise grows with distance and saturates" begin
+            for u in (1.0, 4.0, 10.0)
+                xs = [1.0, 10.0, 100.0, 1000.0, 10_000.0]
+                rises = [plume_rise(x, stack, air, u) for x in xs]
+                @test issorted(rises)
+                @test all(≥(0), rises)
+                # Saturated well before the far field.
+                @test plume_rise(1e5, stack, air, u) ≈ plume_rise(1e6, stack, air, u)
+            end
+        end
+
+        @testset "a stronger wind bends the plume over" begin
+            rises = [plume_rise(1000.0, stack, air, u) for u in (1.0, 2.0, 5.0, 10.0, 20.0)]
+            @test issorted(rises; rev = true)
+            @test all(>(0), rises)
+        end
+
+        @testset "stratification caps the rise" begin
+            neutral = Atmosphere(;
+                reference_speed = 4.0,
+                temperature = 287.0,
+                density = 1.2,
+                lapse_rate = -STANDARD_GRAVITY / DRY_AIR_SPECIFIC_HEAT,
+                surface = SURFACE_AGRICULTURAL,
+                roughness = ROUGHNESS_PASTURE,
+            )
+            @test final_buoyant_rise(F, 4.0, stability_parameter(neutral)) ≥
+                  final_buoyant_rise(F, 4.0, S)
+            # Unstable air has no stable ceiling, and must not raise a domain
+            # error from a fractional power of a negative stability parameter.
+            unstable = Atmosphere(;
+                reference_speed = 4.0,
+                temperature = 287.0,
+                density = 1.2,
+                lapse_rate = -0.02,
+                surface = SURFACE_AGRICULTURAL,
+                roughness = ROUGHNESS_PASTURE,
+            )
+            Su = stability_parameter(unstable)
+            @test Su < 0
+            @test isfinite(final_buoyant_rise(F, 4.0, Su))
+            @test isfinite(final_momentum_rise(Fₘ, 10.0, 2.33, 4.0, Su))
+            @test isfinite(plume_rise(1000.0, stack, unstable, 4.0))
+        end
+
+        @testset "domains" begin
+            @test_throws DomainError final_buoyant_rise(F, 0.0, S)
+            @test_throws DomainError final_momentum_rise(Fₘ, 10.0, 2.33, 0.0, S)
+            @test_throws DomainError buoyant_rise(-1.0, F, 4.0, S)
+            @test_throws DomainError momentum_rise(-1.0, Fₘ, 10.0, 2.33, 4.0, S)
+        end
+
+        # As for the dispersion parameters, reproduce the 2021 correlations
+        # literally and require exact agreement wherever they are applicable,
+        # i.e. in stably stratified air, which is the only case the original
+        # could evaluate at all.
+        @testset "fidelity to the 2021 implementation" begin
+            original_X_0 = F -> F < 55 ? 14 * F^(5 / 8) : 34 * F^(2 / 5)
+            original_hb_final = function (F, u, S)
+                x_0 = original_X_0(F)
+                min(
+                    2.6 * (F / (u * S))^(1 / 3),
+                    1.6 * F^(1 / 3) * (3.5 * x_0)^(2 / 3) / u,
+                    5.0 * F^(1 / 4) * S^(-3 / 8),
+                )
+            end
+            original_hb = function (x, F, u, S)
+                hbfinal = original_hb_final(F, u, S)
+                hbtranzitie = 1.6 * F^(1 / 3) * x^(2 / 3) / u
+                (x < 3.5 * original_X_0(F) && hbtranzitie <= hbfinal) ? hbtranzitie :
+                hbfinal
+            end
+            original_hm_final = function (Fm, w_0, D, u, S)
+                min(
+                    1.5 * w_0 * D / u,
+                    4 * (Fm / S)^(1 / 4),
+                    1.5 * (Fm / u)^(1 / 3) * S^(-1 / 6),
+                )
+            end
+            original_hm = function (x, Fm, w_0, D, u, S)
+                hmfinal = original_hm_final(Fm, w_0, D, u, S)
+                hmtranzitie = 1.89 * (w_0^2 * D / (u * (w_0 + 3u)))^(2 / 3) * x^(1 / 3)
+                hmtranzitie <= hmfinal ? hmtranzitie : hmfinal
+            end
+            original_hmb = function (x, F, Fm, w_0, D, u, S)
+                hmbfinal = original_hm_final(Fm, w_0, D, u, S) + original_hb_final(F, u, S)
+                hmbtranzitie =
+                    3^(1 / 3) *
+                    (Fm * x / ((1 / 3 + u / w_0)^2 * u^2) + F * x^2 / (0.5 * u^3))^(1 / 3)
+                hmbtranzitie <= hmbfinal ? hmbtranzitie : hmbfinal
+            end
+            original_rise = function (x, F, Fm, w_0, D, u, S)
+                hbfinal = original_hb_final(F, u, S)
+                hmfinal = original_hm_final(Fm, w_0, D, u, S)
+                if abs(hbfinal - hmfinal) * 2 / (hbfinal + hmfinal) <= 0.1
+                    return original_hmb(x, F, Fm, w_0, D, u, S)
+                elseif hmfinal > hbfinal
+                    return original_hm(x, Fm, w_0, D, u, S)
+                else
+                    return original_hb(x, F, u, S)
+                end
+            end
+
+            w₀, D = 10.0, 2.33
+            for u in (0.5, 1.0, 4.0, 7.3, 15.0), Sv in (1e-4, 8.63e-4, 1e-3, 5e-3)
+                @test final_buoyant_rise(F, u, Sv) == original_hb_final(F, u, Sv)
+                @test final_momentum_rise(Fₘ, w₀, D, u, Sv) ==
+                      original_hm_final(Fₘ, w₀, D, u, Sv)
+                for x in (1.0, 10.0, 137.0, 1000.0, 10_000.0)
+                    @test buoyant_rise(x, F, u, Sv) == original_hb(x, F, u, Sv)
+                    @test momentum_rise(x, Fₘ, w₀, D, u, Sv) ==
+                          original_hm(x, Fₘ, w₀, D, u, Sv)
+                    @test combined_rise(x, F, Fₘ, w₀, u, Sv, D) ==
+                          original_hmb(x, F, Fₘ, w₀, D, u, Sv)
+                end
+            end
+        end
+    end
+
     @testset "WindRose" begin
         g = SectorGrid(16)
         uniform_stability = fill(1 / 6, 6)
