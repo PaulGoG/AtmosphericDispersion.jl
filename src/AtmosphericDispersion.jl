@@ -102,7 +102,29 @@ include("windrose.jl")
 include("surfaces.jl")
 include("tables.jl")
 include("dispersion.jl")
+export Building,
+    BuildingEnvelope,
+    equivalent_height,
+    equivalent_area,
+    wake_broadened,
+    WAKE_INFLUENCE_RADII,
+    DEFAULT_WAKE_COEFFICIENT
+export Site,
+    mean_wind_speed,
+    downwash_height,
+    wake_height,
+    release_height,
+    transport_wind_speed,
+    effective_height,
+    corrected_lateral_dispersion,
+    corrected_vertical_dispersion,
+    WAKE_WIND_THRESHOLD
+export plume_frame, dilution_instantaneous, dilution_extended, dilution_long_term
+
 include("source.jl")
 include("plumerise.jl")
+include("buildings.jl")
+include("site.jl")
+include("dilution.jl")
 
 end

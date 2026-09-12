@@ -25,7 +25,15 @@ addressed.
 │   ├── AtmosphericDispersion.jl   module, includes and exports
 │   ├── sectors.jl          wind-rose sector geometry
 │   ├── stability.jl        Pasquill–Gifford stability classes
-│   └── windrose.jl         directional and stability joint frequencies
+│   ├── windrose.jl         directional and stability joint frequencies
+│   ├── surfaces.jl         surface, roughness and precipitation categories
+│   ├── tables.jl           tabulated coefficients of the normative
+│   ├── dispersion.jl       wind profile and dispersion parameters
+│   ├── source.jl           stack, ambient state, fluxes, stability parameter
+│   ├── plumerise.jl        momentum and buoyancy rise
+│   ├── buildings.jl        building envelope and wake broadening
+│   ├── site.jl             release height and the per-run precomputation
+│   └── dilution.jl         the three dilution regimes
 ├── test/
 │   ├── Project.toml
 │   ├── activate.jl
@@ -88,27 +96,41 @@ surely never lands on a boundary — so the test could not detect the failure it
 was written for. All sixteen cardinal directions, and both sides of every
 boundary, are now asserted explicitly.
 
+## What the convention costs
+
+Reading the 2021 frequency table under the two conventions, everything else
+held fixed, the long-term dilution factor at 1 km differs by up to a factor of
+**1.63**, and the most-exposed sector moves from **N** to **S** — exactly
+opposite, as it must. For a dose assessment the sector that matters is the
+most-exposed one, so this is not a refinement: it points the assessment at the
+wrong side of the site.
+
+Nothing in the 2021 code, its data file, or the thesis records which reading
+the table carried, so the published orientation should be treated as
+unverified until the provenance of `Frecvente.csv` is established.
+
 ## Status
 
-Foundations in place and under test; the solver itself is not yet written.
+The dilution solver is in place and under test; deposition is not yet written.
 
 Done:
 
-- Sector geometry (`SectorGrid`), Pasquill classes, and the wind rose with its
-  explicit direction convention
-- Static QA in the suite: Aqua, JET, ExplicitImports
+- Sector geometry, Pasquill classes, and the wind rose with its explicit
+  direction convention
+- Surface and roughness categories; the coefficient tables as compile-time
+  constants rather than DataFrame lookups in the inner loop
+- Wind profile and dispersion parameters; plume rise; building wake
+- `Site`, which precomputes everything independent of receptor position
+- The three dilution regimes: instantaneous, extended, long term
+- Static QA in the suite: Aqua, JET, ExplicitImports. 2624 tests, including
+  exact agreement with the 2021 formulae wherever they were evaluable
 
 Next:
 
-- TOML-driven configuration, validated on load, replacing hardcoded constants
-- Plume rise, Briggs dispersion parameters and building-wake corrections
-- Depletion, dry and wet deposition, resuspension
-- The three dilution regimes behind a typed public interface, with thin script
-  entry points
-- Removal of the per-grid-point recomputation of building-equivalent geometry
-  and of the DataFrame mask lookups in the innermost loops
-- Physics validation: dimensional analysis, limiting cases, and comparison
-  against an independent implementation
+- TOML-driven configuration, validated on load
+- Depletion by decay, dry and wet deposition, resuspension
+- Thin script entry points over the library
+- Documenter site; comparison against an independent implementation
 
 ## History
 

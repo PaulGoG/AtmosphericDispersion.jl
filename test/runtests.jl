@@ -637,6 +637,293 @@ using JET
         end
     end
 
+    @testset "Buildings" begin
+        @testset "an empty envelope is the identity" begin
+            e = BuildingEnvelope()
+            @test equivalent_height(e) == 0
+            @test equivalent_area(e) == 0
+            for σ in (1.0, 50.0, 500.0), H in (0.0, 10.0, 100.0)
+                @test wake_broadened(σ, H, e) == σ
+            end
+        end
+
+        @testset "only buildings close enough count" begin
+            near = Building(; east = 30.0, north = 0.0, height = 20.0, frontal_area = 400.0)
+            far = Building(; east = 500.0, north = 0.0, height = 20.0, frontal_area = 400.0)
+            @test equivalent_height(BuildingEnvelope([near])) == 20.0
+            # 500 m away but only 20 m tall: outside 3 x its own height.
+            @test equivalent_height(BuildingEnvelope([far])) == 0
+            @test equivalent_height(BuildingEnvelope([near, far])) == 20.0
+        end
+
+        @testset "contributions are weighted by inverse distance" begin
+            a = Building(; east = 10.0, north = 0.0, height = 30.0, frontal_area = 100.0)
+            b = Building(; east = 80.0, north = 0.0, height = 30.0, frontal_area = 900.0)
+            e = BuildingEnvelope([a, b])
+            # Equal heights, so the weighted height is that height regardless.
+            @test equivalent_height(e) ≈ 30.0
+            # The nearer, smaller building dominates the area.
+            @test equivalent_area(e) ≈ (100 / 10 + 900 / 80) / (1 / 10 + 1 / 80)
+            @test equivalent_area(e) < 900
+            @test_throws ArgumentError BuildingEnvelope([
+                Building(; east = 0.0, north = 0.0, height = 5.0, frontal_area = 1.0),
+            ])
+        end
+
+        @testset "wake broadening by release height" begin
+            e = BuildingEnvelope([
+                Building(; east = 20.0, north = 0.0, height = 20.0, frontal_area = 400.0),
+            ])
+            σ = 10.0
+            full = sqrt(σ^2 + DEFAULT_WAKE_COEFFICIENT * equivalent_area(e) / π)
+            @test wake_broadened(σ, 0.0, e) ≈ full          # trapped in the cavity
+            @test wake_broadened(σ, 19.0, e) ≈ full         # still below the tops
+            @test wake_broadened(σ, 50.1, e) ≈ σ            # well clear
+            between = wake_broadened(σ, 35.0, e)
+            @test σ < between < full                        # interpolated
+            # Setting the coefficient to zero disables the correction.
+            off = BuildingEnvelope(
+                [Building(; east = 20.0, north = 0.0, height = 20.0, frontal_area = 400.0)];
+                wake_coefficient = 0.0,
+            )
+            @test wake_broadened(σ, 0.0, off) ≈ σ
+        end
+    end
+
+    @testset "Site" begin
+        stack = StackSource(;
+            height = 50.3,
+            diameter = 2.33,
+            exit_velocity = 10.0,
+            exit_density = 0.6,
+            exit_temperature = 324.0,
+        )
+        air = Atmosphere(;
+            reference_speed = 4.0,
+            temperature = 287.0,
+            density = 1.2,
+            lapse_rate = 2e-2,
+            surface = SURFACE_AGRICULTURAL,
+            roughness = ROUGHNESS_PASTURE,
+        )
+        site = Site(; source = stack, atmosphere = air)
+
+        @testset "precomputation matches the direct evaluation" begin
+            @test release_height(site) == wake_height(stack, air, BuildingEnvelope())
+            @test site.buoyancy == buoyancy_flux(stack, air)
+            @test site.momentum == momentum_flux(stack, air)
+            @test site.stability == stability_parameter(air)
+        end
+
+        @testset "downwash" begin
+            # A vigorous efflux in a light wind clears the stack untouched.
+            @test downwash_height(stack, air) == stack.height
+            # A weak efflux in a strong wind is drawn down.
+            calm = StackSource(;
+                height = 50.3,
+                diameter = 2.33,
+                exit_velocity = 1.0,
+                exit_density = 0.6,
+                exit_temperature = 324.0,
+            )
+            windy = Atmosphere(;
+                reference_speed = 15.0,
+                temperature = 287.0,
+                density = 1.2,
+                lapse_rate = 2e-2,
+                surface = SURFACE_AGRICULTURAL,
+                roughness = ROUGHNESS_PASTURE,
+            )
+            @test downwash_height(calm, windy) < calm.height
+        end
+
+        @testset "wake height" begin
+            # No buildings: release height is the downwash-corrected stack height.
+            @test wake_height(stack, air, BuildingEnvelope()) == downwash_height(stack, air)
+            # A building taller than the stack traps the plume at ground level.
+            tall = BuildingEnvelope([
+                Building(; east = 50.0, north = 0.0, height = 100.0, frontal_area = 2000.0),
+            ])
+            @test wake_height(stack, air, tall) == 0
+        end
+
+        @testset "transport wind is floored at the reference height" begin
+            tall = BuildingEnvelope([
+                Building(; east = 50.0, north = 0.0, height = 100.0, frontal_area = 2000.0),
+            ])
+            trapped = Site(; source = stack, atmosphere = air, buildings = tall)
+            @test release_height(trapped) == 0
+            # Without the floor this would be zero and every dilution factor
+            # would divide by it.
+            for class in PASQUILL_CLASSES
+                u = transport_wind_speed(trapped, class)
+                @test u > 0
+                @test u == wind_speed(4.0, REFERENCE_HEIGHT, SURFACE_AGRICULTURAL, class)
+            end
+        end
+
+        @testset "effective height rises with distance" begin
+            for class in PASQUILL_CLASSES
+                hs = [effective_height(x, site, class) for x in (1.0, 100.0, 1000.0, 1e5)]
+                @test issorted(hs)
+                @test all(≥(release_height(site)), hs)
+            end
+        end
+    end
+
+    @testset "Dilution" begin
+        stack = StackSource(;
+            height = 50.3,
+            diameter = 2.33,
+            exit_velocity = 10.0,
+            exit_density = 0.6,
+            exit_temperature = 324.0,
+        )
+        air = Atmosphere(;
+            reference_speed = 4.0,
+            temperature = 287.0,
+            density = 1.2,
+            lapse_rate = 2e-2,
+            surface = SURFACE_AGRICULTURAL,
+            roughness = ROUGHNESS_PASTURE,
+        )
+        site = Site(; source = stack, atmosphere = air)
+
+        @testset "plume frame" begin
+            # Wind from the north transports to the south.
+            x, y = plume_frame(0.0, -1000.0, 0.0)
+            @test x ≈ 1000 && abs(y) < 1e-9
+            @test plume_frame(0.0, 1000.0, 0.0)[1] ≈ -1000        # upwind
+            # Wind from the west transports to the east.
+            x, y = plume_frame(1000.0, 0.0, 3π / 2)
+            @test x ≈ 1000 && abs(y) < 1e-9
+            # The frame is orthonormal: it preserves distance.
+            for β in range(0, 2π; length = 17), (e, n) in ((300.0, 400.0), (-120.0, 50.0))
+                x, y = plume_frame(e, n, β)
+                @test hypot(x, y) ≈ hypot(e, n)
+            end
+        end
+
+        @testset "instantaneous field" begin
+            # Nothing upwind.
+            @test dilution_instantaneous(0.0, 1000.0, 0.0, site, PASQUILL_D, 0.0) == 0
+            # Peaked on the axis and symmetric across it.
+            onaxis = dilution_instantaneous(0.0, -1000.0, 0.0, site, PASQUILL_D, 0.0)
+            @test onaxis > 0
+            for off in (50.0, 200.0)
+                left = dilution_instantaneous(off, -1000.0, 0.0, site, PASQUILL_D, 0.0)
+                right = dilution_instantaneous(-off, -1000.0, 0.0, site, PASQUILL_D, 0.0)
+                @test left ≈ right
+                @test left < onaxis
+            end
+            # Falls off downwind, far from the source.
+            far = [
+                dilution_instantaneous(0.0, -r, 0.0, site, PASQUILL_D, 0.0) for
+                r in (2_000.0, 5_000.0, 20_000.0)
+            ]
+            @test issorted(far; rev = true)
+            # Equivariant under a common rotation of receptor and wind.
+            for β in range(0, 2π; length = 13)
+                rotated = dilution_instantaneous(
+                    1000sin(β + π),
+                    1000cos(β + π),
+                    0.0,
+                    site,
+                    PASQUILL_D,
+                    β,
+                )
+                @test rotated ≈ onaxis
+            end
+            @test_throws DomainError dilution_instantaneous(
+                0.0,
+                -1000.0,
+                -1.0,
+                site,
+                PASQUILL_D,
+                0.0,
+            )
+        end
+
+        @testset "extended field" begin
+            # Uniform across the sector, zero outside it.
+            onaxis = dilution_extended(0.0, -1000.0, site, PASQUILL_D, 0.0)
+            @test onaxis > 0
+            inside = dilution_extended(90.0, -1000.0, site, PASQUILL_D, 0.0)
+            @test inside ≈ onaxis        # crosswind-uniform within the sector
+            @test dilution_extended(1000.0, 0.0, site, PASQUILL_D, 0.0) == 0   # 90° off
+            @test dilution_extended(0.0, 1000.0, site, PASQUILL_D, 0.0) == 0   # upwind
+            # A wider sector spreads the same material further, so dilutes more.
+            @test dilution_extended(0.0, -1000.0, site, PASQUILL_D, 0.0, SectorGrid(8)) <
+                  onaxis
+        end
+
+        @testset "long-term field" begin
+            g = SectorGrid(16)
+            stab = [0.06533, 0.06533, 0.06533, 0.488, 0.158, 0.158]
+            stab ./= sum(stab)
+
+            # A uniform rose gives a rotationally symmetric field.
+            uniform = WindRose(g, fill(1 / 16, 16), BlowingToward(); stability = stab)
+            values = [
+                dilution_long_term(
+                    1000sin(sector_bearing(g, k)),
+                    1000cos(sector_bearing(g, k)),
+                    site,
+                    uniform,
+                ) for k = 1:16
+            ]
+            @test all(v -> v ≈ first(values), values)
+            @test first(values) > 0
+
+            # The two conventions give fields that are exact mirror images,
+            # sector by sector. This is the defect, isolated.
+            f = [
+                0.07849,
+                0.07849,
+                0.07221,
+                0.07378,
+                0.07849,
+                0.05965,
+                0.05651,
+                0.0471,
+                0.05181,
+                0.05024,
+                0.04867,
+                0.04553,
+                0.05495,
+                0.06436,
+                0.06279,
+                0.07692,
+            ]
+            f ./= sum(f)
+            from = WindRose(g, f, BlowingFrom(); stability = stab)
+            toward = WindRose(g, f, BlowingToward(); stability = stab)
+            χ(rose, k) = dilution_long_term(
+                1000sin(sector_bearing(g, k)),
+                1000cos(sector_bearing(g, k)),
+                site,
+                rose,
+            )
+            for k = 1:16
+                @test χ(from, k) ≈ χ(toward, opposite(g, k))
+            end
+            # And they disagree substantially where the rose is asymmetric.
+            ratios = [χ(toward, k) / χ(from, k) for k = 1:16]
+            @test maximum(ratios) > 1.4
+            @test minimum(ratios) < 0.7
+            # The most exposed sector is exactly opposite between the two.
+            @test argmax([χ(toward, k) for k = 1:16]) == opposite(g, argmax([χ(from, k) for k = 1:16]))
+
+            @test dilution_long_term(0.0, 0.0, site, toward) == 0
+            # A sector the wind never blows towards receives nothing.
+            single = zeros(16)
+            single[1] = 1.0
+            only_north = WindRose(g, single, BlowingToward(); stability = stab)
+            @test χ(only_north, 1) > 0
+            @test χ(only_north, 9) == 0
+        end
+    end
+
     @testset "WindRose" begin
         g = SectorGrid(16)
         uniform_stability = fill(1 / 6, 6)
