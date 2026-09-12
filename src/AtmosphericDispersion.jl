@@ -42,9 +42,48 @@ export WindDirectionConvention,
     frequency_from,
     stability_fraction,
     grid
+export WindProfileSurface,
+    SURFACE_WATER,
+    SURFACE_AGRICULTURAL,
+    SURFACE_FOREST_URBAN,
+    WIND_PROFILE_SURFACES,
+    RoughnessClass,
+    ROUGHNESS_GRASSLAND_WATER,
+    ROUGHNESS_ARABLE,
+    ROUGHNESS_PASTURE,
+    ROUGHNESS_RURAL,
+    ROUGHNESS_FOREST_URBAN,
+    ROUGHNESS_METROPOLIS,
+    ROUGHNESS_CLASSES,
+    PrecipitationType,
+    PRECIPITATION_RAIN,
+    PRECIPITATION_SNOW,
+    PRECIPITATION_TYPES
+export VerticalShapeCoefficients,
+    vertical_shape_coefficients,
+    RoughnessCoefficients,
+    roughness_coefficients,
+    roughness_length,
+    lateral_coefficient,
+    profile_exponent,
+    WashoutCoefficients,
+    washout_coefficients,
+    PRECIPITATION_RATES
+export wind_speed,
+    lateral_dispersion,
+    vertical_shape,
+    roughness_correction,
+    vertical_dispersion,
+    REFERENCE_HEIGHT,
+    PROFILE_CEILING,
+    SHORT_RELEASE_REFERENCE,
+    SMOOTH_ROUGHNESS_LIMIT
 
 include("sectors.jl")
 include("stability.jl")
 include("windrose.jl")
+include("surfaces.jl")
+include("tables.jl")
+include("dispersion.jl")
 
 end
