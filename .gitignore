@@ -3,3 +3,6 @@ Manifest.toml
 # Generated figures and animations, except those referenced from the README
 Reprezentari_Grafice/*
 !Reprezentari_Grafice/Animatie_3D.gif
+
+# Documenter output, generated when the docs are built on the main branch.
+/docs/build/
