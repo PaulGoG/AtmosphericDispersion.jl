@@ -47,6 +47,11 @@ const PALETTE = (
 
 const FIGURES = joinpath(@__DIR__, "..", "figures")
 
+# Both map axes carry the same title. Naming a direction in an axis title puts
+# the word on the edge it sits against — "north" down the left-hand spine — and
+# the compass marks state the orientation anyway.
+const AXIS_LABEL = "Distance from the stack [km]"
+
 """
     compass!(ax; color = :white)
 
@@ -57,7 +62,7 @@ puts north on the left and east along the bottom. The coordinate names go in the
 axis titles and the directions go here, against the edge each one actually
 points at.
 """
-function compass!(ax; color = :white)
+function compass!(ax; color = :white, fontsize = 19)
     marks = (
         ("N", 0.5, 0.985, (:center, :top)),
         ("S", 0.5, 0.015, (:center, :bottom)),
@@ -72,7 +77,7 @@ function compass!(ax; color = :white)
             text = t,
             space = :relative,
             align = align,
-            fontsize = 19,
+            fontsize = fontsize,
             font = :bold,
             color = color,
             # The marks sit over whatever the field happens to be doing at the
@@ -132,12 +137,7 @@ function figure_field(config)
     lo, hi = quantile(far, 0.02), maximum(far)
 
     fig = Figure(size = (900, 720))
-    ax = Axis(
-        fig[1, 1],
-        xlabel = "Distance east of the stack [km]",
-        ylabel = "Distance north of the stack [km]",
-        aspect = DataAspect(),
-    )
+    ax = Axis(fig[1, 1], xlabel = AXIS_LABEL, ylabel = AXIS_LABEL, aspect = DataAspect())
     hm = heatmap!(
         ax,
         xs ./ 1000,
@@ -302,7 +302,7 @@ plume always lies on the opposite side of the stack: at a bearing of 0 — a
 northerly — the plume runs south. Averaging these over a year, weighted by how
 often the wind blows towards each sector, is what the long-term field is.
 """
-function figure_animation(config; half_width = 8_000.0, n = 141, frames = 72)
+function figure_animation(config; half_width = 20_000.0, n = 141, frames = 72)
     xs = range(-half_width, half_width, length = n)
     bearings = range(0, 2π, length = frames + 1)[1:frames]
     site, class = config.site, PASQUILL_D
@@ -315,12 +315,7 @@ function figure_animation(config; half_width = 8_000.0, n = 141, frames = 72)
     end
 
     fig = Figure(size = (780, 640))
-    ax = Axis(
-        fig[1, 1],
-        xlabel = "Distance east of the stack [km]",
-        ylabel = "Distance north of the stack [km]",
-        aspect = DataAspect(),
-    )
+    ax = Axis(fig[1, 1], xlabel = AXIS_LABEL, ylabel = AXIS_LABEL, aspect = DataAspect())
     compute!(0.0)
     lo, hi = 1e-9, 3e-6
     hm = heatmap!(
@@ -355,7 +350,6 @@ function figure_animation(config; half_width = 8_000.0, n = 141, frames = 72)
         ),
     )
 
-    g = grid(config.rose)
     path = joinpath(FIGURES, "plume_sweep.gif")
     mkpath(FIGURES)
     record(fig, path, bearings; framerate = 12) do β
@@ -365,21 +359,272 @@ function figure_animation(config; half_width = 8_000.0, n = 141, frames = 72)
         # direction named — and that ambiguity is what put the 2021 dose field
         # the wrong way round. The label states the consequence as well as the
         # convention so it cannot be misread.
-        from = sector_name(g, sector_of(g, β))
-        to = sector_name(g, opposite(g, sector_of(g, β)))
-        label[] = "Wind from " * from * "  →  plume to " * to
+        label[] = SWEEP_LABEL[](β)
     end
     return path
 end
 
+"""
+    panel_sweep(path, panels; half_width, n, frames, columns, lo, hi, caption)
+
+Record a multi-panel sweep of the compass, one panel per entry of `panels`.
+
+Each panel is a `(title, f)` pair where `f(east, north, bearing)` returns the
+ground-level dilution factor in s/m³. Every panel shares one colour scale, which
+is the point: the comparison is quantitative, not a set of separately normalised
+pictures.
+"""
+function panel_sweep(
+    path,
+    panels;
+    half_width = 20_000.0,
+    n = 101,
+    frames = 48,
+    columns = 3,
+    lo = 1e-9,
+    hi = 3e-6,
+    caption = "",
+    width = 1080,
+    height = 780,
+)
+    xs = range(-half_width, half_width, length = n)
+    bearings = range(0, 2π, length = frames + 1)[1:frames]
+    fields = [Observable(zeros(n, n)) for _ in panels]
+    label = Observable("")
+
+    fig = Figure(size = (width, height))
+    grid_layout = fig[1, 1] = GridLayout()
+    rows = cld(length(panels), columns)
+    # Ticks stop short of the frame. Labelling the extremes puts the last label
+    # of one panel against the first of the next, which is what "2020" was.
+    ticks = ([-10.0, 0.0, 10.0], ["−10", "0", "10"])
+    axes = Axis[]
+    local hm
+    for (i, (title, f)) in enumerate(panels)
+        row, col = fldmod1(i, columns)
+        ax = Axis(
+            grid_layout[row, col],
+            aspect = DataAspect(),
+            xticks = ticks,
+            yticks = ticks,
+            xticklabelsvisible = row == rows,
+            yticklabelsvisible = col == 1,
+        )
+        fields[i][] = [f(e, nn, 0.0) for e in xs, nn in xs]
+        hm = heatmap!(
+            ax,
+            xs ./ 1000,
+            xs ./ 1000,
+            lift(v -> clamp.(v, lo, hi), fields[i]),
+            colormap = :viridis,
+            colorscale = log10,
+            colorrange = (lo, hi),
+        )
+        scatter!(
+            ax,
+            [0.0],
+            [0.0],
+            color = :white,
+            strokecolor = :black,
+            strokewidth = 1.2,
+            markersize = 8,
+        )
+        compass!(ax; fontsize = 13)
+        # Top left, because the compass owns the top centre.
+        text!(
+            ax,
+            0.04,
+            0.96;
+            text = title,
+            space = :relative,
+            align = (:left, :top),
+            fontsize = 15,
+            color = :white,
+            strokecolor = :black,
+            strokewidth = 0.7,
+        )
+        push!(axes, ax)
+    end
+
+    # One label per direction for the whole grid rather than one per panel.
+    Label(grid_layout[rows+1, 1:columns], AXIS_LABEL, fontsize = 17)
+    Label(grid_layout[1:rows, 0], AXIS_LABEL, fontsize = 17, rotation = π / 2)
+
+    Colorbar(
+        fig[1, 2],
+        hm,
+        label = L"$\chi/Q$ [s m$^{-3}$]",
+        ticks = (
+            [1e-9, 1e-8, 1e-7, 1e-6],
+            [L"10^{-9}", L"10^{-8}", L"10^{-7}", L"10^{-6}"],
+        ),
+    )
+    Label(fig[2, 1:2], label, fontsize = 17, tellwidth = false)
+    isempty(caption) || Label(fig[3, 1:2], caption, fontsize = 14, tellwidth = false)
+    colgap!(grid_layout, 12)
+    rowgap!(grid_layout, 12)
+    rowgap!(fig.layout, 1, 4)
+    length(fig.layout.content) > 3 && rowgap!(fig.layout, 2, 2)
+
+    mkpath(FIGURES)
+    record(fig, path, bearings; framerate = 12) do β
+        for (i, (_, f)) in enumerate(panels)
+            fields[i][] = [f(e, nn, β) for e in xs, nn in xs]
+        end
+        label[] = SWEEP_LABEL[](β)
+    end
+    return path
+end
+
+# Set once from the configured rose so every animation words the bearing the
+# same way.
+const SWEEP_LABEL = Ref{Function}(β -> "")
+
+function set_sweep_label!(rose)
+    g = grid(rose)
+    SWEEP_LABEL[] =
+        β ->
+            "Wind from " *
+            sector_name(g, sector_of(g, β)) *
+            "  →  plume to " *
+            sector_name(g, opposite(g, sector_of(g, β)))
+    return nothing
+end
+
+"""
+    figure_classes(config)
+
+The same release under all six Pasquill classes, on one colour scale.
+"""
+function figure_classes(config)
+    site = config.site
+    panels = [
+        ("$(letter(c))", (e, nn, β) -> dilution_instantaneous(e, nn, 0.0, site, c, β))
+        for c in PASQUILL_CLASSES
+    ]
+    return panel_sweep(
+        joinpath(FIGURES, "stability_classes.gif"),
+        panels;
+        columns = 3,
+        width = 1080,
+        height = 770,
+        caption = "Pasquill class A (very unstable) to F (very stable), one colour scale",
+    )
+end
+
+"""
+    figure_buildings(config)
+
+The same release with and without a building beside the stack.
+"""
+function figure_buildings(config)
+    source, air = config.site.source, config.site.atmosphere
+    bare = Site(; source, atmosphere = air)
+    building = Building(; east = 30.0, north = 0.0, height = 45.0, frontal_area = 1800.0)
+    waked = Site(; source, atmosphere = air, buildings = BuildingEnvelope([building]))
+    panels = [
+        (
+            "No building",
+            (e, nn, β) -> dilution_instantaneous(e, nn, 0.0, bare, PASQUILL_D, β),
+        ),
+        (
+            "45 m building, 30 m away",
+            (e, nn, β) -> dilution_instantaneous(e, nn, 0.0, waked, PASQUILL_D, β),
+        ),
+    ]
+    return panel_sweep(
+        joinpath(FIGURES, "building_wake.gif"),
+        panels;
+        columns = 2,
+        width = 900,
+        height = 515,
+        caption = "Class D. The wake broadens the plume and lowers the release height",
+    )
+end
+
+"""
+    figure_heights(config)
+
+The same release from three stack heights.
+"""
+function figure_heights(config)
+    s, air = config.site.source, config.site.atmosphere
+    sites = map((30.0, 50.3, 120.0)) do h
+        source = StackSource(;
+            height = h,
+            diameter = s.diameter,
+            exit_velocity = s.exit_velocity,
+            exit_density = s.exit_density,
+            exit_temperature = s.exit_temperature,
+        )
+        Site(; source, atmosphere = air)
+    end
+    panels = [
+        (
+            "$(Int(round(h))) m",
+            (e, nn, β) -> dilution_instantaneous(e, nn, 0.0, st, PASQUILL_D, β),
+        ) for (h, st) in zip((30.0, 50.3, 120.0), sites)
+    ]
+    return panel_sweep(
+        joinpath(FIGURES, "release_height.gif"),
+        panels;
+        columns = 3,
+        width = 1080,
+        height = 450,
+        caption = "Stack height, class D. A higher release moves the ground-level maximum downwind",
+    )
+end
+
+"""
+    figure_depletion(config)
+
+The same release with and without depletion by decay, deposition and washout.
+"""
+function figure_depletion(config)
+    site, nuclide = config.site, config.nuclide
+    washout = 3600.0
+    panels = [
+        (
+            "Undepleted",
+            (e, nn, β) -> dilution_instantaneous(e, nn, 0.0, site, PASQUILL_D, β),
+        ),
+        (
+            "Depleted",
+            (e, nn, β) -> dilution_instantaneous(
+                e,
+                nn,
+                0.0,
+                site,
+                PASQUILL_D,
+                β;
+                nuclide,
+                washout_duration = washout,
+                precipitation = config.precipitation,
+                rate = config.precipitation_rate,
+            ),
+        ),
+    ]
+    return panel_sweep(
+        joinpath(FIGURES, "depletion.gif"),
+        panels;
+        columns = 2,
+        width = 900,
+        height = 515,
+        caption = "Class D, $(nuclide.name), one hour of washout at the configured rate",
+    )
+end
+
 function main()
     config = reference_case()
+    set_sweep_label!(config.rose)
     p1, sector = figure_field(config)
     println("wrote ", p1, "   (most exposed sector ", sector, ")")
-    p2 = figure_regimes(config)
-    println("wrote ", p2)
-    p3 = figure_animation(config)
-    println("wrote ", p3)
+    println("wrote ", figure_regimes(config))
+    println("wrote ", figure_animation(config))
+    println("wrote ", figure_classes(config))
+    println("wrote ", figure_buildings(config))
+    println("wrote ", figure_heights(config))
+    println("wrote ", figure_depletion(config))
 end
 
 main()
