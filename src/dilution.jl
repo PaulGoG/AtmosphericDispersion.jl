@@ -56,9 +56,9 @@ function dilution_instantaneous(
     u > 0 || return 0.0
 
     D = _depletion(x, site, class, nuclide, washout_duration, precipitation, rate)
-    crosswind = exp(-y^2 / (2Σy^2))
-    vertical = exp(-(z - H)^2 / (2Σz^2)) + exp(-(z + H)^2 / (2Σz^2))
-    return D * crosswind * vertical / (2π * Σy * Σz * u)
+    crosswind = exp(-y^2 / (2Σy^2)) / (sqrt(2π) * Σy)
+    vertical = vertical_factor(z, H, Σz, mixing_depth(class, site.mixing))
+    return D * crosswind * vertical / u
 end
 
 """
@@ -120,7 +120,10 @@ function dilution_extended(
     u > 0 || return 0.0
 
     D = _depletion(x, site, class, nuclide, washout_duration, precipitation, rate)
-    return D * sqrt(2 / π) * exp(-H^2 / (2Σz^2)) / (Σz * u * x * θ_L)
+    # The crosswind-integrated vertical factor, spread over the arc the sector
+    # subtends. Without a lid this is √(2/π)exp(−H²/2Σ_z²)/Σ_z exactly.
+    vertical = crosswind_integrated_factor(H, Σz, mixing_depth(class, site.mixing))
+    return D * vertical / (u * x * θ_L)
 end
 
 """

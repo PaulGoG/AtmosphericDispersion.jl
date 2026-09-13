@@ -1619,7 +1619,11 @@ using TOML
             surface = SURFACE_AGRICULTURAL,
             roughness = ROUGHNESS_PASTURE,
         )
-        site = Site(; source = stack, atmosphere = air)
+        # Unbounded on purpose. The crosswind integral, the sector average and
+        # the Σ_z = H/√2 maximum are all properties of the *unbounded* Gaussian;
+        # under a lid the plume is confined and they no longer hold as written.
+        # The lid has its own conservation test below.
+        site = Site(; source = stack, atmosphere = air, mixing = MIXING_UNBOUNDED)
         distances = (500.0, 2000.0, 10_000.0)
 
         # Integrating the three-dimensional field across the wind leaves the
@@ -1771,7 +1775,8 @@ using TOML
                 surface = SURFACE_AGRICULTURAL,
                 roughness = ROUGHNESS_PASTURE,
             )
-            site = Site(; source = stack, atmosphere = air)
+            # RG 1.111 Eq. (3) and SRS-19 Eq. (V-2) are written without a lid.
+            site = Site(; source = stack, atmosphere = air, mixing = MIXING_UNBOUNDED)
             distances = (500.0, 2000.0, 10_000.0)
 
             for (n, published) in ((16, 2.032), (12, 1.5238))
@@ -1874,6 +1879,71 @@ using TOML
                     j in PRECIPITATION_RATES
                 ]
                 @test all(r -> isapprox(r, factor; rtol = 0.2), ratios)
+            end
+        end
+
+        # HPA-RPD-058 §3.2.2.1 Eqs. (3.4) and (3.5), and Table 3.5(a), which
+        # the report attributes to Clarke (1979) and Jones (1980).
+        @testset "the mixing layer is HPA-RPD-058" begin
+            published = (1300.0, 900.0, 850.0, 800.0, 400.0, 100.0)
+            for (i, class) in enumerate(PASQUILL_CLASSES)
+                @test mixing_depth(class) == published[i]
+                @test mixing_depth(class, MIXING_UNBOUNDED) == Inf
+                @test mixing_depth(class, MIXING_UNIFORM_800) == 800.0
+            end
+            # deeper in unstable air, shallower in stable, monotonic past A
+            @test issorted(published[2:end]; rev = true)
+            @test RECOMMENDED_MIXING_DEPTH == 800.0
+
+            # Without a lid the factor is the ordinary ground-reflected Gaussian.
+            for H in (20.0, 100.0), Σz in (10.0, 60.0, 400.0), z in (0.0, 50.0)
+                plain =
+                    (exp(-(z - H)^2 / (2Σz^2)) + exp(-(z + H)^2 / (2Σz^2))) /
+                    (sqrt(2π) * Σz)
+                @test vertical_factor(z, H, Σz, Inf) ≈ plain
+            end
+
+            # Eq. (3.5): once σ_z reaches the depth the profile is uniform.
+            for A in (400.0, 800.0, 1300.0), H in (10.0, 100.0)
+                @test vertical_factor(0.0, H, A, A) ≈ 1 / A
+                @test vertical_factor(A / 2, H, 3A, A) ≈ 1 / A
+            end
+
+            # Nothing crosses the lid.
+            for A in (100.0, 800.0)
+                @test vertical_factor(A + 1, 50.0, 30.0, A) == 0
+                @test vertical_factor(A + 1, 50.0, 3A, A) == 0
+            end
+
+            # The released activity is conserved under the lid, which is the
+            # statement the image sum has to satisfy and the truncation at
+            # |s| = 1 could have broken. All of these have H < A, which is the
+            # regime the lid model covers.
+            for (H, Σz, A) in (
+                (100.0, 30.0, 800.0),
+                (100.0, 300.0, 800.0),
+                (50.0, 900.0, 800.0),
+                (20.0, 40.0, 100.0),
+                (10.0, 250.0, 100.0),
+            )
+                mass, _ = quadgk(z -> vertical_factor(z, H, Σz, A), 0.0, A; rtol = 1e-12)
+                @test mass ≈ 1 rtol = 1e-8
+            end
+
+            # A lid can only raise the ground-level concentration: it reflects
+            # material back down that would otherwise have gone on rising.
+            for H in (20.0, 100.0), Σz in (50.0, 200.0, 700.0), A in (400.0, 800.0)
+                @test vertical_factor(0.0, H, Σz, A) ≥ vertical_factor(0.0, H, Σz, Inf)
+            end
+
+            # A release at or above the lid is not trapped by it. HPA's
+            # Diagram 3.1 places the source below the inversion; a plume above
+            # one is decoupled until the inversion breaks, which is a different
+            # model. Class F meets this here — 100 m depth, 103 m release.
+            for H in (100.0, 150.0, 101.0), Σz in (20.0, 200.0)
+                @test vertical_factor(0.0, H, Σz, 100.0) == vertical_factor(0.0, H, Σz, Inf)
+                @test vertical_factor(500.0, H, Σz, 100.0) ==
+                      vertical_factor(500.0, H, Σz, Inf)
             end
         end
 

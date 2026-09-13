@@ -146,6 +146,7 @@ Regenerate with `julia --project=scripts scripts/validation.jl`.
 │   ├── windrose.jl         directional and stability joint frequencies
 │   ├── surfaces.jl         surface, roughness and precipitation categories
 │   ├── tables.jl           tabulated coefficients of the normative
+│   ├── mixing.jl           mixing-layer depth and the lid reflections
 │   ├── dispersion.jl       wind profile and dispersion parameters
 │   ├── source.jl           stack, ambient state, fluxes, stability parameter
 │   ├── plumerise.jl        momentum and buoyancy rise
@@ -361,6 +362,61 @@ for every class and distance.
 
 `dilution_instantaneous` is likewise SRS-19 Eq. (V-1) literally.
 
+#### The mixing layer
+
+A plume does not disperse upwards forever. Turbulent mixing is capped by an
+inversion, and once σ_z approaches that depth the plume is trapped between the
+ground and the lid and reflects off both. The package had no lid, which is what
+limited agreement with published depletion tables in the far field.
+
+It has one now, `HPA-RPD-058` §3.2.2.1 Eq. (3.4) — the image sum over virtual
+sources at `2sA ± h_e`, truncated at `|s| = 1` as the report prescribes — going
+over to Eq. (3.5), a uniform profile of `1/A`, once σ_z reaches the depth.
+Depths are Table 3.5(a), which the report attributes to Clarke (1979) and Jones
+(1980):
+
+| A | B | C | D | E | F |
+|---|---|---|---|---|---|
+| 1300 m | 900 m | 850 m | 800 m | 400 m | 100 m |
+
+Deeper in unstable air, shallower in stable, which is the physical ordering.
+`[model] mixing_layer` selects `tabulated` (the default), `unbounded` (the old
+behaviour), or `uniform_800` — the single depth HPA-RPD-058 §3.2.2.2.3
+recommends "for all conditions" when the real one is unknown.
+
+**What it changes**, as a ratio to the unbounded field at ground level:
+
+| | 10 km | 20 km | 50 km |
+|---|---|---|---|
+| A | 1.06 | **1.44** | **2.23** |
+| B | 1.00 | 1.13 | 1.67 |
+| C | 1.00 | 1.01 | 1.16 |
+| D | 1.00 | 1.00 | 1.00 |
+| E | 1.00 | 1.00 | 1.01 |
+| F | 1.00 | 1.00 | 1.00 |
+
+The unstable classes reach the lid first, despite having the deepest one,
+because σ_z grows fastest there. The lid can only raise ground-level
+concentration — it reflects back down material that would otherwise have kept
+rising — so the correction is in the conservative direction.
+
+**Class F is exempt, and deliberately.** Its tabulated depth is 100 m while
+plume rise puts the effective release at 103 m, so the plume starts *above* the
+inversion. HPA's Diagram 3.1 places the source below it, and a plume above one
+is decoupled from the ground until the inversion breaks — fumigation, a
+different model this package does not implement. Trapping it against a lid it is
+already above would have roughly doubled the ground-level concentration on no
+physical grounds, so where `H ≥ A` the lid is ignored.
+
+The material is confined to `0 ≤ z ≤ A`, and the released activity integrated
+over that interval is **1.000000000**, which is the test the `|s| = 1`
+truncation had to survive.
+
+Note that the analytic invariants below — the crosswind integral, the sector
+average, the `Σ_z = H/√2` maximum — are properties of the *unbounded* Gaussian
+and are asserted against a site with the lid switched off. They are statements
+about the kernel's normalisation, not about the atmosphere.
+
 #### The depletion and resuspension parameters
 
 These were the last constants in the package with no attribution. They have one
@@ -540,8 +596,6 @@ Next:
   the numbers are not
 - Re-run the thesis cases under the corrected convention and the corrected
   roughness coefficients, to say by how much the published dose maps move
-- A mixing lid. Its absence is what limits agreement with published depletion
-  tables beyond about 20 km
 
 ## History
 

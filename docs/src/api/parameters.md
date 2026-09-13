@@ -21,6 +21,13 @@ Modules = [AtmosphericDispersion]
 Pages = ["tables.jl"]
 ```
 
+## The mixing layer
+
+```@autodocs
+Modules = [AtmosphericDispersion]
+Pages = ["mixing.jl"]
+```
+
 ## Wind profile and dispersion parameters
 
 ```@autodocs

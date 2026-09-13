@@ -6,6 +6,25 @@ follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **A mixing layer.** `MixingLayer`, selected by `[model] mixing_layer`,
+  implements HPA-RPD-058 §3.2.2.1 Eq. (3.4) — the image sum over virtual sources
+  at `2sA ± h_e`, truncated at `|s| = 1` — going over to Eq. (3.5), a uniform
+  `1/A` profile, once σ_z reaches the depth. Depths are Table 3.5(a): A 1300,
+  B 900, C 850, D 800, E 400, F 100 m, attributed there to Clarke (1979) and
+  Jones (1980). `unbounded` restores the previous behaviour and `uniform_800`
+  takes the single depth the report recommends for all conditions.
+  - It raises ground-level χ/Q, never lowers it: 1.44× in class A at 20 km and
+    2.23× at 50 km, 1.67× in class B at 50 km, and essentially not at all in
+    class D. The unstable classes reach the lid first because σ_z grows fastest
+    there, despite their deeper lids.
+  - Activity is confined to `0 ≤ z ≤ A` and conserved exactly over it.
+  - A release at or above the lid is not trapped by it. Class F's tabulated
+    depth is 100 m against a 103 m effective release, so the plume starts above
+    the inversion and is decoupled until it breaks — fumigation, which this
+    package does not model.
+
 ### Changed
 
 - **The building-wake coefficient defaults to 1.0** rather than 1.5, which is

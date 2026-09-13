@@ -108,6 +108,7 @@ include("stability.jl")
 include("windrose.jl")
 include("surfaces.jl")
 include("tables.jl")
+include("mixing.jl")
 include("dispersion.jl")
 export Building,
     BuildingEnvelope,
@@ -132,6 +133,15 @@ export DepositionVelocity, Nuclide, TRITIATED_WATER, TRITIUM_GAS, TRITIUM_DECAY_
 export ResuspensionModel, RESUSPENSION_IAEA_SS57, RESUSPENSION_MAXWELL_ANSPAUGH
 export WashoutModel, WASHOUT_NORMATIVE, WASHOUT_HTO, ogram_snow_washout
 export WashoutSpecies, WASHOUT_TRITIUM_IODINE, WASHOUT_OTHER_NUCLIDES
+export MixingLayer,
+    MIXING_TABULATED,
+    MIXING_UNBOUNDED,
+    MIXING_UNIFORM_800,
+    mixing_depth,
+    vertical_factor,
+    crosswind_integrated_factor,
+    RECOMMENDED_MIXING_DEPTH,
+    UNIFORM_MIXING_RATIO
 export decay_factor,
     depletion_integral,
     dry_depletion_factor,

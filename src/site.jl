@@ -83,6 +83,7 @@ struct Site
     atmosphere::Atmosphere
     buildings::BuildingEnvelope
     rise::RiseCoefficients
+    mixing::MixingLayer
     release_height::Float64
     buoyancy::Float64
     momentum::Float64
@@ -93,12 +94,14 @@ struct Site
         atmosphere::Atmosphere,
         buildings::BuildingEnvelope = BuildingEnvelope(),
         rise::RiseCoefficients = BRIGGS_RISE,
+        mixing::MixingLayer = MIXING_TABULATED,
     )
         return new(
             source,
             atmosphere,
             buildings,
             rise,
+            mixing,
             wake_height(source, atmosphere, buildings),
             buoyancy_flux(source, atmosphere),
             momentum_flux(source, atmosphere),

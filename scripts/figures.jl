@@ -491,7 +491,6 @@ function comparison_sweep(
     hi = 3e-6,
     ratio_span = 10.0,
     caption = "",
-    marks = (),
     width = 1400,
     height = 500,
 )
@@ -574,29 +573,6 @@ function comparison_sweep(
             strokewidth = 1.2,
             markersize = 8,
         )
-        for (mx, my, mtext) in marks
-            scatter!(
-                ax,
-                [mx / 1000],
-                [my / 1000],
-                color = PALETTE.red,
-                marker = :rect,
-                markersize = 11,
-                strokecolor = :white,
-                strokewidth = 1,
-            )
-            i == 1 && text!(
-                ax,
-                mx / 1000,
-                my / 1000;
-                text = "  " * mtext,
-                align = (:left, :center),
-                fontsize = 13,
-                color = PALETTE.red,
-                strokecolor = :white,
-                strokewidth = 0.8,
-            )
-        end
         compass!(ax; fontsize = 13, color = i == 3 ? :black : :white)
     end
     Label(grid_layout[2, 1:3], AXIS_LABEL, fontsize = 16)
@@ -686,7 +662,6 @@ function figure_buildings(config)
             (e, nn, β) -> dilution_instantaneous(e, nn, 0.0, waked, PASQUILL_D, β),
         );
         half_width = 12_000.0,
-        marks = ((east, north, "Building"),),
         caption = "Class D, 60 m building 25 m from a 50.3 m stack. The plume is entrained into the cavity and released at ground level: 50.3 m becomes 0 m",
     )
 end

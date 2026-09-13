@@ -25,6 +25,12 @@ plume_rise = "briggs"     # one of: briggs | xoqdoq | thesis_2021
 resuspension = "iaea_ss57"  # one of: iaea_ss57 | maxwell_anspaugh
                           #   iaea_ss57        Safety Series 57 (1982) Eq. (3.14A)
                           #   maxwell_anspaugh Health Phys. 101 (2011); NUREG/CR-7270
+mixing_layer = "tabulated"  # one of: tabulated | unbounded | uniform_800
+                          #   tabulated   HPA-RPD-058 Table 3.5(a), by class:
+                          #               A 1300, B 900, C 850, D 800, E 400, F 100 m
+                          #   unbounded   no lid, as the 2021 code had it
+                          #   uniform_800 800 m for all conditions, the compromise
+                          #               HPA-RPD-058 §3.2.2.2.3 recommends
 washout = "normative"     # one of: normative | hto
                           #   normative  the tabulated scheme; its snow columns are
                           #              a particle-scavenging suppression of the rain

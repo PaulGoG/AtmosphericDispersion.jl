@@ -76,6 +76,12 @@ end
 const _RISE_CHOICES =
     Dict("briggs" => BRIGGS_RISE, "xoqdoq" => XOQDOQ_RISE, "thesis_2021" => THESIS_RISE)
 
+const _MIXING_CHOICES = Dict(
+    "tabulated" => MIXING_TABULATED,
+    "unbounded" => MIXING_UNBOUNDED,
+    "uniform_800" => MIXING_UNIFORM_800,
+)
+
 const _WASHOUT_CHOICES = Dict("normative" => WASHOUT_NORMATIVE, "hto" => WASHOUT_HTO)
 
 const _RESUSPENSION_CHOICES = Dict(
@@ -177,7 +183,13 @@ function configuration_from(root::AbstractDict)
         "model.washout",
     )
 
-    site = Site(; source, atmosphere, buildings, rise)
+    mixing = _choice(
+        _value(model, "mixing_layer", String, "model"; default = "tabulated"),
+        _MIXING_CHOICES,
+        "model.mixing_layer",
+    )
+
+    site = Site(; source, atmosphere, buildings, rise, mixing)
 
     rose = _rose_from(_table(root, "wind_rose", ""))
     nuclide = _nuclide_from(_table(root, "nuclide", ""))
