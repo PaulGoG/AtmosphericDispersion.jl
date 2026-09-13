@@ -17,7 +17,15 @@ makedocs(;
         edit_link = "main",
         assets = String[],
     ),
-    pages = ["Home" => "index.md"],
+    pages = [
+        "Home" => "index.md",
+        "API" => [
+            "Sectors, stability and the wind rose" => "api/geometry.md",
+            "Site and dispersion parameters" => "api/parameters.md",
+            "Dilution, depletion and deposition" => "api/fields.md",
+            "Configuration" => "api/configuration.md",
+        ],
+    ],
 )
 
 deploydocs(; repo = "github.com/PaulGoG/AtmosphericDispersion.jl", devbranch = "main")

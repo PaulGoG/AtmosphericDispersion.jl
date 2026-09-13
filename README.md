@@ -49,7 +49,8 @@ addressed.
 ├── docs/
 │   ├── Project.toml
 │   ├── activate.jl
-│   └── make.jl             Documenter build
+│   ├── make.jl             Documenter build
+│   └── src/                overview and four API pages
 └── .github/workflows/      CI, CompatHelper, TagBot
 ```
 
@@ -170,10 +171,10 @@ Done:
 - TOML configuration validated key by key, and a script entry point over it
 - Static QA in the suite: Aqua, JET, ExplicitImports. 2920 tests, including
   exact agreement with the 2021 formulae wherever they were evaluable
+- A Documenter site that builds clean, doctests included
 
 Next:
 
-- Documenter site
 - Comparison against an independent implementation
 - Establish the provenance of the 2021 wind rose, and settle its convention
 

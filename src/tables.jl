@@ -124,7 +124,13 @@ struct WashoutCoefficients
     high::Float64
 end
 
-# Table 7: tabulated at these intensities only, in mm/h.
+"""
+    PRECIPITATION_RATES
+
+The precipitation intensities in mm/h at which the washout coefficients are
+tabulated. [`washout_coefficients`](@ref) is defined at these values and
+nowhere else.
+"""
 const PRECIPITATION_RATES = (0.5, 1.0, 3.0, 5.0)
 
 const _WASHOUT = (
