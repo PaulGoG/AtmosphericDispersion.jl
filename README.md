@@ -294,9 +294,10 @@ Next:
 
 ## History
 
-`original` holds the code exactly as submitted for the BSc thesis at the Faculty
-of Physics, University of Bucharest, in June 2021, together with the thesis
-itself. This branch shares no history with it.
+The [`original`](../../tree/original) branch holds the code exactly as submitted
+for the BSc thesis at the Faculty of Physics, University of Bucharest, in June
+2021, together with the thesis itself (`BSc_thesis_2021.pdf`, in Romanian).
+`main` shares no history with it.
 
 ## Citing
 
