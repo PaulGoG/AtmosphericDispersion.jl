@@ -1789,9 +1789,15 @@ using TOML
 
         # IAEA Safety Series No. 57, Generic Models and Parameters for Assessing
         # the Environmental Transfer of Radionuclides from Routine Releases,
-        # STI/PUB/611, Vienna (1982), §3.6, Eq. (3.14A). The report gives the
-        # reference values verbatim: "10⁻⁵ m⁻¹, 10⁻⁹ m⁻¹ for A and B
-        # respectively and 1 × 10⁻² d⁻¹ and 2 × 10⁻⁵ d⁻¹ for λ₁ and λ₂".
+        # STI/PUB/611, Vienna (1982), §3.6, Eq. (3.14A). Read in the primary
+        # document, which states verbatim: "Reference values for the terms in
+        # Eq. (3.14A) are 10⁻⁵ m⁻¹, 10⁻⁹ m⁻¹ for A and B respectively and
+        # 1 × 10⁻² d⁻¹ and 2 × 10⁻⁵ d⁻¹ for λ₁ and λ₂ respectively."
+        #
+        # Safety Series 57 has been superseded — every page of it now carries a
+        # "no longer valid" stamp — but it is the source these constants came
+        # from, by way of reference [3] of CNCAN NSR-23, and no successor
+        # restates them. See RESUSPENSION_MAXWELL_ANSPAUGH for the modern form.
         @testset "resuspension is IAEA Safety Series 57" begin
             c = RESUSPENSION_COEFFICIENTS
             @test c.A == 1e-5
@@ -1836,6 +1842,28 @@ using TOML
             w = washout_coefficients(PRECIPITATION_RAIN, 1.0)
             @test w.low ≤ 7.0e-5 ≤ w.high
             @test w.low ≤ 3.5e-5 ≤ w.high
+
+            # IAEA Safety Series 57 Table II gives the washout coefficient as
+            # Λ = a·I with a = 1.6e-4 h(mm·s)⁻¹ for particulates and 1.1e-4 for
+            # elemental iodine, so 1.6e-4 and 1.1e-4 s⁻¹ at 1 mm/h. Both fall
+            # inside both species rows of the normative's rain bracket.
+            for species in (WASHOUT_TRITIUM_IODINE, WASHOUT_OTHER_NUCLIDES)
+                r = washout_coefficients(
+                    PRECIPITATION_RAIN,
+                    1.0,
+                    WASHOUT_NORMATIVE,
+                    species,
+                )
+                @test r.low ≤ 1.6e-4 ≤ r.high
+                @test r.low ≤ 1.1e-4 ≤ r.high
+            end
+
+            # Safety Series 57 makes the dependence linear in intensity, where
+            # the normative's table fits 0.75 and NRPB-R322 publishes 0.75.
+            # NRPB-R157 §D3.4 brackets the exponent at 0.5 to 1.0, which
+            # contains both positions, so neither is asserted against the other.
+            @test 0.5 ≤ 0.75 ≤ 1.0
+            @test 0.5 ≤ 1.0 ≤ 1.0
 
             # The snow columns are the rain columns scaled down by a constant —
             # a particle-scavenging suppression, and not a measurement.

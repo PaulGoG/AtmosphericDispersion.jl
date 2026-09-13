@@ -132,7 +132,10 @@ Which published resuspension correlation to use.
 
   - `RESUSPENSION_IAEA_SS57` — IAEA Safety Series No. 57 (1982), §3.6,
     Eq. (3.14A), the two-term form above. The default, and the one whose
-    constants this package carries exactly.
+    constants this package carries exactly. Safety Series 57 reached this
+    package by way of reference [3] of CNCAN NSR-23; it has since been
+    superseded, and every page of it carries a "no longer valid" stamp, but no
+    successor restates these constants.
   - `RESUSPENSION_MAXWELL_ANSPAUGH` — Maxwell and Anspaugh, *Health Physics*
     **101** (2011), Eqs. 15/16, also adopted by NRC NUREG/CR-7270:
     `10⁻⁵e^(−0.07t) + 7×10⁻⁹e^(−0.002t) + 10⁻⁹`. It keeps the amplitudes and

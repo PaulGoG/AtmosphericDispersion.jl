@@ -51,6 +51,9 @@ follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Safety Series 57's resuspension constants and Table II washout constants, and
+  NSR-23's own tables, are now asserted against the primary documents rather
+  than against secondary reporting of them.
 - The vertical dispersion scheme is identified: it is Hosker's fit
   (IAEA-SM-181/19, 1974) to F.B. Smith (1972) and Briggs (1973), printed in
   HPA-RPD-058 Table 3.3 and NRPB-R91 Table 3. Both tables are now asserted entry

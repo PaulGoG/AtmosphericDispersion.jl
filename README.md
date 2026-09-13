@@ -369,7 +369,10 @@ now.
 **Resuspension.** `K = A exp(−λ₁t) + B exp(−λ₂t)` with
 `A = 10⁻⁵ m⁻¹, B = 10⁻⁹ m⁻¹, λ₁ = 10⁻² d⁻¹, λ₂ = 2 × 10⁻⁵ d⁻¹` is **IAEA Safety
 Series No. 57** (1982), §3.6, Eq. (3.14A) — all four constants, exactly, in the
-same units. That report also brackets them: A over 10⁻⁶–10⁻⁴ and B over
+same units, read in the primary document, which states them in that sentence.
+It is reference [3] of NSR-23's own bibliography, which is how they got here.
+Safety Series 57 is now superseded and says so on every page, but no successor
+restates these constants. That report also brackets them: A over 10⁻⁶–10⁻⁴ and B over
 10⁻¹⁰–10⁻⁸ m⁻¹, with the fast half-life "of the order of weeks" (this gives
 69.3 d) and the slow one "in the range 50 to 100 years" (94.9 yr). Asserted.
 
@@ -389,10 +392,16 @@ carried only one; both are here now, selected by `WashoutSpecies`:
 
 The intensity dependence is the published one: fitting each column in log–log
 gives an exponent of **0.753** for three of four, and `Λ ∝ J^0.75` is Slinn
-(1977) via **NRPB-R322** (ADMLC, 2001) §3.1.1. The rain amplitudes bracket the
-published values — at 1 mm/h the German **AVV** Anhang 7 Tabelle 3 gives
-7 × 10⁻⁵ s⁻¹ for aerosols and elemental iodine and 3.5 × 10⁻⁵ for tritiated
-water, both inside the tritium row's 10⁻⁵ to 2 × 10⁻⁴.
+(1977) via **NRPB-R322** (ADMLC, 2001) §3.1.1. Safety Series 57 §3.4.2 takes a
+third position, `Λ = aI`, linear; NRPB-R157 §D3.4 brackets the exponent at 0.5
+to 1.0, which contains both, so neither is asserted against the other.
+
+The rain amplitudes bracket every published value found. At 1 mm/h the German
+**AVV** Anhang 7 Tabelle 3 gives 7 × 10⁻⁵ s⁻¹ for aerosols and elemental iodine
+and 3.5 × 10⁻⁵ for tritiated water; **Safety Series 57 Table II** gives
+`a = 1.6 × 10⁻⁴` h(mm·s)⁻¹ for particulates and `1.1 × 10⁻⁴` for elemental
+iodine, so 1.6 × 10⁻⁴ and 1.1 × 10⁻⁴ s⁻¹ at that rate. All four fall inside
+**both** species rows.
 
 **Snow is where it breaks down, and the normative disagrees with itself.** The
 tritium row's snow values are the rain values divided by 100 and 500 — a
