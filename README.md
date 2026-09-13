@@ -92,7 +92,7 @@ Regenerate with `julia --project=scripts scripts/figures.jl`.
 │   ├── activate.jl
 │   ├── make.jl             Documenter build
 │   └── src/                overview and four API pages
-└── .github/workflows/      CI, CompatHelper, TagBot
+└── .github/workflows/      CI, TagBot (dependency bumps come from Dependabot)
 ```
 
 ## Environments
