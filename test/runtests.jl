@@ -1747,6 +1747,11 @@ using TOML
         # that it is √(2/π) divided by a 22.5° sector in radians; SRS-19 works
         # in twelve sectors, where the same constant is 1.5238.
         @testset "the sector constant is the published regulatory value" begin
+            # SRS-19 Eq. (3) prints the twelve-sector constant as 12/√(2π³),
+            # which is a closed form rather than a rounded decimal; the
+            # sixteen-sector analogue is RG 1.111's 2.032.
+            @test sqrt(2 / π) * 16 / (2π) ≈ 16 / sqrt(2π^3) rtol = 1e-14
+            @test sqrt(2 / π) * 12 / (2π) ≈ 12 / sqrt(2π^3) rtol = 1e-14
             @test sqrt(2 / π) * 16 / (2π) ≈ 2.032 rtol = 2e-4
             @test sqrt(2 / π) * 12 / (2π) ≈ 1.5238 rtol = 2e-4
 
@@ -1778,6 +1783,68 @@ using TOML
                     @test dilution_extended(0.0, -r, site, class, 0.0, sectors) ≈ regulatory rtol =
                         2e-4
                 end
+            end
+        end
+
+        # IAEA Safety Series No. 57, Generic Models and Parameters for Assessing
+        # the Environmental Transfer of Radionuclides from Routine Releases,
+        # STI/PUB/611, Vienna (1982), §3.6, Eq. (3.14A). The report gives the
+        # reference values verbatim: "10⁻⁵ m⁻¹, 10⁻⁹ m⁻¹ for A and B
+        # respectively and 1 × 10⁻² d⁻¹ and 2 × 10⁻⁵ d⁻¹ for λ₁ and λ₂".
+        @testset "resuspension is IAEA Safety Series 57" begin
+            c = RESUSPENSION_COEFFICIENTS
+            @test c.A == 1e-5
+            @test c.B == 1e-9
+            @test c.λ₁ == 1e-2
+            @test c.λ₂ == 2e-5
+
+            # The same paragraph brackets them across the literature.
+            @test 1e-6 ≤ c.A ≤ 1e-4
+            @test 1e-10 ≤ c.B ≤ 1e-8
+            # "of the order of weeks" and "in the range 50 to 100 years"
+            @test 14 ≤ log(2) / c.λ₁ ≤ 120
+            @test 50 ≤ log(2) / c.λ₂ / 365.25 ≤ 100
+
+            @test resuspension_factor(0) ≈ c.A + c.B
+            @test resuspension_factor(1e9) ≈ 0 atol = 1e-12
+        end
+
+        # The washout table follows the published intensity dependence and
+        # brackets the published amplitudes; it does not reproduce a single
+        # tabulation, and is asserted as what it is.
+        @testset "washout follows the published intensity law" begin
+            # Λ ∝ J^0.75, from Slinn (1977) via NRPB-R322 (ADMLC, 2001) §3.1.1:
+            # "a net dependence of scavenging coefficient on J^0.75".
+            for precipitation in (PRECIPITATION_RAIN, PRECIPITATION_SNOW),
+                field in (:low, :high)
+
+                Λ = [
+                    getfield(washout_coefficients(precipitation, j), field) for
+                    j in PRECIPITATION_RATES
+                ]
+                x = log.(collect(PRECIPITATION_RATES))
+                y = log.(Λ)
+                x̄, ȳ = sum(x) / length(x), sum(y) / length(y)
+                p = sum((x .- x̄) .* (y .- ȳ)) / sum((x .- x̄) .^ 2)
+                @test 0.65 ≤ p ≤ 0.80
+            end
+
+            # At 1 mm/h the German AVV zu §47 StrlSchV (2012), Anhang 7
+            # Tabelle 3, gives 7e-5 s⁻¹ for aerosols and elemental iodine and
+            # 3.5e-5 for tritiated water. Both lie inside this table's range.
+            w = washout_coefficients(PRECIPITATION_RAIN, 1.0)
+            @test w.low ≤ 7.0e-5 ≤ w.high
+            @test w.low ≤ 3.5e-5 ≤ w.high
+
+            # The snow columns are the rain columns scaled down by a constant —
+            # a particle-scavenging suppression, and not a measurement.
+            for (field, factor) in ((:low, 100), (:high, 500))
+                ratios = [
+                    getfield(washout_coefficients(PRECIPITATION_RAIN, j), field) /
+                    getfield(washout_coefficients(PRECIPITATION_SNOW, j), field) for
+                    j in PRECIPITATION_RATES
+                ]
+                @test all(r -> isapprox(r, factor; rtol = 0.2), ratios)
             end
         end
 

@@ -320,6 +320,42 @@ for every class and distance.
 
 `dilution_instantaneous` is likewise SRS-19 Eq. (V-1) literally.
 
+#### The depletion and resuspension parameters
+
+These were the last constants in the package with no attribution. They have one
+now.
+
+**Resuspension.** `K = A exp(−λ₁t) + B exp(−λ₂t)` with
+`A = 10⁻⁵ m⁻¹, B = 10⁻⁹ m⁻¹, λ₁ = 10⁻² d⁻¹, λ₂ = 2 × 10⁻⁵ d⁻¹` is **IAEA Safety
+Series No. 57** (1982), §3.6, Eq. (3.14A) — all four constants, exactly, in the
+same units. That report also brackets them: A over 10⁻⁶–10⁻⁴ and B over
+10⁻¹⁰–10⁻⁸ m⁻¹, with the fast half-life "of the order of weeks" (this gives
+69.3 d) and the slow one "in the range 50 to 100 years" (94.9 yr). Asserted.
+
+A later model supersedes it — Maxwell and Anspaugh, *Health Physics* **101**
+(2011), also in NUREG/CR-7270 — which keeps the amplitudes but puts the fast
+decay constant at 0.07 d⁻¹ rather than 0.01. The package therefore runs high
+with elapsed time: 1.8× at ten days, 6× at thirty. Recorded, not changed.
+
+**Washout.** The table is not arbitrary. Fitting each column in log–log gives an
+exponent of **0.753** for three of the four and 0.691 for the fourth, within
+10 % — and `Λ ∝ J^0.75` is the published dependence, from Slinn (1977) via
+**NRPB-R322** (ADMLC, 2001) §3.1.1. The amplitudes bracket the published values
+rather than reproducing one: at 1 mm/h the German **AVV zu §47 StrlSchV** (2012)
+Anhang 7 Tabelle 3 gives 7 × 10⁻⁵ s⁻¹ for aerosols and elemental iodine and
+3.5 × 10⁻⁵ for tritiated water, and **both fall inside this table's
+low-to-high range of 10⁻⁵ to 2 × 10⁻⁴**. Asserted as a bracket, which is what it
+is.
+
+**And one thing the sourcing exposed.** The snow columns are the rain columns
+divided by exactly 100 and 500 — a particle-scavenging suppression, sensible for
+aerosols. For HTO it is the wrong physics: snow scavenging of tritiated water is
+isotopic exchange at the crystal surface, and the only HTO-specific measurement
+found (Ogram, Ontario Hydro 85-233-K, 1985, Table V) runs about **1000× above**
+this table's snow column, not below it. The reference case is HTO. This is
+flagged in the status list rather than silently corrected, because the right
+value depends on a decision about what the table is for.
+
 #### A known deviation, recorded rather than carried quietly
 
 The combined momentum-and-buoyancy rise should reduce to the pure-buoyancy law
@@ -390,9 +426,9 @@ Next:
   the numbers are not
 - Re-run the thesis cases under the corrected convention and the corrected
   roughness coefficients, to say by how much the published dose maps move
-- Source or re-derive the washout table and the resuspension factor. Neither has
-  been traced to a publication, and the washout rates for light rain fall below
-  every published range found
+- Decide what the snow washout column should be for HTO. It is currently the
+  rain column divided by 500, a particle-scavenging suppression, and the only
+  HTO-specific measurement found runs three orders of magnitude the other way
 - A mixing lid. Its absence is what limits agreement with published depletion
   tables beyond about 20 km
 
