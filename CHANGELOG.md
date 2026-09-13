@@ -8,6 +8,16 @@ follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **An end-to-end benchmark against HPA-RPD-058 Table 3.7** — 3 release heights
+  × 7 stability categories × 8 distances of published plume-depletion fractions.
+  143 of the 144 cells reproduce to within 0.028 against a printed precision of
+  0.01, and every row is monotone. The exception is an error in the source:
+  category F at 30 m reads 0.13 at 50 km and 0.19 at 100 km, a depletion factor
+  that rises with distance; this package gives 0.0188, one decimal point from
+  the printed value. The test asserts both the defect and the computed value.
+- **`Site` takes `fixed_height` and `fixed_wind`**, overriding the effective
+  release height and transport wind speed. Published benchmarks state both as
+  inputs rather than deriving them, so reproducing one requires setting them.
 - **A mixing layer.** `MixingLayer`, selected by `[model] mixing_layer`,
   implements HPA-RPD-058 §3.2.2.1 Eq. (3.4) — the image sum over virtual sources
   at `2sA ± h_e`, truncated at `|s| = 1` — going over to Eq. (3.5), a uniform
@@ -20,10 +30,11 @@ follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
     class D. The unstable classes reach the lid first because σ_z grows fastest
     there, despite their deeper lids.
   - Activity is confined to `0 ≤ z ≤ A` and conserved exactly over it.
-  - A release at or above the lid is not trapped by it. Class F's tabulated
+  - A release strictly above the lid is not trapped by it: class F's tabulated
     depth is 100 m against a 103 m effective release, so the plume starts above
     the inversion and is decoupled until it breaks — fumigation, which this
-    package does not model.
+    package does not model. A release exactly at the lid is still capped, which
+    Table 3.7 decided rather than taste.
 
 ### Changed
 

@@ -1882,6 +1882,104 @@ using TOML
             end
         end
 
+        # HPA-RPD-058 Table 3.7, "Fractions of material remaining in the plume
+        # due to dry deposition for a deposition velocity of 10⁻² m s⁻¹":
+        # 3 effective release heights × 7 stability categories × 8 distances,
+        # with the wind speed at stack height printed for each row.
+        #
+        # This is the only end-to-end benchmark in the suite. It exercises σ_z,
+        # the mixing layer and the depletion integral together against published
+        # numbers, where everything else here checks one piece at a time.
+        # Category G is omitted: this package has no category G.
+        @testset "depletion against HPA-RPD-058 Table 3.7" begin
+            rows = (
+                (30.0, PASQUILL_A, 1.32, (0.96, 0.94, 0.92, 0.89, 0.86, 0.81, 0.68, 0.51)),
+                (30.0, PASQUILL_B, 2.65, (0.98, 0.96, 0.94, 0.90, 0.87, 0.83, 0.73, 0.59)),
+                (30.0, PASQUILL_C, 6.62, (0.99, 0.98, 0.97, 0.95, 0.93, 0.90, 0.85, 0.78)),
+                (30.0, PASQUILL_D, 6.62, (1.00, 0.98, 0.97, 0.93, 0.90, 0.86, 0.78, 0.69)),
+                (30.0, PASQUILL_E, 3.97, (1.00, 0.98, 0.94, 0.86, 0.78, 0.68, 0.51, 0.36)),
+                (30.0, PASQUILL_F, 2.65, (1.00, 0.99, 0.95, 0.79, 0.61, 0.40, 0.13, 0.19)),
+                (70.0, PASQUILL_A, 1.64, (0.99, 0.97, 0.95, 0.93, 0.90, 0.86, 0.75, 0.59)),
+                (70.0, PASQUILL_B, 3.28, (1.00, 0.99, 0.97, 0.94, 0.92, 0.88, 0.80, 0.67)),
+                (70.0, PASQUILL_C, 8.21, (1.00, 1.00, 0.99, 0.97, 0.96, 0.93, 0.89, 0.83)),
+                (70.0, PASQUILL_D, 8.21, (1.00, 1.00, 0.99, 0.97, 0.94, 0.91, 0.84, 0.77)),
+                (70.0, PASQUILL_E, 4.93, (1.00, 1.00, 0.99, 0.95, 0.89, 0.81, 0.65, 0.49)),
+                (70.0, PASQUILL_F, 3.28, (1.00, 1.00, 1.00, 0.98, 0.89, 0.68, 0.28, 0.060)),
+                (100.0, PASQUILL_A, 1.80, (0.99, 0.98, 0.97, 0.94, 0.92, 0.88, 0.77, 0.62)),
+                (100.0, PASQUILL_B, 3.60, (1.00, 0.99, 0.98, 0.96, 0.93, 0.90, 0.82, 0.70)),
+                (100.0, PASQUILL_C, 8.99, (1.00, 1.00, 0.99, 0.98, 0.97, 0.95, 0.91, 0.85)),
+                (100.0, PASQUILL_D, 8.99, (1.00, 1.00, 1.00, 0.98, 0.96, 0.93, 0.87, 0.80)),
+                (100.0, PASQUILL_E, 5.40, (1.00, 1.00, 1.00, 0.98, 0.94, 0.85, 0.72, 0.55)),
+                (
+                    100.0,
+                    PASQUILL_F,
+                    3.60,
+                    (1.00, 1.00, 1.00, 1.00, 0.94, 0.76, 0.33, 0.083),
+                ),
+            )
+            xs = (500.0, 1e3, 2e3, 5e3, 1e4, 2e4, 5e4, 1e5)
+
+            marker = Nuclide(;
+                name = "table 3.7 marker",
+                decay_constant = 0.0,
+                deposition_velocity = DepositionVelocity(1e-2, 1e-2),
+            )
+            air = Atmosphere(;
+                reference_speed = 4.0,
+                temperature = 288.0,
+                density = 1.2,
+                lapse_rate = 0.0098,
+                surface = SURFACE_AGRICULTURAL,
+                roughness = ROUGHNESS_PASTURE,
+            )
+            stack = StackSource(;
+                height = 30.0,
+                diameter = 1.0,
+                exit_velocity = 1e-9,
+                exit_density = 1.2,
+                exit_temperature = 288.0,
+            )
+
+            # The one cell that is wrong in the source: category F at 30 m runs
+            # 0.13 at 50 km and 0.19 at 100 km. A depletion factor cannot rise
+            # with distance — material already deposited does not return — so
+            # the row is non-monotonic and cannot be right. This package gives
+            # 0.0188 there, which is both monotone and a decimal point away from
+            # the printed 0.19.
+            @test rows[6][4][8] > rows[6][4][7]        # the table, not monotone
+
+            worst = 0.0
+            for (H, class, u, published) in rows
+                site = Site(;
+                    source = stack,
+                    atmosphere = air,
+                    fixed_height = H,
+                    fixed_wind = u,
+                )
+                for (k, x) in enumerate(xs)
+                    (H == 30.0 && class == PASQUILL_F && k == 8) && continue
+                    f = dry_depletion_factor(x, site, class, marker)
+                    @test f ≈ published[k] atol = 0.03
+                    worst = max(worst, abs(f - published[k]))
+                end
+                # every row is monotone here, including the one that is not in
+                # the table
+                factors = [dry_depletion_factor(x, site, class, marker) for x in xs]
+                @test issorted(factors; rev = true)
+            end
+            @test worst < 0.03
+
+            # The typo cell, computed rather than read
+            typo_site = Site(;
+                source = stack,
+                atmosphere = air,
+                fixed_height = 30.0,
+                fixed_wind = 2.65,
+            )
+            @test dry_depletion_factor(1e5, typo_site, PASQUILL_F, marker) ≈ 0.019 atol =
+                0.002
+        end
+
         # HPA-RPD-058 §3.2.2.1 Eqs. (3.4) and (3.5), and Table 3.5(a), which
         # the report attributes to Clarke (1979) and Jones (1980).
         @testset "the mixing layer is HPA-RPD-058" begin
@@ -1936,11 +2034,16 @@ using TOML
                 @test vertical_factor(0.0, H, Σz, A) ≥ vertical_factor(0.0, H, Σz, Inf)
             end
 
-            # A release at or above the lid is not trapped by it. HPA's
+            # A release strictly above the lid is not trapped by it. HPA's
             # Diagram 3.1 places the source below the inversion; a plume above
             # one is decoupled until the inversion breaks, which is a different
-            # model. Class F meets this here — 100 m depth, 103 m release.
-            for H in (100.0, 150.0, 101.0), Σz in (20.0, 200.0)
+            # model. The reference case meets this in class F: 100 m depth
+            # against a 103 m release. A release exactly at the lid is still
+            # capped — Table 3.7 tabulates one and only the capped form
+            # reproduces it.
+            @test vertical_factor(0.0, 100.0, 50.0, 100.0) !=
+                  vertical_factor(0.0, 100.0, 50.0, Inf)
+            for H in (150.0, 101.0), Σz in (20.0, 200.0)
                 @test vertical_factor(0.0, H, Σz, 100.0) == vertical_factor(0.0, H, Σz, Inf)
                 @test vertical_factor(500.0, H, Σz, 100.0) ==
                       vertical_factor(500.0, H, Σz, Inf)

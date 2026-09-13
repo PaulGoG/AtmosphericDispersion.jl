@@ -47,10 +47,14 @@ end
 
 The integral
 
-    ∫ exp(−H(x')² / 2Σ_z(x')²) / Σ_z(x') dx'
+    ∫ √(2/π) exp(−H(x')² / 2Σ_z(x')²) / Σ_z(x') dx'
 
-from [`DEPLETION_INTEGRAL_FLOOR`](@ref) to `x`, in dimensionless units, which
-sets how much of the plume has met the ground by distance `x`.
+from [`DEPLETION_INTEGRAL_FLOOR`](@ref) to `x`, in units of m⁻¹ × m, which sets
+how much of the plume has met the ground by distance `x`.
+
+Under a mixing layer the integrand carries the lid's image terms as well, which
+is HPA-RPD-058 Eq. (3.17); it is [`crosswind_integrated_factor`](@ref) evaluated
+along the plume axis.
 
 Evaluated by adaptive Gauss–Kronrod quadrature. The 2021 code used a fifty-point
 trapezoid rule, which is not adaptive and resolves the near field — where the
@@ -62,10 +66,15 @@ function depletion_integral(x::Real, site::Site, class::PasquillClass)
     # has to be resolved dynamically.
     upper = Float64(x)
     upper > DEPLETION_INTEGRAL_FLOOR || return 0.0
+    A = mixing_depth(class, site.mixing)
     integrand = function (x′::Float64)
         Σz = corrected_vertical_dispersion(x′, site, class)
         H = effective_height(x′, site, class)
-        return exp(-H^2 / (2Σz^2)) / Σz
+        # The same crosswind-integrated vertical factor the dilution kernel
+        # uses, so the lid's image terms enter the depletion too. HPA-RPD-058
+        # Eq. (3.17) carries them; without them the plume keeps depositing as
+        # though it could go on diluting upwards for ever.
+        return crosswind_integrated_factor(H, Σz, A)
     end
     value, _ = quadgk(integrand, DEPLETION_INTEGRAL_FLOOR, upper)
     return value
@@ -86,7 +95,8 @@ function dry_depletion_factor(x::Real, site::Site, class::PasquillClass, nuclide
     iszero(v_d) && return 1.0
     u = transport_wind_speed(site, class)
     u > 0 || throw(DomainError(u, "transport speed must be positive"))
-    return exp(-sqrt(2 / π) * (v_d / u) * depletion_integral(x, site, class))
+    # The √(2/π) is inside the integrand now, in crosswind_integrated_factor.
+    return exp(-(v_d / u) * depletion_integral(x, site, class))
 end
 
 """

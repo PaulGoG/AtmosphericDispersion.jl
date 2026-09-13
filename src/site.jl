@@ -67,7 +67,8 @@ function wake_height(
 end
 
 """
-    Site(; source, atmosphere, buildings = BuildingEnvelope())
+    Site(; source, atmosphere, buildings = BuildingEnvelope(), rise, mixing,
+         fixed_height = nothing, fixed_wind = nothing)
 
 A stack in its surroundings: everything a dispersion calculation needs that
 does not vary over the receptor grid.
@@ -77,13 +78,23 @@ parameter are all independent of receptor position and of stability class, so
 they are computed once here. The 2021 code recomputed them inside the innermost
 loop — the building reduction and the downwash correction, the latter six
 wind-profile evaluations deep, were repeated for every point of every field.
+
+`fixed_height` and `fixed_wind` override the effective release height in metres
+and the transport wind speed in m/s, bypassing plume rise and the wind profile.
+Published benchmarks state both as inputs rather than deriving them — Turner's
+worked problems, the HPA-RPD-058 depletion tables, the NRC test cases — so
+reproducing one requires setting them, not reverse-engineering a stack geometry
+that happens to produce them.
 """
+
 struct Site
     source::StackSource
     atmosphere::Atmosphere
     buildings::BuildingEnvelope
     rise::RiseCoefficients
     mixing::MixingLayer
+    fixed_height::Union{Nothing,Float64}
+    fixed_wind::Union{Nothing,Float64}
     release_height::Float64
     buoyancy::Float64
     momentum::Float64
@@ -95,13 +106,23 @@ struct Site
         buildings::BuildingEnvelope = BuildingEnvelope(),
         rise::RiseCoefficients = BRIGGS_RISE,
         mixing::MixingLayer = MIXING_TABULATED,
+        fixed_height::Union{Nothing,Real} = nothing,
+        fixed_wind::Union{Nothing,Real} = nothing,
     )
+        fixed_height === nothing ||
+            fixed_height ≥ 0 ||
+            throw(ArgumentError("a fixed release height cannot be negative"))
+        fixed_wind === nothing ||
+            fixed_wind > 0 ||
+            throw(ArgumentError("a fixed transport wind speed must be positive"))
         return new(
             source,
             atmosphere,
             buildings,
             rise,
             mixing,
+            fixed_height === nothing ? nothing : Float64(fixed_height),
+            fixed_wind === nothing ? nothing : Float64(fixed_wind),
             wake_height(source, atmosphere, buildings),
             buoyancy_flux(source, atmosphere),
             momentum_flux(source, atmosphere),
@@ -131,6 +152,10 @@ cavity — release height zero — would be transported at zero wind speed, and
 every dilution factor divides by it.
 """
 function transport_wind_speed(site::Site, class::PasquillClass)
+    # Bound to a local so the `=== nothing` test narrows the union; returning
+    # the field directly leaves the return type Union{Nothing,Float64}.
+    fixed = site.fixed_wind
+    fixed === nothing || return fixed
     z = max(release_height(site), REFERENCE_HEIGHT)
     return wind_speed(site.atmosphere.reference_speed, z, site.atmosphere.surface, class)
 end
@@ -164,8 +189,11 @@ Effective release height in metres at downwind distance `x` metres: the release
 height after downwash and building wake, plus the plume rise attained by that
 distance.
 """
-effective_height(x::Real, site::Site, class::PasquillClass) =
-    release_height(site) + plume_rise(x, site, class)
+function effective_height(x::Real, site::Site, class::PasquillClass)
+    fixed = site.fixed_height
+    fixed === nothing && return release_height(site) + plume_rise(x, site, class)
+    return fixed
+end
 
 """
     corrected_lateral_dispersion(x, site, class; release_duration = SHORT_RELEASE_REFERENCE)

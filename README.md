@@ -362,6 +362,38 @@ for every class and distance.
 
 `dilution_instantaneous` is likewise SRS-19 Eq. (V-1) literally.
 
+#### An end-to-end benchmark
+
+Everything above checks one piece at a time. **HPA-RPD-058 Table 3.7** checks
+them together: *"Fractions of material remaining in the plume due to dry
+deposition for a deposition velocity of 10⁻² m s⁻¹"*, three effective release
+heights × seven stability categories × eight distances out to 100 km, with the
+stack-height wind speed printed for each row.
+
+Reproducing it exercises σ_z, the mixing layer and the depletion integral at
+once. **143 of the 144 cells agree to within 0.028**, the table's own printed
+precision being 0.01, and every row is monotone.
+
+The one exception is not the package. Category F at 30 m reads **0.13 at 50 km
+and 0.19 at 100 km** — a depletion factor that rises with distance, which is
+impossible: material already deposited does not come back. This package gives
+**0.0188** there, which is monotone and one decimal point from the printed 0.19.
+The test asserts the cell is wrong in the source and asserts the computed value
+instead.
+
+That benchmark also settled a boundary this package had guessed at. A plume
+released *above* the inversion is decoupled and must not be capped; a plume
+released *exactly at* it still is. Table 3.7 tabulates a 100 m release in
+category F, whose mixing depth is 100 m, and only the capped form reproduces it —
+0.357 and 0.089 at 50 and 100 km against a published 0.33 and 0.083, where the
+uncapped form gives 0.599 and 0.311. The condition is `H > A`, not `H ≥ A`, and
+the table is what decided it.
+
+Reproducing published benchmarks at all needed one thing the package lacked: they
+state the effective release height and the transport wind speed as inputs, where
+the package derives both. `Site` now takes `fixed_height` and `fixed_wind`, which
+bypass plume rise and the wind profile.
+
 #### The mixing layer
 
 A plume does not disperse upwards forever. Turbulent mixing is capped by an

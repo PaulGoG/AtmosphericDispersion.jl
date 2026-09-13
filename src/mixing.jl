@@ -93,14 +93,20 @@ Eq. (3.5).
 Above the lid the factor is zero: the material is confined to `0 ≤ z ≤ A`, and
 integrating over that interval returns the whole release.
 
-**A release at or above the lid is not treated.** HPA-RPD-058's Diagram 3.1
+**A release strictly above the lid is not treated.** HPA-RPD-058's Diagram 3.1
 places the source below the inversion, and a plume released above one is
 decoupled from the ground until the inversion breaks — fumigation, which is a
-different model and not one this package implements. Where `H ≥ A` the lid is
+different model and not one this package implements. Where `H > A` the lid is
 therefore ignored and the unbounded form used, which is what happens in class F
-here: its tabulated depth is 100 m and plume rise puts the release at 103 m.
-Trapping such a plume against a lid it is already above would roughly double the
-ground-level concentration on no physical grounds.
+for the reference case: its tabulated depth is 100 m and plume rise puts the
+release at 103 m. Trapping such a plume against a lid it is already above would
+roughly double the ground-level concentration on no physical grounds.
+
+A release sitting *exactly* at the lid is still capped. That boundary is not a
+matter of taste: HPA-RPD-058's own Table 3.7 tabulates a 100 m release in
+category F, whose depth is 100 m, and only the capped form reproduces it — 0.357
+and 0.089 at 50 and 100 km against a published 0.33 and 0.083, where the
+uncapped form gives 0.599 and 0.311.
 
 With `A = Inf` the sum collapses to the two unbounded terms and the result is
 the ordinary ground-reflected Gaussian.
@@ -109,7 +115,7 @@ function vertical_factor(z::Real, H::Real, Σz::Real, A::Real)
     Σz > 0 || throw(DomainError(Σz, "the vertical dispersion parameter must be positive"))
     isfinite(A) && A ≤ 0 && throw(DomainError(A, "the mixing depth must be positive"))
     # The lid applies only to a release below it; see the note above.
-    capped = isfinite(A) && H < A
+    capped = isfinite(A) && H ≤ A
     if capped
         # Nothing crosses the lid. Without this the profile would carry material
         # above it and the released activity would not be conserved.
