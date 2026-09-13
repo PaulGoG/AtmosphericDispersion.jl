@@ -1,7 +1,11 @@
 name = "AtmosphericDispersion"
 uuid = "f3782548-7dae-470d-bd66-51102aeb28c8"
-authors = ["Paul-Adrian Gogîță"]
 version = "1.0.0-DEV"
+authors = ["Paul-Adrian Gogîță"]
+
+[deps]
+QuadGK = "1fd47b50-473d-5c70-9696-f719f8f3bcdc"
 
 [compat]
+QuadGK = "2.11.3"
 julia = "1.11"

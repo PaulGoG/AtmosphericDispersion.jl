@@ -33,7 +33,9 @@ addressed.
 │   ├── plumerise.jl        momentum and buoyancy rise
 │   ├── buildings.jl        building envelope and wake broadening
 │   ├── site.jl             release height and the per-run precomputation
-│   └── dilution.jl         the three dilution regimes
+│   ├── dilution.jl         the three dilution regimes
+│   ├── nuclides.jl         species: decay constant and deposition velocity
+│   └── depletion.jl        decay, dry deposition and washout
 ├── test/
 │   ├── Project.toml
 │   ├── activate.jl
@@ -109,9 +111,31 @@ Nothing in the 2021 code, its data file, or the thesis records which reading
 the table carried, so the published orientation should be treated as
 unverified until the provenance of `Frecvente.csv` is established.
 
+## Depletion composes by multiplication
+
+A second defect, independent of the wind rose and provable the same way — by a
+limit. The 2021 code combined the wet and dry depletion factors additively,
+
+    χ = χ/Q · Q · DEC · (DEP_w + DEP_d)
+
+Switch the rain off and set the deposition velocity to zero, so nothing is
+removed at all: each factor tends to one, their sum tends to two, and the
+concentration comes out twice the undepleted value. Surviving fractions
+multiply — the processes act in sequence on the same material.
+
+The long-term dry factor had the same shape of error at larger scale. It summed
+six exponentials, one per stability class, with the frequencies inside the
+exponent and no weighting outside, so in the no-deposition limit it tended to
+six rather than one. Depletion is class-dependent through both the transport
+speed and the vertical dispersion, so it belongs inside the class sum, and that
+is where it now sits.
+
+Both limits are asserted in the suite.
+
 ## Status
 
-The dilution solver is in place and under test; deposition is not yet written.
+The dilution and depletion solvers are in place and under test; ground
+deposition and resuspension are not yet written.
 
 Done:
 
@@ -122,13 +146,14 @@ Done:
 - Wind profile and dispersion parameters; plume rise; building wake
 - `Site`, which precomputes everything independent of receptor position
 - The three dilution regimes: instantaneous, extended, long term
-- Static QA in the suite: Aqua, JET, ExplicitImports. 2624 tests, including
+- Nuclides, and depletion by decay, dry deposition and washout
+- Static QA in the suite: Aqua, JET, ExplicitImports. 2771 tests, including
   exact agreement with the 2021 formulae wherever they were evaluable
 
 Next:
 
 - TOML-driven configuration, validated on load
-- Depletion by decay, dry and wet deposition, resuspension
+- Ground deposition and resuspension
 - Thin script entry points over the library
 - Documenter site; comparison against an independent implementation
 

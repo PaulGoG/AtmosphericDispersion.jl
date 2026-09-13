@@ -13,6 +13,8 @@ rotation and right in every other respect.
 """
 module AtmosphericDispersion
 
+using QuadGK: quadgk
+
 export SectorGrid,
     nsectors,
     sector_width,
@@ -120,11 +122,20 @@ export Site,
     corrected_vertical_dispersion,
     WAKE_WIND_THRESHOLD
 export plume_frame, dilution_instantaneous, dilution_extended, dilution_long_term
+export DepositionVelocity, Nuclide, TRITIATED_WATER, TRITIUM_GAS, TRITIUM_DECAY_CONSTANT
+export decay_factor,
+    depletion_integral,
+    dry_depletion_factor,
+    wet_depletion_factor,
+    depletion_factor,
+    DEPLETION_INTEGRAL_FLOOR
 
 include("source.jl")
 include("plumerise.jl")
 include("buildings.jl")
 include("site.jl")
+include("nuclides.jl")
+include("depletion.jl")
 include("dilution.jl")
 
 end

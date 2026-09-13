@@ -114,16 +114,25 @@ function dilution_extended(
 end
 
 """
-    dilution_long_term(east, north, site, rose)
+    dilution_long_term(east, north, site, rose; nuclide = nothing,
+                       washout_duration = 0, precipitation = PRECIPITATION_RAIN,
+                       rate = first(PRECIPITATION_RATES))
 
 Ground-level dilution factor χ/Q in s/m³ for a release long enough that the
 wind direction samples the whole rose,
 
-    χ_k/Q = √(2/π) F_k/(r θ_L) Σ_i [ F_ki exp(−H²/2Σ_z²) / (Σ_z ū) ]
+    χ_k/Q = √(2/π) F_k/(r θ_L) Σ_i [ F_ki D_i(r) exp(−H²/2Σ_z²) / (Σ_z ū) ]
 
 summed over the Pasquill classes, with `F_k` the frequency of wind blowing
 **towards** the receptor's sector `k` and `F_ki` the fraction of that time
 spent in class `i`.
+
+`D_i` is the depletion factor of class `i`, which is one unless a `nuclide` is
+given. It sits **inside** the class sum because it depends on the class through
+both the transport speed and the vertical dispersion. The 2021 code instead
+formed a separate depletion term as an unweighted sum of six exponentials, one
+per class, and so returned up to six in the limit of no deposition at all,
+where a surviving fraction must tend to one.
 
 `rose` supplies both, in the correct sense whichever convention it was built
 from — that is the point of [`WindRose`](@ref) storing blowing-towards
@@ -134,7 +143,16 @@ from. The 2021 code instead projected the receptor onto the axis of its sector,
 which shortens the distance by up to `1 − cos(θ_L/2)`, about 1.9 % for sixteen
 sectors, and correspondingly inflates the dilution factor.
 """
-function dilution_long_term(east::Real, north::Real, site::Site, rose::WindRose)
+function dilution_long_term(
+    east::Real,
+    north::Real,
+    site::Site,
+    rose::WindRose;
+    nuclide::Union{Nothing,Nuclide} = nothing,
+    washout_duration::Real = 0.0,
+    precipitation::PrecipitationType = PRECIPITATION_RAIN,
+    rate::Real = first(PRECIPITATION_RATES),
+)
     r = hypot(east, north)
     r > 0 || return 0.0
 
@@ -151,8 +169,31 @@ function dilution_long_term(east::Real, north::Real, site::Site, rose::WindRose)
         Σz = corrected_vertical_dispersion(r, site, class)
         u = transport_wind_speed(site, class)
         u > 0 || continue
-        total += F_ki * exp(-H^2 / (2Σz^2)) / (Σz * u)
+        D = _depletion(r, site, class, nuclide, washout_duration, precipitation, rate)
+        total += F_ki * D * exp(-H^2 / (2Σz^2)) / (Σz * u)
     end
 
     return sqrt(2 / π) * F_k * total / (r * sector_width(g))
 end
+
+# Dispatched rather than branched, so the undepleted path stays free of the
+# nuclide machinery and both paths are type-stable.
+_depletion(
+    ::Real,
+    ::Site,
+    ::PasquillClass,
+    ::Nothing,
+    ::Real,
+    ::PrecipitationType,
+    ::Real,
+) = 1.0
+
+_depletion(
+    x::Real,
+    site::Site,
+    class::PasquillClass,
+    nuclide::Nuclide,
+    washout_duration::Real,
+    precipitation::PrecipitationType,
+    rate::Real,
+) = depletion_factor(x, site, class, nuclide; washout_duration, precipitation, rate)
