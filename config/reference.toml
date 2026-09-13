@@ -16,7 +16,20 @@ specific_heat = 1005.0    # isobaric specific heat of ambient air, J/(kg K); > 0
 surface = "agricultural"  # one of: water | agricultural | forest_urban
 roughness = "pasture"     # one of: grassland_water | arable | pasture | rural | forest_urban | metropolis
 
+[model]
+# Where published schemes disagree, the choice is made here.
+plume_rise = "briggs"     # one of: briggs | xoqdoq | thesis_2021
+                          #   briggs      2*beta^2 = 0.72, 3*w0*D/u, 2.6*[F/(uS)]^(1/3)
+                          #   xoqdoq      as briggs, with the stable coefficient 2.4
+                          #   thesis_2021 0.5 and 1.5, as the 2021 code had them
+resuspension = "iaea_ss57"  # one of: iaea_ss57 | maxwell_anspaugh
+                          #   iaea_ss57        Safety Series 57 (1982) Eq. (3.14A)
+                          #   maxwell_anspaugh Health Phys. 101 (2011); NUREG/CR-7270
+
 [buildings]
+# 1.5 is the value the 2021 code used and no source was found for it. AVV zu
+# §47 StrlSchV Eqs. (4.31)/(4.32) and IAEA SRS-19 Eq. (6) both use 1.0 in the
+# same position; NRC RG 1.111 Eq. (9) applies 0.5 to the building height instead.
 wake_coefficient = 1.5    # wake broadening coefficient; >= 0, zero disables the correction
 # Repeat [[buildings.building]] for each structure; omit the block for none.
 # [[buildings.building]]

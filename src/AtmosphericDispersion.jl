@@ -95,6 +95,10 @@ export buoyancy_transition_distance,
     final_momentum_rise,
     momentum_rise,
     combined_rise,
+    RiseCoefficients,
+    BRIGGS_RISE,
+    XOQDOQ_RISE,
+    THESIS_RISE,
     plume_rise,
     BUOYANCY_FLUX_BREAKPOINT,
     MECHANISM_BALANCE_TOLERANCE
@@ -124,6 +128,7 @@ export Site,
     WAKE_WIND_THRESHOLD
 export plume_frame, dilution_instantaneous, dilution_extended, dilution_long_term
 export DepositionVelocity, Nuclide, TRITIATED_WATER, TRITIUM_GAS, TRITIUM_DECAY_CONSTANT
+export ResuspensionModel, RESUSPENSION_IAEA_SS57, RESUSPENSION_MAXWELL_ANSPAUGH
 export decay_factor,
     depletion_integral,
     dry_depletion_factor,

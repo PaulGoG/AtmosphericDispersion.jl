@@ -82,6 +82,7 @@ struct Site
     source::StackSource
     atmosphere::Atmosphere
     buildings::BuildingEnvelope
+    rise::RiseCoefficients
     release_height::Float64
     buoyancy::Float64
     momentum::Float64
@@ -91,11 +92,13 @@ struct Site
         source::StackSource,
         atmosphere::Atmosphere,
         buildings::BuildingEnvelope = BuildingEnvelope(),
+        rise::RiseCoefficients = BRIGGS_RISE,
     )
         return new(
             source,
             atmosphere,
             buildings,
+            rise,
             wake_height(source, atmosphere, buildings),
             buoyancy_flux(source, atmosphere),
             momentum_flux(source, atmosphere),
@@ -140,14 +143,15 @@ function plume_rise(x::Real, site::Site, class::PasquillClass)
     F, Fₘ, S = site.buoyancy, site.momentum, site.stability
     w₀, D = site.source.exit_velocity, site.source.diameter
 
-    buoyant = final_buoyant_rise(F, u, S)
-    momentum = final_momentum_rise(Fₘ, w₀, D, u, S)
+    r = site.rise
+    buoyant = final_buoyant_rise(F, u, S, r)
+    momentum = final_momentum_rise(Fₘ, w₀, D, u, S, r)
     total = buoyant + momentum
     balanced =
         iszero(total) || 2 * abs(buoyant - momentum) / total ≤ MECHANISM_BALANCE_TOLERANCE
-    balanced && return combined_rise(x, F, Fₘ, w₀, u, S, D)
-    momentum > buoyant && return momentum_rise(x, Fₘ, w₀, D, u, S)
-    return buoyant_rise(x, F, u, S)
+    balanced && return combined_rise(x, F, Fₘ, w₀, u, S, D, r)
+    momentum > buoyant && return momentum_rise(x, Fₘ, w₀, D, u, S, r)
+    return buoyant_rise(x, F, u, S, r)
 end
 
 """

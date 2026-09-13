@@ -377,22 +377,53 @@ this table's snow column, not below it. The reference case is HTO. This is
 flagged in the status list rather than silently corrected, because the right
 value depends on a decision about what the table is for.
 
-#### A known deviation, recorded rather than carried quietly
+#### Where schemes disagree, the choice is in the configuration
 
-The combined momentum-and-buoyancy rise should reduce to the pure-buoyancy law
-when the momentum flux vanishes. It does not. Dropping `F_m` leaves
-`(6F x²/u³)^(1/3)` against the two-thirds law's `(1.6³F x²/u³)^(1/3)` that
-`buoyant_rise` itself uses — an overshoot of **13.6 %**.
+Three plume-rise constants differ between published schemes, and the 2021 code
+took a position on each without recording one. They are now a `RiseCoefficients`
+value selected by `[model] plume_rise`, defaulting to Briggs:
 
-The momentum half of the expression is exactly Briggs, `β_j = 1/3 + u/w₀`, which
-places the discrepancy in the buoyancy half alone: Briggs writes
-`3F x²/(2β²u³)` with `β = 0.6`, a denominator of `0.72`, where this code has
-`0.5`. Two independent routes give the same answer — `2β² = 0.72` and
-`3/1.6³ = 0.7324`.
+| | Briggs, the default | 2021 code | Also published |
+|---|---|---|---|
+| Combined-law buoyancy denominator | **0.72** = 2β², β = 0.6 | 0.5 | — |
+| Neutral momentum rise, `c w₀D/u` | **3** — Briggs (1969) Eq. 5.2, EPA ISC3 Eq. (1-16) | 1.5, unsourced | — |
+| Stable final rise, `c[F/(uS)]^(1/3)` | **2.6** — Briggs, Handbook on Atmospheric Diffusion | 2.6 | 2.4, NRC XOQDOQ |
 
-The constant is **left as the thesis set it**, and the discrepancy is pinned by
-a test instead. Correcting it moves published dose results, and that is a
-decision to take deliberately rather than as a side effect of a validation pass.
+The first is the one that matters. The combined momentum-and-buoyancy law must
+reduce to the pure-buoyancy law when the momentum flux vanishes, and with 0.5 it
+did not: it left `(6F x²/u³)^(1/3)` against the two-thirds law's
+`(1.6³F x²/u³)^(1/3)`, an overshoot of **13.6 %**. The momentum half of the same
+expression was already exactly Briggs — `β_j = 1/3 + u/w₀` — which placed the
+discrepancy in the buoyancy half alone, and two independent routes give the
+correction: `2β² = 0.72` and `3/1.6³ = 0.7324`.
+
+With 0.72 the law reduces as it should, to within **0.6 %** — the residual being
+that `(3/0.72)^(1/3) = 1.60915` where the literature rounds the two-thirds
+coefficient to 1.6, the same rounding that makes the neutral final rise 21.425
+against a published 21.4.
+
+`plume_rise = "thesis_2021"` restores the old constants exactly, and the
+fidelity tests use it, so the 2021 results remain reproducible.
+
+**The reference case does not move**, and that is worth saying rather than
+leaving as a surprise: the CANDU stack is buoyancy-dominated — 57.7 m of buoyant
+rise against 10.6 m of momentum rise in class D, an imbalance far outside the
+tolerance for the combined law — so it takes the pure-buoyancy branch, which
+none of these constants touch. The correction bites on momentum-dominated and
+balanced releases, which is where the 13.6 % was.
+
+Selecting `xoqdoq` does move it: the reference atmosphere is stably stratified,
+so the stable branch is active, and the effective release height at 2 km in
+class D falls from 108.0 m to 103.6 m.
+
+Resuspension is selectable the same way: `[model] resuspension` takes
+`iaea_ss57` (the default, Safety Series 57) or `maxwell_anspaugh` (2011, also
+NUREG/CR-7270).
+
+The building-wake coefficient was already configurable. Its default of 1.5 is
+the 2021 value and no source was found for it; AVV Eqs. (4.31)/(4.32) and
+SRS-19 Eq. (6) both use 1.0 in the same position, and RG 1.111 Eq. (9) applies
+0.5 to the building height instead. The config comment now says so.
 
 The third row is worth a note. This code writes the neutral final rise as
 `1.6F^(1/3)(3.5x_f)^(2/3)/u`, which does not look like the published
@@ -443,8 +474,6 @@ Done:
 
 Next:
 
-- Decide the combined-rise buoyancy denominator, `0.5` against Briggs' `2β² =
-  0.72`. It is a 13.6 % overshoot and it moves published dose results
 - Establish the provenance of the 2021 wind rose — the convention is settled,
   the numbers are not
 - Re-run the thesis cases under the corrected convention and the corrected

@@ -73,6 +73,14 @@ function _choice(value::AbstractString, options::AbstractDict, path::AbstractStr
     return _fail(path, "must be one of $choices, got $(repr(value))")
 end
 
+const _RISE_CHOICES =
+    Dict("briggs" => BRIGGS_RISE, "xoqdoq" => XOQDOQ_RISE, "thesis_2021" => THESIS_RISE)
+
+const _RESUSPENSION_CHOICES = Dict(
+    "iaea_ss57" => RESUSPENSION_IAEA_SS57,
+    "maxwell_anspaugh" => RESUSPENSION_MAXWELL_ANSPAUGH,
+)
+
 const _SURFACE_CHOICES = Dict(
     "water" => SURFACE_WATER,
     "agricultural" => SURFACE_AGRICULTURAL,
@@ -103,6 +111,7 @@ Everything a dispersion run needs, assembled and validated from a TOML file by
 - `site` — the [`Site`](@ref), with its source, atmosphere and buildings
 - `rose` — the [`WindRose`](@ref), already resolved to blowing-towards
 - `nuclide` — the released [`Nuclide`](@ref)
+- `resuspension` — which [`ResuspensionModel`](@ref) to apply
 - `activity` — released activity, Bq
 - `release_duration` — duration of the release, s
 - `precipitation`, `precipitation_rate`, `washout_duration` — the washout case
@@ -112,6 +121,7 @@ struct RunConfiguration
     site::Site
     rose::WindRose{Float64}
     nuclide::Nuclide
+    resuspension::ResuspensionModel
     activity::Float64
     release_duration::Float64
     precipitation::PrecipitationType
@@ -144,7 +154,21 @@ function configuration_from(root::AbstractDict)
     source = _source_from(_table(root, "source", ""))
     atmosphere = _atmosphere_from(_table(root, "atmosphere", ""))
     buildings = _buildings_from(get(root, "buildings", Dict{String,Any}()))
-    site = Site(; source, atmosphere, buildings)
+
+    model = get(root, "model", Dict{String,Any}())
+    model isa AbstractDict || _fail("model", "expected a table, got $(typeof(model))")
+    rise = _choice(
+        _value(model, "plume_rise", String, "model"; default = "briggs"),
+        _RISE_CHOICES,
+        "model.plume_rise",
+    )
+    resuspension = _choice(
+        _value(model, "resuspension", String, "model"; default = "iaea_ss57"),
+        _RESUSPENSION_CHOICES,
+        "model.resuspension",
+    )
+
+    site = Site(; source, atmosphere, buildings, rise)
 
     rose = _rose_from(_table(root, "wind_rose", ""))
     nuclide = _nuclide_from(_table(root, "nuclide", ""))
@@ -184,6 +208,7 @@ function configuration_from(root::AbstractDict)
         site,
         rose,
         nuclide,
+        resuspension,
         activity,
         release_duration,
         precipitation,

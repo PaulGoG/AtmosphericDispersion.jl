@@ -671,14 +671,15 @@ using TOML
 
             w₀, D = 10.0, 2.33
             for u in (0.5, 1.0, 4.0, 7.3, 15.0), Sv in (1e-4, 8.63e-4, 1e-3, 5e-3)
-                @test final_buoyant_rise(F, u, Sv) == original_hb_final(F, u, Sv)
-                @test final_momentum_rise(Fₘ, w₀, D, u, Sv) ==
+                @test final_buoyant_rise(F, u, Sv, THESIS_RISE) ==
+                      original_hb_final(F, u, Sv)
+                @test final_momentum_rise(Fₘ, w₀, D, u, Sv, THESIS_RISE) ==
                       original_hm_final(Fₘ, w₀, D, u, Sv)
                 for x in (1.0, 10.0, 137.0, 1000.0, 10_000.0)
-                    @test buoyant_rise(x, F, u, Sv) == original_hb(x, F, u, Sv)
-                    @test momentum_rise(x, Fₘ, w₀, D, u, Sv) ==
+                    @test buoyant_rise(x, F, u, Sv, THESIS_RISE) == original_hb(x, F, u, Sv)
+                    @test momentum_rise(x, Fₘ, w₀, D, u, Sv, THESIS_RISE) ==
                           original_hm(x, Fₘ, w₀, D, u, Sv)
-                    @test combined_rise(x, F, Fₘ, w₀, u, Sv, D) ==
+                    @test combined_rise(x, F, Fₘ, w₀, u, Sv, D, THESIS_RISE) ==
                           original_hmb(x, F, Fₘ, w₀, D, u, Sv)
                 end
             end
@@ -1848,27 +1849,63 @@ using TOML
             end
         end
 
-        # Known deviation, recorded rather than silently carried. The combined
-        # momentum-and-buoyancy law should reduce to the pure-buoyancy law when
-        # the momentum flux vanishes, and it does not: dropping Fₘ leaves
-        # (6F x²/u³)^(1/3), against the two-thirds law's (1.6³F x²/u³)^(1/3)
-        # used by `buoyant_rise`, so it overshoots by 13.6 %.
-        #
-        # The momentum half of the same expression is exactly Briggs — the
-        # denominator (1/3 + u/w₀)² is his β_j² — which puts the discrepancy in
-        # the buoyancy half alone: Briggs writes 3F x²/(2β²u³) with β = 0.6,
-        # i.e. a denominator of 0.72 where this code has 0.5. The constant is
-        # left as the thesis set it and pinned here, because correcting it moves
-        # published dose results and that is not a change to make silently.
-        @testset "combined rise overshoots the two-thirds law as Fₘ vanishes" begin
-            for F in (5.0, 50.0, 500.0), u in (2.0, 5.0, 9.0), x in (100.0, 500.0)
-                combined = 3^(1 / 3) * (F * x^2 / (0.5 * u^3))^(1 / 3)
+        # The combined momentum-and-buoyancy law must reduce to the pure
+        # buoyancy law when the momentum flux vanishes. Briggs writes its
+        # buoyancy term as 3F x²/(2β²u³) with β = 0.6, a denominator of
+        # 2β² = 0.72, and that is now the default; the 2021 code had 0.5, which
+        # overshoots the two-thirds law by 13.6 % and is kept as THESIS_RISE.
+        @testset "combined rise reduces to the two-thirds law" begin
+            # With c = 2β² = 0.72 the combined law implies a two-thirds
+            # coefficient of (3/0.72)^(1/3) = 1.60915, against the 1.6 the
+            # literature rounds it to and that `buoyant_rise` uses. The two
+            # therefore agree to 0.6 %, not exactly — the same rounding the
+            # neutral final rise shows as 21.425 against a published 21.4.
+            @test (3 / BRIGGS_RISE.combined_buoyancy)^(1 / 3) ≈ 1.60915 rtol = 1e-4
+
+            checked = 0
+            for F in (5.0, 50.0, 500.0), u in (2.0, 5.0, 9.0), x in (50.0, 100.0, 300.0)
                 two_thirds = 1.6 * F^(1 / 3) * x^(2 / 3) / u
-                @test combined / two_thirds ≈ (6 / 1.6^3)^(1 / 3) rtol = 1e-12
-                @test combined / two_thirds ≈ 1.1357 rtol = 1e-4
+                # The combined law is capped at the sum of the two final rises,
+                # and the cap differs between the two coefficient sets, so only
+                # assert where neither is binding.
+                cap(r) =
+                    final_momentum_rise(1e-14, 10.0, 2.0, u, -1e-6, r) +
+                    final_buoyant_rise(F, u, -1e-6, r)
+                briggs = combined_rise(x, F, 1e-14, 10.0, u, -1e-6, 2.0, BRIGGS_RISE)
+                thesis = combined_rise(x, F, 1e-14, 10.0, u, -1e-6, 2.0, THESIS_RISE)
+                (briggs < 0.99cap(BRIGGS_RISE) && thesis < 0.99cap(THESIS_RISE)) || continue
+                checked += 1
+                @test briggs ≈ two_thirds rtol = 6e-3
+                @test thesis / two_thirds ≈ (6 / 1.6^3)^(1 / 3) rtol = 2e-3
             end
-            @test 3 / 1.6^3 ≈ 0.7324 rtol = 1e-4      # the consistent denominator
-            @test 2 * 0.6^2 ≈ 0.72                     # Briggs, from β = 0.6
+            @test checked ≥ 6          # the sweep must actually exercise the branch
+            @test BRIGGS_RISE.combined_buoyancy == 2 * 0.6^2       # Briggs, β = 0.6
+            @test 3 / 1.6^3 ≈ 0.7324 rtol = 1e-4                   # the same from the law
+            @test THESIS_RISE.combined_buoyancy == 0.5
+        end
+
+        # The neutral momentum rise is 3 w₀D/u in Briggs (1969) Eq. 5.2, as
+        # implemented by EPA ISC3 Eq. (1-16). The 2021 code had 1.5, unsourced.
+        @testset "neutral momentum rise is Briggs" begin
+            for w₀ in (5.0, 15.0), D in (1.0, 3.0), u in (2.0, 8.0)
+                @test final_momentum_rise(0.0, w₀, D, u, -1e-6, BRIGGS_RISE) ≈
+                      3 * w₀ * D / u
+                @test final_momentum_rise(0.0, w₀, D, u, -1e-6, THESIS_RISE) ≈
+                      1.5 * w₀ * D / u
+            end
+            @test BRIGGS_RISE.neutral_momentum == 3.0
+        end
+
+        # The stable final rise coefficient is 2.6 in Briggs and the Handbook on
+        # Atmospheric Diffusion, and 2.4 in NRC XOQDOQ.
+        @testset "stable rise coefficient, Briggs against XOQDOQ" begin
+            @test BRIGGS_RISE.stable_final == 2.6
+            @test XOQDOQ_RISE.stable_final == 2.4
+            for F in (5.0, 200.0), u in (3.0, 8.0), S in (1e-4, 1e-3)
+                b = final_buoyant_rise(F, u, S, BRIGGS_RISE)
+                x = final_buoyant_rise(F, u, S, XOQDOQ_RISE)
+                @test x ≤ b
+            end
         end
 
         # Briggs (1973) open-country lateral dispersion, as tabulated in Hanna,

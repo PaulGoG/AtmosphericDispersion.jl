@@ -6,6 +6,24 @@ follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **Plume-rise constants now default to Briggs, and the choice is
+  configurable.** `RiseCoefficients` carries the three constants published
+  schemes disagree on, selected by `[model] plume_rise`: `briggs` (the default),
+  `xoqdoq` (stable coefficient 2.4), or `thesis_2021` (the 2021 values).
+  - The combined-law buoyancy denominator moves from 0.5 to **2β² = 0.72**, so
+    the law reduces to the two-thirds law as the momentum flux vanishes. It
+    previously overshot by 13.6 %.
+  - The neutral momentum rise moves from `1.5 w₀D/u` to Briggs' **`3 w₀D/u`**,
+    per Briggs (1969) Eq. 5.2 and EPA ISC3 Eq. (1-16). No source was found for
+    1.5.
+  - These change results. `plume_rise = "thesis_2021"` reproduces the old ones,
+    and the fidelity tests use it.
+- `resuspension_factor` takes a `ResuspensionModel`, selected by
+  `[model] resuspension`: `iaea_ss57` (the default) or `maxwell_anspaugh`.
+- `Site` gains a `rise` field; `RunConfiguration` gains `resuspension`.
+
 ### Fixed
 
 - **Two coefficients of the roughness correction.** `F(z₀,x)` carried 1.58 and

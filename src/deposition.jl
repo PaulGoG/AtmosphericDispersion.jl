@@ -126,6 +126,25 @@ material progressively fixed into it.
 const RESUSPENSION_COEFFICIENTS = (A = 1e-5, B = 1e-9, λ₁ = 1e-2, λ₂ = 2e-5)
 
 """
+    ResuspensionModel
+
+Which published resuspension correlation to use.
+
+  - `RESUSPENSION_IAEA_SS57` — IAEA Safety Series No. 57 (1982), §3.6,
+    Eq. (3.14A), the two-term form above. The default, and the one whose
+    constants this package carries exactly.
+  - `RESUSPENSION_MAXWELL_ANSPAUGH` — Maxwell and Anspaugh, *Health Physics*
+    **101** (2011), Eqs. 15/16, also adopted by NRC NUREG/CR-7270:
+    `10⁻⁵e^(−0.07t) + 7×10⁻⁹e^(−0.002t) + 10⁻⁹`. It keeps the amplitudes and
+    weathers seven times faster, so it falls well below Safety Series 57 from
+    about a week onwards.
+"""
+@enum ResuspensionModel begin
+    RESUSPENSION_IAEA_SS57 = 1
+    RESUSPENSION_MAXWELL_ANSPAUGH = 2
+end
+
+"""
     resuspension_factor(elapsed_days)
 
 Resuspension factor `K` in m⁻¹ at `elapsed_days` after deposition,
@@ -136,8 +155,14 @@ It converts a surface deposition in Bq/m² into an airborne concentration in
 Bq/m³. It falls by a factor of about 38 over the first year and by four orders
 of magnitude over ten, as the deposited material weathers into the surface.
 """
-function resuspension_factor(elapsed_days::Real)
+function resuspension_factor(
+    elapsed_days::Real,
+    model::ResuspensionModel = RESUSPENSION_IAEA_SS57,
+)
     elapsed_days ≥ 0 || throw(DomainError(elapsed_days, "elapsed time cannot be negative"))
+    if model == RESUSPENSION_MAXWELL_ANSPAUGH
+        return 1e-5 * exp(-0.07 * elapsed_days) + 7e-9 * exp(-0.002 * elapsed_days) + 1e-9
+    end
     c = RESUSPENSION_COEFFICIENTS
     return c.A * exp(-c.λ₁ * elapsed_days) + c.B * exp(-c.λ₂ * elapsed_days)
 end
@@ -148,7 +173,11 @@ end
 Airborne concentration in Bq/m³ resuspended from a surface deposition of
 `deposition` Bq/m², `elapsed_days` after it was laid down.
 """
-function resuspended_concentration(deposition::Real, elapsed_days::Real)
+function resuspended_concentration(
+    deposition::Real,
+    elapsed_days::Real,
+    model::ResuspensionModel = RESUSPENSION_IAEA_SS57,
+)
     deposition ≥ 0 || throw(DomainError(deposition, "deposition cannot be negative"))
-    return deposition * resuspension_factor(elapsed_days)
+    return deposition * resuspension_factor(elapsed_days, model)
 end
