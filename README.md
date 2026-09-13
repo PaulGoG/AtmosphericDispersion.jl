@@ -302,8 +302,11 @@ the transport speed together.
 
 ### Against the published literature
 
-Every parameterisation the normative hands down turns out to be a standard
-published scheme. Where they are, the identity is asserted rather than
+The governing normative is **CNCAN NSR-23**, the Romanian nuclear regulator's
+norm the 2021 thesis was written against. Every parameterisation it hands down
+turns out to be a standard published scheme, and where the two disagree this
+package now follows the international source and keeps the normative's value
+available. Where they are, the identity is asserted rather than
 described.
 
 | | Published form | Agreement |
@@ -327,18 +330,23 @@ it without attribution. It is printed in full in **HPA-RPD-058** (Health
 Protection Agency, 2009) Table 3.3 and **NRPB-R91** (1979) Table 3, and both
 printings agree digit for digit.
 
-Asserting the whole table against those printings found **two transcription
-errors** in the roughness correction, carried over from the 2021 tables:
+Asserting the whole table against those printings found **two wrong
+coefficients** in the roughness correction:
 
-| z₀ | was | published | effect on σ_z |
+| z₀ | NSR-23 Table 2 | Hosker | effect on σ_z |
 |---|---|---|---|
 | 0.01 m, grassland and water | 1.58 | **1.56** | 1.9 % too large |
 | 0.04 m, arable | 2.08 | **2.02** | 3.6 % too large |
 
-The other 22 coefficients, and all 24 of the shape function, were already exact.
-This is the argument for asserting tables of constants entry by entry rather
-than sampling them: nothing else in the suite could have caught it, because the
-error is in the data, not the algebra.
+**The error is the normative's, not the thesis's.** NSR-23 prints 1.58 and 2.08,
+and the 2021 code carried them faithfully. NSR-23 attributes its Table 2 to
+CAN/CSA-N288.2-M91 and UNSCEAR 2000, so the corruption entered somewhere in that
+chain rather than at either end. This package follows Hosker.
+
+The other 22 coefficients, and all 24 of the shape function, match exactly in
+both NSR-23 and Hosker. This is the argument for asserting tables of constants
+entry by entry rather than sampling them: nothing else in the suite could have
+caught it, because the error is in the data, not the algebra.
 
 #### The long-term equation is a regulatory one
 
@@ -370,24 +378,44 @@ A later model supersedes it — Maxwell and Anspaugh, *Health Physics* **101**
 decay constant at 0.07 d⁻¹ rather than 0.01. The package therefore runs high
 with elapsed time: 1.8× at ten days, 6× at thirty. Recorded, not changed.
 
-**Washout.** The table is not arbitrary. Fitting each column in log–log gives an
-exponent of **0.753** for three of the four and 0.691 for the fourth, within
-10 % — and `Λ ∝ J^0.75` is the published dependence, from Slinn (1977) via
-**NRPB-R322** (ADMLC, 2001) §3.1.1. The amplitudes bracket the published values
-rather than reproducing one: at 1 mm/h the German **AVV zu §47 StrlSchV** (2012)
-Anhang 7 Tabelle 3 gives 7 × 10⁻⁵ s⁻¹ for aerosols and elemental iodine and
-3.5 × 10⁻⁵ for tritiated water, and **both fall inside this table's
-low-to-high range of 10⁻⁵ to 2 × 10⁻⁴**. Asserted as a bracket, which is what it
-is.
+**Washout.** The table is **NSR-23 Table 7**, which the normative attributes to
+CAN/CSA-N288.2-M91. It has **two species rows** and this package originally
+carried only one; both are here now, selected by `WashoutSpecies`:
 
-**And one thing the sourcing exposed.** The snow columns are the rain columns
-divided by exactly 100 and 500 — a particle-scavenging suppression, sensible for
-aerosols. For HTO it is the wrong physics: snow scavenging of tritiated water is
-isotopic exchange at the crystal surface, and the only HTO-specific measurement
-found (Ogram, Ontario Hydro 85-233-K, 1985, Table V) runs about **1000× above**
-this table's snow column, not below it. The reference case is HTO. This is
-flagged in the status list rather than silently corrected, because the right
-value depends on a decision about what the table is for.
+| at 1 mm/h | rain Λ_L | rain Λ_H | snow Λ_L | snow Λ_H |
+|---|---|---|---|---|
+| Tritium and iodine | 1 × 10⁻⁵ | 2 × 10⁻⁴ | 1 × 10⁻⁷ | 4 × 10⁻⁷ |
+| All other nuclides | 2 × 10⁻⁵ | 3 × 10⁻⁴ | **5 × 10⁻⁴** | **2 × 10⁻²** |
+
+The intensity dependence is the published one: fitting each column in log–log
+gives an exponent of **0.753** for three of four, and `Λ ∝ J^0.75` is Slinn
+(1977) via **NRPB-R322** (ADMLC, 2001) §3.1.1. The rain amplitudes bracket the
+published values — at 1 mm/h the German **AVV** Anhang 7 Tabelle 3 gives
+7 × 10⁻⁵ s⁻¹ for aerosols and elemental iodine and 3.5 × 10⁻⁵ for tritiated
+water, both inside the tritium row's 10⁻⁵ to 2 × 10⁻⁴.
+
+**Snow is where it breaks down, and the normative disagrees with itself.** The
+tritium row's snow values are the rain values divided by 100 and 500 — a
+particle-scavenging suppression, which IAEA TECDOC-379 §3.5.4 supports for
+*particles* (inorganic iodine in powder snow at 0.2 mm/h, 5 × 10⁻⁸ s⁻¹, against
+1.7 × 10⁻⁵ for the same species in rain). But the other-nuclides row runs the
+*other* way, three to four orders of magnitude **above** its own rain values.
+
+Snow scavenging of tritiated water is isotopic exchange at the crystal surface,
+not impaction, so the suppression is the wrong mechanism for it. Ogram (Ontario
+Hydro 85-233-K, 1985) measured it, and the measurement lands almost exactly on
+NSR-23's *other-nuclides* snow lower limit:
+
+| mm/h | Ogram HTO | NSR-23 other-nuclides snow Λ_L | ratio |
+|---|---|---|---|
+| 0.5 | 2.88 × 10⁻⁴ | 3 × 10⁻⁴ | 0.96 |
+| 1 | 4.20 × 10⁻⁴ | 5 × 10⁻⁴ | 0.84 |
+| 3 | 7.78 × 10⁻⁴ | 8 × 10⁻⁴ | 0.97 |
+| 5 | 1.04 × 10⁻³ | 1 × 10⁻³ | 1.04 |
+
+Four rates, agreement within 16 %, from a measurement the normative does not
+cite. That is the evidence that the tritium row's snow column is the anomaly.
+`[model] washout = "hto"` selects Ogram's correlation; rain is unaffected.
 
 #### Where schemes disagree, the choice is in the configuration
 
@@ -432,10 +460,23 @@ Resuspension is selectable the same way: `[model] resuspension` takes
 `iaea_ss57` (the default, Safety Series 57) or `maxwell_anspaugh` (2011, also
 NUREG/CR-7270).
 
-The building-wake coefficient was already configurable. Its default of 1.5 is
-the 2021 value and no source was found for it; AVV Eqs. (4.31)/(4.32) and
-SRS-19 Eq. (6) both use 1.0 in the same position, and RG 1.111 Eq. (9) applies
-0.5 to the building height instead. The config comment now says so.
+**The building-wake coefficient now defaults to 1.0**, which is IAEA SRS-19
+Eq. (6), `Σ_z = (σ_z² + A_B/π)^(1/2)`, and the German AVV Eqs. (4.31)/(4.32),
+`√(σ² + I_G²/π)`. NSR-23 used 1.5 and no source outside it was found;
+`NORMATIVE_WAKE_COEFFICIENT` restores it. RG 1.111 Eq. (9) is a third convention
+again, applying 0.5 to the building *height* rather than its area.
+
+**Snow washout is now selectable by species.** The normative's snow columns are
+the rain columns divided by exactly 100 and 500 — a particle-scavenging
+suppression, and the right physics for aerosols and reactive gases: IAEA
+TECDOC-379 §3.5.4 gives 5 × 10⁻⁸ s⁻¹ for inorganic iodine in powder snow at
+0.2 mm/h against 1.7 × 10⁻⁵ for the same species in rain, a factor of some 340
+the same way. But snow scavenging of **tritiated water is isotopic exchange at
+the crystal surface, not impaction**, and Ogram (Ontario Hydro 85-233-K, 1985)
+measures it about **a thousand times above** the normative column, not below it.
+`[model] washout = "hto"` selects Ogram's correlation for snow; rain is
+identical either way. The reference case of this package is HTO, so the choice
+matters for it.
 
 The third row is worth a note. This code writes the neutral final rise as
 `1.6F^(1/3)(3.5x_f)^(2/3)/u`, which does not look like the published
@@ -490,9 +531,6 @@ Next:
   the numbers are not
 - Re-run the thesis cases under the corrected convention and the corrected
   roughness coefficients, to say by how much the published dose maps move
-- Decide what the snow washout column should be for HTO. It is currently the
-  rain column divided by 500, a particle-scavenging suppression, and the only
-  HTO-specific measurement found runs three orders of magnitude the other way
 - A mixing lid. Its absence is what limits agreement with published depletion
   tables beyond about 20 km
 

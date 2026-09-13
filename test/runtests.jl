@@ -1849,6 +1849,80 @@ using TOML
             end
         end
 
+        # The building-wake coefficient. IAEA Safety Reports Series No. 19
+        # (2001) Eq. (6) writes the wake-broadened vertical parameter as
+        # (σ_z² + A_B/π)^(1/2), and the German AVV zu §47 StrlSchV (2012)
+        # Eqs. (4.31)/(4.32) as √(σ² + I_G²/π): a coefficient of one in both.
+        @testset "wake coefficient is the published one" begin
+            @test DEFAULT_WAKE_COEFFICIENT == 1.0
+            @test NORMATIVE_WAKE_COEFFICIENT == 1.5
+
+            b = Building(; east = 25.0, north = 0.0, height = 60.0, frontal_area = 3600.0)
+            iaea = BuildingEnvelope([b])
+            normative = BuildingEnvelope([b]; wake_coefficient = NORMATIVE_WAKE_COEFFICIENT)
+            A = equivalent_area(iaea)
+            for σ in (10.0, 50.0, 200.0)
+                # released inside the cavity, where the correction is undiluted
+                @test wake_broadened(σ, 0.0, iaea) ≈ sqrt(σ^2 + A / π)
+                @test wake_broadened(σ, 0.0, normative) ≈ sqrt(σ^2 + 1.5A / π)
+                @test wake_broadened(σ, 0.0, iaea) < wake_broadened(σ, 0.0, normative)
+            end
+        end
+
+        # Ogram, Precipitation Scavenging of Tritiated Water Vapour (HTO),
+        # Ontario Hydro Research Division 85-233-K (1985), §6.0 Eq. (38), with
+        # its Table V at 0.5, 1 and 2 mm/h. Snow scavenging of HTO is isotopic
+        # exchange at the crystal surface, so the particle suppression the
+        # normative applies is the wrong physics for it.
+        @testset "HTO snow washout is Ogram 1985" begin
+            @test ogram_snow_washout(0.5) ≈ 2.9e-4 rtol = 0.02
+            @test ogram_snow_washout(1.0) ≈ 4.2e-4 rtol = 0.02
+            @test ogram_snow_washout(2.0) ≈ 6.1e-4 rtol = 0.02
+            @test ogram_snow_washout(1.0) ≈ 1.2e-4 + 3.0e-4
+
+            # Ogram's measurement lands on NSR-23's own other-nuclides snow
+            # lower limit, a row it does not cite Ogram for — which is the
+            # evidence that the tritium row's snow column is the anomaly.
+            for r in PRECIPITATION_RATES
+                other = washout_coefficients(
+                    PRECIPITATION_SNOW,
+                    r,
+                    WASHOUT_NORMATIVE,
+                    WASHOUT_OTHER_NUCLIDES,
+                )
+                @test 0.8 < ogram_snow_washout(r) / other.low < 1.2
+            end
+
+            # NSR-23 Table 7 has two species rows; the other-nuclides snow
+            # values run three to four orders of magnitude above the tritium
+            # row's, in the opposite direction to the particle suppression.
+            for r in PRECIPITATION_RATES
+                trit = washout_coefficients(
+                    PRECIPITATION_SNOW,
+                    r,
+                    WASHOUT_NORMATIVE,
+                    WASHOUT_TRITIUM_IODINE,
+                )
+                other = washout_coefficients(
+                    PRECIPITATION_SNOW,
+                    r,
+                    WASHOUT_NORMATIVE,
+                    WASHOUT_OTHER_NUCLIDES,
+                )
+                @test other.low / trit.low > 1e3
+            end
+
+            # rain is untouched by the choice; snow differs by about 10³
+            for r in PRECIPITATION_RATES
+                @test washout_coefficients(PRECIPITATION_RAIN, r, WASHOUT_HTO) ==
+                      washout_coefficients(PRECIPITATION_RAIN, r, WASHOUT_NORMATIVE)
+                ratio =
+                    washout_coefficients(PRECIPITATION_SNOW, r, WASHOUT_HTO).high /
+                    washout_coefficients(PRECIPITATION_SNOW, r, WASHOUT_NORMATIVE).high
+                @test 900 < ratio < 1500
+            end
+        end
+
         # The combined momentum-and-buoyancy law must reduce to the pure
         # buoyancy law when the momentum flux vanishes. Briggs writes its
         # buoyancy term as 3F x²/(2β²u³) with β = 0.6, a denominator of

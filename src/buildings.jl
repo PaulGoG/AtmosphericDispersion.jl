@@ -40,10 +40,27 @@ const WAKE_INFLUENCE_RADII = 3.0
 """
     DEFAULT_WAKE_COEFFICIENT
 
-Coefficient `C` of the wake broadening of the dispersion parameters. Setting it
-to zero disables the building correction entirely.
+Coefficient `C` of the wake broadening of the dispersion parameters,
+`√(σ² + C A/π)`. Setting it to zero disables the building correction entirely.
+
+**One**, which is what IAEA Safety Reports Series No. 19 (2001) Eq. (6) writes
+as `Σ_z = (σ_z² + A_B/π)^(1/2)` and the German AVV zu §47 StrlSchV (2012)
+Eqs. (4.31)/(4.32) as `√(σ² + I_G²/π)`. The 2021 thesis code used 1.5, following
+the Romanian normative it was written against, and no source outside that
+normative was found for it; NRC Regulatory Guide 1.111 Eq. (9) is a third
+convention again, applying 0.5 to the building *height* rather than its area.
+
+See [`NORMATIVE_WAKE_COEFFICIENT`](@ref) to restore the 2021 value.
 """
-const DEFAULT_WAKE_COEFFICIENT = 1.5
+const DEFAULT_WAKE_COEFFICIENT = 1.0
+
+"""
+    NORMATIVE_WAKE_COEFFICIENT
+
+The wake coefficient of the Romanian normative the 2021 thesis followed, kept so
+its results can be reproduced. See [`DEFAULT_WAKE_COEFFICIENT`](@ref).
+"""
+const NORMATIVE_WAKE_COEFFICIENT = 1.5
 
 """
     BuildingEnvelope(buildings = Building[]; wake_coefficient = DEFAULT_WAKE_COEFFICIENT)

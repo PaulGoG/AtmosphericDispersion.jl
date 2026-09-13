@@ -25,12 +25,18 @@ plume_rise = "briggs"     # one of: briggs | xoqdoq | thesis_2021
 resuspension = "iaea_ss57"  # one of: iaea_ss57 | maxwell_anspaugh
                           #   iaea_ss57        Safety Series 57 (1982) Eq. (3.14A)
                           #   maxwell_anspaugh Health Phys. 101 (2011); NUREG/CR-7270
+washout = "normative"     # one of: normative | hto
+                          #   normative  the tabulated scheme; its snow columns are
+                          #              a particle-scavenging suppression of the rain
+                          #   hto        snow from Ogram (1985) for tritiated water,
+                          #              which is isotopic exchange, not impaction
 
 [buildings]
-# 1.5 is the value the 2021 code used and no source was found for it. AVV zu
-# §47 StrlSchV Eqs. (4.31)/(4.32) and IAEA SRS-19 Eq. (6) both use 1.0 in the
-# same position; NRC RG 1.111 Eq. (9) applies 0.5 to the building height instead.
-wake_coefficient = 1.5    # wake broadening coefficient; >= 0, zero disables the correction
+# 1.0 is IAEA SRS-19 Eq. (6) and AVV zu §47 StrlSchV Eqs. (4.31)/(4.32). The
+# Romanian normative the 2021 work followed used 1.5, for which no source
+# outside it was found; NRC RG 1.111 Eq. (9) is a third convention, applying
+# 0.5 to the building height rather than its area.
+wake_coefficient = 1.0    # wake broadening coefficient; >= 0, zero disables the correction
 # Repeat [[buildings.building]] for each structure; omit the block for none.
 # [[buildings.building]]
 # east = 30.0             # displacement from the stack, m

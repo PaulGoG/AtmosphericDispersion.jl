@@ -115,7 +115,8 @@ export Building,
     equivalent_area,
     wake_broadened,
     WAKE_INFLUENCE_RADII,
-    DEFAULT_WAKE_COEFFICIENT
+    DEFAULT_WAKE_COEFFICIENT,
+    NORMATIVE_WAKE_COEFFICIENT
 export Site,
     mean_wind_speed,
     downwash_height,
@@ -129,6 +130,8 @@ export Site,
 export plume_frame, dilution_instantaneous, dilution_extended, dilution_long_term
 export DepositionVelocity, Nuclide, TRITIATED_WATER, TRITIUM_GAS, TRITIUM_DECAY_CONSTANT
 export ResuspensionModel, RESUSPENSION_IAEA_SS57, RESUSPENSION_MAXWELL_ANSPAUGH
+export WashoutModel, WASHOUT_NORMATIVE, WASHOUT_HTO, ogram_snow_washout
+export WashoutSpecies, WASHOUT_TRITIUM_IODINE, WASHOUT_OTHER_NUCLIDES
 export decay_factor,
     depletion_integral,
     dry_depletion_factor,

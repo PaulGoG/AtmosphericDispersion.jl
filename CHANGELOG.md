@@ -8,6 +8,20 @@ follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **The building-wake coefficient defaults to 1.0** rather than 1.5, which is
+  IAEA SRS-19 Eq. (6) and the German AVV Eqs. (4.31)/(4.32). The 1.5 came from
+  CNCAN NSR-23, the Romanian normative the thesis followed, and no source
+  outside it was found; `NORMATIVE_WAKE_COEFFICIENT` restores it.
+- **Both species rows of the washout table.** NSR-23 Table 7 tabulates tritium
+  and iodine separately from all other radionuclides, and only the first was
+  carried; `WashoutSpecies` selects between them. The other-nuclides snow values
+  run three to four orders of magnitude *above* their own rain values, opposite
+  to the tritium row's suppression.
+- **Snow washout for HTO is selectable**, `[model] washout = "hto"`, using Ogram
+  (Ontario Hydro 85-233-K, 1985) Eq. (38). Snow scavenging of tritiated water is
+  isotopic exchange, not impaction. Ogram's measurement agrees with NSR-23's own
+  other-nuclides snow lower limit to within 16 % at all four rates, which is the
+  evidence that the tritium row's snow column is the anomaly. Rain is unaffected.
 - **Plume-rise constants now default to Briggs, and the choice is
   configurable.** `RiseCoefficients` carries the three constants published
   schemes disagree on, selected by `[model] plume_rise`: `briggs` (the default),
@@ -29,8 +43,11 @@ follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
 - **Two coefficients of the roughness correction.** `F(z₀,x)` carried 1.58 and
   2.08 for z₀ = 0.01 m and 0.04 m where Hosker publishes 1.56 and 2.02, making
   σ_z 1.9 % too large over grassland and water and 3.6 % too large over arable
-  land. The remaining 22 coefficients, and all 24 of the shape function, were
-  already exact.
+  land. These are the values **NSR-23 Table 2 itself prints** — the 2021 code
+  carried them faithfully, and the normative attributes its table to
+  CAN/CSA-N288.2-M91 and UNSCEAR 2000, so the corruption entered in that chain.
+  The remaining 22 coefficients, and all 24 of the shape function, were already
+  exact in both.
 
 ### Added
 

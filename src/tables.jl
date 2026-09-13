@@ -1,8 +1,9 @@
 #=
 Tabulated coefficients of the dispersion parameterisation.
 
-These are fixed tables of the governing normative, reproduced as Tables 1-4 and
-7 of the thesis. They are compile-time constants rather than data files: they
+These are fixed tables of the governing normative — CNCAN NSR-23, the Romanian
+nuclear regulator's norm the 2021 thesis was written against — reproduced as
+Tables 1-4 and 7 of the thesis. They are compile-time constants rather than data files: they
 are small, they never vary between runs, and the values are read inside the
 innermost loops of every field evaluation, where a keyed lookup into a data
 frame costs more than the dispersion calculation itself.
@@ -66,9 +67,14 @@ struct RoughnessCoefficients
     d₂::Float64
 end
 
-# HPA-RPD-058 Table 3.3, second panel; identical in NRPB-R91 Table 3. The first
-# two f values were transcribed as 1.58 and 2.08, which made σ_z too large by
-# 1.9 % over grassland and water and 3.6 % over arable land.
+# HPA-RPD-058 Table 3.3, second panel; identical in NRPB-R91 Table 3.
+#
+# NSR-23 Table 2 prints 1.58 and 2.08 for the first two, which is what the 2021
+# code faithfully carried. The error is the normative's, not the thesis's: it
+# attributes its Table 2 to CAN/CSA-N288.2-M91 and UNSCEAR 2000, and somewhere
+# in that chain Hosker's 1.56 and 2.02 became 1.58 and 2.08. Following the
+# published values makes σ_z smaller by 1.9 % over grassland and water and 3.6 %
+# over arable land.
 const _ROUGHNESS = (
     RoughnessCoefficients(0.01, 1.56, 0.048, 6.25e-4, 0.45),    # grassland and water
     RoughnessCoefficients(0.04, 2.02, 0.0269, 7.76e-4, 0.37),   # arable
@@ -144,38 +150,133 @@ nowhere else.
 """
 const PRECIPITATION_RATES = (0.5, 1.0, 3.0, 5.0)
 
+"""
+    WashoutSpecies
+
+Which row of the normative's washout table applies. NSR-23 Table 7, which it
+attributes to CAN/CSA-N288.2-M91, tabulates two:
+
+  - `WASHOUT_TRITIUM_IODINE` — tritium and iodine, the default, and the case
+    this package's reference configuration is.
+  - `WASHOUT_OTHER_NUCLIDES` — every other radionuclide. Its rain values are
+    roughly twice the tritium row's; its **snow** values are three to four
+    orders of magnitude larger, not smaller.
+
+That the two snow rows differ by so much in opposite directions is the reason
+the snow scavenging of tritiated water is worth stating explicitly rather than
+inheriting. See [`WashoutModel`](@ref).
+"""
+@enum WashoutSpecies begin
+    WASHOUT_TRITIUM_IODINE = 1
+    WASHOUT_OTHER_NUCLIDES = 2
+end
+
+# NSR-23 Table 7, both rows, at PRECIPITATION_RATES. Indexed
+# [species][precipitation][rate].
 const _WASHOUT = (
-    (   # rain
-        WashoutCoefficients(5.0e-6, 1.0e-4),
-        WashoutCoefficients(1.0e-5, 2.0e-4),
-        WashoutCoefficients(2.0e-5, 4.0e-4),
-        WashoutCoefficients(3.0e-5, 6.0e-4),
+    (   # tritium and iodine
+        (   # rain
+            WashoutCoefficients(5.0e-6, 1.0e-4),
+            WashoutCoefficients(1.0e-5, 2.0e-4),
+            WashoutCoefficients(2.0e-5, 4.0e-4),
+            WashoutCoefficients(3.0e-5, 6.0e-4),
+        ),
+        (   # snow
+            WashoutCoefficients(5.0e-8, 2.0e-7),
+            WashoutCoefficients(1.0e-7, 4.0e-7),
+            WashoutCoefficients(2.0e-7, 8.0e-7),
+            WashoutCoefficients(3.0e-7, 1.0e-6),
+        ),
     ),
-    (   # snow
-        WashoutCoefficients(5.0e-8, 2.0e-7),
-        WashoutCoefficients(1.0e-7, 4.0e-7),
-        WashoutCoefficients(2.0e-7, 8.0e-7),
-        WashoutCoefficients(3.0e-7, 1.0e-6),
+    (   # all other radionuclides
+        (   # rain
+            WashoutCoefficients(1.0e-5, 2.0e-4),
+            WashoutCoefficients(2.0e-5, 3.0e-4),
+            WashoutCoefficients(3.0e-5, 7.0e-4),
+            WashoutCoefficients(5.0e-5, 1.0e-3),
+        ),
+        (   # snow
+            WashoutCoefficients(3.0e-4, 1.0e-2),
+            WashoutCoefficients(5.0e-4, 2.0e-2),
+            WashoutCoefficients(8.0e-4, 4.0e-2),
+            WashoutCoefficients(1.0e-3, 5.0e-2),
+        ),
     ),
 )
 
 """
-    washout_coefficients(precipitation, rate)
+    WashoutModel
+
+Which scavenging scheme to use.
+
+  - `WASHOUT_NORMATIVE` — the tabulated scheme of the normative, and the
+    default. Its snow columns are the rain columns divided by exactly 100 and
+    500, a suppression appropriate to **particles and reactive gases**: IAEA
+    TECDOC-379 §3.5.4 gives 5 × 10⁻⁸ s⁻¹ for inorganic iodine in powder snow at
+    0.2 mm/h against 1.7 × 10⁻⁵ for the same species in rain, a factor of some
+    340 in the same direction.
+  - `WASHOUT_HTO` — the same rain columns, with snow from Ogram, *Precipitation
+    Scavenging of Tritiated Water Vapour (HTO)*, Ontario Hydro Research Division
+    85-233-K (1985), §6.0 Eq. (38):
+
+        Λ_s = 1.2×10⁻⁴ R^0.33 + 3.0×10⁻⁴ R^0.64   s⁻¹,  R in mm/h
+
+    Snow scavenging of tritiated water is **isotopic exchange at the crystal
+    surface**, not impaction, so the particle suppression is the wrong physics
+    for it. Ogram measures scavenging about three orders of magnitude *above* the
+    normative snow column, and calls the correlation an approximate upper limit.
+
+The reference case of this package is HTO, so the two differ for it by a factor
+of roughly a thousand in snow. They are identical in rain.
+"""
+@enum WashoutModel begin
+    WASHOUT_NORMATIVE = 1
+    WASHOUT_HTO = 2
+end
+
+"""
+    ogram_snow_washout(rate)
+
+Washout coefficient in s⁻¹ for tritiated water in snow at `rate` mm/h of water
+equivalent, from Ogram (1985) Eq. (38).
+
+The report's own Table V reproduces this at 0.5, 1 and 2 mm/h but prints
+2.0 × 10⁻⁴ at 0.1 mm/h where the equation gives 1.25 × 10⁻⁴. That inconsistency
+is in the original; the equation is used here.
+"""
+function ogram_snow_washout(rate::Real)
+    rate ≥ 0 || throw(DomainError(rate, "precipitation rate cannot be negative"))
+    return 1.2e-4 * rate^0.33 + 3.0e-4 * rate^0.64
+end
+
+"""
+    washout_coefficients(precipitation, rate, model = WASHOUT_NORMATIVE)
 
 [`WashoutCoefficients`](@ref) for the given precipitation type and intensity in
-mm/h.
+mm/h, under the chosen [`WashoutModel`](@ref).
 
 The table is defined only at the intensities in [`PRECIPITATION_RATES`](@ref);
 any other value throws. The tabulated points follow a power law in intensity
 closely enough that interpolating between them would be defensible, but that is
 a modelling decision rather than a lookup, and it is not made here.
 """
-function washout_coefficients(precipitation::PrecipitationType, rate::Real)
+function washout_coefficients(
+    precipitation::PrecipitationType,
+    rate::Real,
+    model::WashoutModel = WASHOUT_NORMATIVE,
+    species::WashoutSpecies = WASHOUT_TRITIUM_IODINE,
+)
     i = findfirst(==(float(rate)), PRECIPITATION_RATES)
     isnothing(i) && throw(
         ArgumentError(
             "the washout table is defined at intensities $(PRECIPITATION_RATES) mm/h, got $rate",
         ),
     )
-    return _WASHOUT[Int(precipitation)][i]
+    tabulated = _WASHOUT[Int(species)][Int(precipitation)][i]
+    if model == WASHOUT_HTO && precipitation == PRECIPITATION_SNOW
+        # Ogram gives one correlation, described as an upper limit, so it is
+        # taken as the high bound and the tabulated value as the low one.
+        return WashoutCoefficients(tabulated.low, ogram_snow_washout(rate))
+    end
+    return tabulated
 end

@@ -100,9 +100,14 @@ velocity is: it removes the least material and so is conservative for the
 airborne concentration. The high coefficient drives the ground deposition
 instead.
 """
-function wet_depletion_factor(duration::Real, precipitation::PrecipitationType, rate::Real)
+function wet_depletion_factor(
+    duration::Real,
+    precipitation::PrecipitationType,
+    rate::Real,
+    model::WashoutModel = WASHOUT_NORMATIVE,
+)
     duration ≥ 0 || throw(DomainError(duration, "washout duration cannot be negative"))
-    return exp(-washout_coefficients(precipitation, rate).low * duration)
+    return exp(-washout_coefficients(precipitation, rate, model).low * duration)
 end
 
 """
@@ -127,10 +132,11 @@ function depletion_factor(
     washout_duration::Real = 0.0,
     precipitation::PrecipitationType = PRECIPITATION_RAIN,
     rate::Real = first(PRECIPITATION_RATES),
+    washout_model::WashoutModel = WASHOUT_NORMATIVE,
 )
     u = transport_wind_speed(site, class)
     f = decay_factor(x, u, nuclide) * dry_depletion_factor(x, site, class, nuclide)
     washout_duration > 0 &&
-        (f *= wet_depletion_factor(washout_duration, precipitation, rate))
+        (f *= wet_depletion_factor(washout_duration, precipitation, rate, washout_model))
     return f
 end

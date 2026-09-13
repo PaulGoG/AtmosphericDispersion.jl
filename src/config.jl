@@ -76,6 +76,8 @@ end
 const _RISE_CHOICES =
     Dict("briggs" => BRIGGS_RISE, "xoqdoq" => XOQDOQ_RISE, "thesis_2021" => THESIS_RISE)
 
+const _WASHOUT_CHOICES = Dict("normative" => WASHOUT_NORMATIVE, "hto" => WASHOUT_HTO)
+
 const _RESUSPENSION_CHOICES = Dict(
     "iaea_ss57" => RESUSPENSION_IAEA_SS57,
     "maxwell_anspaugh" => RESUSPENSION_MAXWELL_ANSPAUGH,
@@ -112,6 +114,7 @@ Everything a dispersion run needs, assembled and validated from a TOML file by
 - `rose` — the [`WindRose`](@ref), already resolved to blowing-towards
 - `nuclide` — the released [`Nuclide`](@ref)
 - `resuspension` — which [`ResuspensionModel`](@ref) to apply
+- `washout_model` — which [`WashoutModel`](@ref) to apply
 - `activity` — released activity, Bq
 - `release_duration` — duration of the release, s
 - `precipitation`, `precipitation_rate`, `washout_duration` — the washout case
@@ -122,6 +125,7 @@ struct RunConfiguration
     rose::WindRose{Float64}
     nuclide::Nuclide
     resuspension::ResuspensionModel
+    washout_model::WashoutModel
     activity::Float64
     release_duration::Float64
     precipitation::PrecipitationType
@@ -167,6 +171,11 @@ function configuration_from(root::AbstractDict)
         _RESUSPENSION_CHOICES,
         "model.resuspension",
     )
+    washout_model = _choice(
+        _value(model, "washout", String, "model"; default = "normative"),
+        _WASHOUT_CHOICES,
+        "model.washout",
+    )
 
     site = Site(; source, atmosphere, buildings, rise)
 
@@ -209,6 +218,7 @@ function configuration_from(root::AbstractDict)
         rose,
         nuclide,
         resuspension,
+        washout_model,
         activity,
         release_duration,
         precipitation,
