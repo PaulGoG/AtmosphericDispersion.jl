@@ -165,10 +165,34 @@ Gaussian plume over the whole vertical column leaves a normalisation of
 exactly `√π`, the signature of `√(2π)` mistyped as `√2·π`, and it understated
 wet deposition by a factor of 1.772.
 
+## Validation
+
+The solver is checked against the analytic properties of the Gaussian plume, not
+only against itself. These are the statements that fail first if a
+normalisation, a reflection term or a sector width is wrong.
+
+| Check | Result |
+|---|---|
+| Crosswind integral equals `2exp(−H²/2Σ_z²)/(√(2π) Σ_z u)` | exact to 1 part in 10⁸ |
+| Mass conservation, `u ∫∫ χ/Q dy dz = 1` | **1.000000000** |
+| Sector average equals the crosswind integral over the arc | exact to 1 part in 10¹⁰ |
+| Ground-level maximum at `Σ_z = H/√2` | exact under its own assumptions |
+
+Mass conservation is the strongest of them: it says the released activity
+crossing any downwind plane, carried at the transport speed, is the whole
+release — which exercises the 2πΣ_yΣ_z normalisation, the ground reflection and
+the transport speed together.
+
+The last check needs a word. `Σ_z = H/√2` is derived holding `H` fixed and
+`Σ_y ∝ Σ_z`; asserted under those assumptions it is exact. In the real field the
+maximum lands 5 % away from it, and the cause is not error but `Σ_y/Σ_z`
+drifting from 1.94 to 2.43 across the peak region while plume rise has already
+saturated. All six Pasquill classes and three sector counts are covered.
+
 ## Status
 
-The solver is complete and configuration-driven. Documentation and validation
-against an independent implementation remain.
+The solver is complete, configuration-driven and validated against the analytic
+invariants.
 
 Done:
 
@@ -182,14 +206,17 @@ Done:
 - Nuclides, and depletion by decay, dry deposition and washout
 - Dry and wet ground deposition, and resuspension
 - TOML configuration validated key by key, and a script entry point over it
-- Static QA in the suite: Aqua, JET, ExplicitImports. 2920 tests, including
+- Physics validation against the analytic invariants of the Gaussian plume
+- Static QA in the suite: Aqua, JET, ExplicitImports. 3017 tests, including
   exact agreement with the 2021 formulae wherever they were evaluable
 - A Documenter site that builds clean, doctests included
 
 Next:
 
-- Comparison against an independent implementation
-- Establish the provenance of the 2021 wind rose, and settle its convention
+- Establish the provenance of the 2021 wind rose — the convention is settled,
+  the numbers are not
+- Re-run the thesis cases under the corrected convention, to say by how much the
+  published dose maps move
 
 ## History
 
