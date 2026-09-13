@@ -21,6 +21,10 @@ addressed.
 .
 ├── Project.toml            package manifest and [compat]
 ├── activate.jl             activates and instantiates the root environment
+├── config/
+│   └── reference.toml      the CANDU tritium case, with bounds in the comments
+├── scripts/
+│   └── run.jl              long-term field for a configured run
 ├── src/
 │   ├── AtmosphericDispersion.jl   module, includes and exports
 │   ├── sectors.jl          wind-rose sector geometry
@@ -36,7 +40,8 @@ addressed.
 │   ├── dilution.jl         the three dilution regimes
 │   ├── nuclides.jl         species: decay constant and deposition velocity
 │   ├── depletion.jl        decay, dry deposition and washout
-│   └── deposition.jl       ground deposition and resuspension
+│   ├── deposition.jl       ground deposition and resuspension
+│   └── config.jl           TOML loader, validated key by key
 ├── test/
 │   ├── Project.toml
 │   ├── activate.jl
@@ -62,10 +67,17 @@ julia docs/activate.jl       # documentation environment
 ## Entry points
 
 ```bash
-julia --project -e 'using Pkg; Pkg.test()'          # test suite and static QA
-julia --project=docs docs/make.jl                    # build the documentation
-julia -e 'using JuliaFormatter; format(".")'         # apply the committed style
+julia --project scripts/run.jl config/reference.toml  # long-term field for a run
+julia --project -e 'using Pkg; Pkg.test()'            # test suite and static QA
+julia --project=docs docs/make.jl                      # build the documentation
+julia -e 'using JuliaFormatter; format(".")'           # apply the committed style
 ```
+
+A run is described by a TOML file, never by editing source. The loader checks
+presence, type, enumerated choice and numerical bound, and names the offending
+key by its full dotted path — `ConfigurationError at \`grid.spacing\`: must be
+smaller than grid.extent (20000.0 m), got 20000.0` — so a rejected file says
+what to change.
 
 ## The wind-direction convention
 
@@ -141,8 +153,8 @@ wet deposition by a factor of 1.772.
 
 ## Status
 
-The solver is complete: dilution, depletion, ground deposition and
-resuspension. Configuration and documentation remain.
+The solver is complete and configuration-driven. Documentation and validation
+against an independent implementation remain.
 
 Done:
 
@@ -155,14 +167,15 @@ Done:
 - The three dilution regimes: instantaneous, extended, long term
 - Nuclides, and depletion by decay, dry deposition and washout
 - Dry and wet ground deposition, and resuspension
-- Static QA in the suite: Aqua, JET, ExplicitImports. 2805 tests, including
+- TOML configuration validated key by key, and a script entry point over it
+- Static QA in the suite: Aqua, JET, ExplicitImports. 2920 tests, including
   exact agreement with the 2021 formulae wherever they were evaluable
 
 Next:
 
-- TOML-driven configuration, validated on load
-- Thin script entry points over the library
-- Documenter site; comparison against an independent implementation
+- Documenter site
+- Comparison against an independent implementation
+- Establish the provenance of the 2021 wind rose, and settle its convention
 
 ## History
 

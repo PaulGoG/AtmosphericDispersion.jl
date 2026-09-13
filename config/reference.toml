@@ -1,0 +1,58 @@
+# Reference case: tritium released from a CANDU stack.
+
+[source]
+height = 50.3             # stack height above ground, m; > 0
+diameter = 2.33           # inner diameter at the exit, m; > 0
+exit_velocity = 10.0      # vertical gas velocity at the exit, m/s; >= 0
+exit_density = 0.6        # density of the emitted gas, kg/m^3; > 0
+exit_temperature = 324.0  # temperature of the emitted gas, K; > 0
+
+[atmosphere]
+reference_speed = 4.0     # wind speed at 10 m, m/s; >= 0
+temperature = 287.0       # ambient air temperature, K; > 0
+density = 1.2             # ambient air density, kg/m^3; > 0
+lapse_rate = 0.02         # vertical temperature gradient dT/dz, K/m; finite
+specific_heat = 1005.0    # isobaric specific heat of ambient air, J/(kg K); > 0
+surface = "agricultural"  # one of: water | agricultural | forest_urban
+roughness = "pasture"     # one of: grassland_water | arable | pasture | rural | forest_urban | metropolis
+
+[buildings]
+wake_coefficient = 1.5    # wake broadening coefficient; >= 0, zero disables the correction
+# Repeat [[buildings.building]] for each structure; omit the block for none.
+# [[buildings.building]]
+# east = 30.0             # displacement from the stack, m
+# north = 0.0             # displacement from the stack, m
+# height = 20.0           # building height, m; >= 0
+# frontal_area = 400.0    # cross-section presented to the wind, m^2; >= 0
+
+[nuclide]
+name = "HTO"
+decay_constant = 1.784e-9       # 1/s; >= 0
+deposition_velocity_low = 0.004  # m/s; >= 0, used for plume depletion
+deposition_velocity_high = 0.008 # m/s; >= low, used for ground deposition
+
+[wind_rose]
+sectors = 16              # even, >= 4
+convention = "blowing_from"  # one of: blowing_from | blowing_toward
+# One frequency per sector, clockwise from north, summing to 1.
+frequencies = [
+  0.078491, 0.078491, 0.072211, 0.073781,
+  0.078491, 0.059651, 0.056511, 0.047100,
+  0.051811, 0.050241, 0.048670, 0.045530,
+  0.054951, 0.064361, 0.062791, 0.076921,
+]
+# One fraction per Pasquill class A to F, summing to 1.
+stability = [0.065331, 0.065331, 0.065331, 0.488005, 0.158002, 0.158002]
+
+[release]
+activity = 6.8e14         # released activity, Bq; >= 0
+duration = 31557600.0     # release duration, s; > 0
+
+[precipitation]
+type = "rain"             # one of: rain | snow
+rate = 1.0                # intensity, mm/h; one of 0.5 | 1.0 | 3.0 | 5.0
+washout_duration = 0.0    # duration of the washout event, s; >= 0
+
+[grid]
+extent = 20000.0          # half-width of the receptor grid, m; > 0
+spacing = 250.0           # receptor spacing, m; > 0 and < extent

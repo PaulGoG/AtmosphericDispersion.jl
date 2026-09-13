@@ -14,6 +14,7 @@ rotation and right in every other respect.
 module AtmosphericDispersion
 
 using QuadGK: quadgk
+using TOML: TOML
 
 export SectorGrid,
     nsectors,
@@ -135,6 +136,7 @@ export dry_deposition,
     resuspension_factor,
     resuspended_concentration,
     RESUSPENSION_COEFFICIENTS
+export ConfigurationError, RunConfiguration, load_configuration, configuration_from
 
 include("source.jl")
 include("plumerise.jl")
@@ -144,5 +146,6 @@ include("nuclides.jl")
 include("depletion.jl")
 include("dilution.jl")
 include("deposition.jl")
+include("config.jl")
 
 end
