@@ -47,6 +47,44 @@ const PALETTE = (
 
 const FIGURES = joinpath(@__DIR__, "..", "figures")
 
+"""
+    compass!(ax; color = :white)
+
+Mark the four cardinal directions on the edges of a map-frame axis.
+
+An axis title naming a direction is read as marking the edge it sits on, which
+puts north on the left and east along the bottom. The coordinate names go in the
+axis titles and the directions go here, against the edge each one actually
+points at.
+"""
+function compass!(ax; color = :white)
+    marks = (
+        ("N", 0.5, 0.985, (:center, :top)),
+        ("S", 0.5, 0.015, (:center, :bottom)),
+        ("E", 0.985, 0.5, (:right, :center)),
+        ("W", 0.015, 0.5, (:left, :center)),
+    )
+    for (t, x, y, align) in marks
+        text!(
+            ax,
+            x,
+            y;
+            text = t,
+            space = :relative,
+            align = align,
+            fontsize = 19,
+            font = :bold,
+            color = color,
+            # The marks sit over whatever the field happens to be doing at the
+            # edge, which for a plume running due west is the bright end of the
+            # colour scale.
+            strokecolor = :black,
+            strokewidth = 0.6,
+        )
+    end
+    return ax
+end
+
 function reference_case()
     config = load_configuration(joinpath(@__DIR__, "..", "config", "reference.toml"))
     return config
@@ -94,7 +132,12 @@ function figure_field(config)
     lo, hi = quantile(far, 0.02), maximum(far)
 
     fig = Figure(size = (900, 720))
-    ax = Axis(fig[1, 1], xlabel = "East [km]", ylabel = "North [km]", aspect = DataAspect())
+    ax = Axis(
+        fig[1, 1],
+        xlabel = "Distance east of the stack [km]",
+        ylabel = "Distance north of the stack [km]",
+        aspect = DataAspect(),
+    )
     hm = heatmap!(
         ax,
         xs ./ 1000,
@@ -114,6 +157,7 @@ function figure_field(config)
         markersize = 13,
     )
     text!(ax, 0.4, 0.4; text = "Stack", fontsize = 15, color = :white)
+    compass!(ax)
     # Explicit ticks: the range spans about 1.2 decades, so automatic log ticks
     # land on fractional exponents like 10^6.75, which are not a thing anyone
     # reads off a colour bar.
@@ -271,7 +315,12 @@ function figure_animation(config; half_width = 8_000.0, n = 141, frames = 72)
     end
 
     fig = Figure(size = (780, 640))
-    ax = Axis(fig[1, 1], xlabel = "East [km]", ylabel = "North [km]", aspect = DataAspect())
+    ax = Axis(
+        fig[1, 1],
+        xlabel = "Distance east of the stack [km]",
+        ylabel = "Distance north of the stack [km]",
+        aspect = DataAspect(),
+    )
     compute!(0.0)
     lo, hi = 1e-9, 3e-6
     hm = heatmap!(
@@ -292,16 +341,10 @@ function figure_animation(config; half_width = 8_000.0, n = 141, frames = 72)
         strokewidth = 1.5,
         markersize = 12,
     )
-    text!(
-        ax,
-        0.03,
-        0.96;
-        text = label,
-        space = :relative,
-        align = (:left, :top),
-        fontsize = 17,
-        color = :white,
-    )
+    compass!(ax)
+    # Under the axes rather than over the field: the compass marks now occupy
+    # the edges, and a white overlay at the top left ran into the N.
+    Label(fig[2, 1], label, fontsize = 18, tellwidth = false)
     Colorbar(
         fig[1, 2],
         hm,
