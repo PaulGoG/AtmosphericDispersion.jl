@@ -121,9 +121,22 @@ opposite, as it must. For a dose assessment the sector that matters is the
 most-exposed one, so this is not a refinement: it points the assessment at the
 wrong side of the site.
 
-Nothing in the 2021 code, its data file, or the thesis records which reading
-the table carried, so the published orientation should be treated as
-unverified until the provenance of `Frecvente.csv` is established.
+**The author has since confirmed he misunderstood the convention at the time.**
+The table is therefore a *blowing-from* rose, which is what every published wind
+rose is, and the 2021 code consumed it as *blowing-toward*. The 2021 dose field
+is rotated by half a turn, and its most-exposed sector is the least-exposed one.
+`config/reference.toml` declares `blowing_from` accordingly.
+
+The provenance of the numbers is still open: his recollection is that they are
+either placeholder values or real meteorological data for the Pitești fuel plant
+or the Cernavodă NPP site. Read in standard cardinal order the rose is
+north-dominated — 30.6 % of the time in the N quadrant against 19.8 % in the S,
+strongest from N, NNE and E, weakest from SSW and SW — which is the right shape
+for Dobrogea, where the crivăț blows from the north-east. That is consistent
+with the Cernavodă branch of his recollection but does not establish it: the
+rose is also unusually flat for a real site, only 1.7:1 between its strongest
+and weakest sectors, where measured roses are typically more peaked. Treat the
+absolute frequencies as unverified; the *convention* is not.
 
 ## Depletion composes by multiplication
 
