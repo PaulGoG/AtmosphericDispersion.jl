@@ -93,6 +93,24 @@ addition.
 
 Regenerate all of them with `julia --project=scripts scripts/figures.jl`.
 
+### Validation figures
+
+`figures/validation/` holds one figure per parameterisation, each drawn against
+the published form it is meant to be. Where the test suite asserts an identity
+the curves must lie on top of one another; where it only claims a bracket, the
+figure is what shows how wide the bracket is.
+
+| Figure | Against |
+|---|---|
+| `dispersion_parameters.png` | Briggs (1973) σ_y and σ_z, all six classes |
+| `roughness_correction.png` | the published `(z₀/0.1)^0.2` scaling |
+| `washout.png` | NRPB-R322 and AVV amplitudes, and the `J^0.75` law |
+| `resuspension.png` | IAEA Safety Series 57, and its 2011 successor |
+| `plume_rise.png` | Briggs final rise and the two-thirds law |
+| `ground_level_maximum.png` | the peak and its position, class by class |
+
+Regenerate with `julia --project=scripts scripts/validation.jl`.
+
 ## Layout
 
 ```
@@ -105,8 +123,10 @@ Regenerate all of them with `julia --project=scripts scripts/figures.jl`.
 ├── scripts/
 │   ├── Project.toml        plotting environment, kept out of the package
 │   ├── activate.jl
+│   ├── theme_common.jl     figure style shared by the scripts below
 │   ├── run.jl              long-term field for a configured run
-│   └── figures.jl          the figures above
+│   ├── figures.jl          the figures above
+│   └── validation.jl       every parameterisation against its published form
 ├── src/
 │   ├── AtmosphericDispersion.jl   module, includes and exports
 │   ├── sectors.jl          wind-rose sector geometry
@@ -153,6 +173,7 @@ julia scripts/activate.jl    # plotting environment
 ```bash
 julia --project scripts/run.jl config/reference.toml  # long-term field for a run
 julia --project=scripts scripts/figures.jl            # regenerate the figures
+julia --project=scripts scripts/validation.jl        # regenerate the validation figures
 julia --project -e 'using Pkg; Pkg.test()'            # test suite and static QA
 julia --project=docs docs/make.jl                      # build the documentation
 julia -e 'using JuliaFormatter; format(".")'           # apply the committed style
@@ -383,10 +404,12 @@ algebra and the numbers.
 σ_z is not Briggs — it is Hosker, as above, carrying an explicit roughness
 correction that Briggs does not have. So the package mixes **Briggs σ_y with
 Hosker σ_z**, a pairing no single publication uses, and the two are therefore
-asserted against different sources. Against Briggs, σ_z is only bracketed:
-within a factor 1.6 across 0.1–10 km, and systematically ordered — less vertical
-spread than Briggs in unstable air, more in stable, closest in neutral. That is
-the spread that separates published σ schemes from one another.
+asserted against different sources. Against Briggs, σ_z is only bracketed: the
+ratio runs from **0.41** (class B at 10 km) to **1.49** (class E at 10 km) over
+0.1–10 km, a factor of 2.4 taken symmetrically, and it is systematically ordered
+— less vertical spread than Briggs in unstable air, more in stable, closest in
+neutral. That is the spread that separates published σ schemes from one another,
+and `figures/validation/dispersion_parameters.png` is the picture of it.
 
 The last check needs a word. `Σ_z = H/√2` is derived holding `H` fixed and
 `Σ_y ∝ Σ_z`; asserted under those assumptions it is exact. In the real field the
