@@ -35,7 +35,8 @@ addressed.
 │   ├── site.jl             release height and the per-run precomputation
 │   ├── dilution.jl         the three dilution regimes
 │   ├── nuclides.jl         species: decay constant and deposition velocity
-│   └── depletion.jl        decay, dry deposition and washout
+│   ├── depletion.jl        decay, dry deposition and washout
+│   └── deposition.jl       ground deposition and resuspension
 ├── test/
 │   ├── Project.toml
 │   ├── activate.jl
@@ -132,10 +133,16 @@ is where it now sits.
 
 Both limits are asserted in the suite.
 
+A third defect of the same kind sits in the wet deposition. Integrating the
+Gaussian plume over the whole vertical column leaves a normalisation of
+`√(2π) Σ_y u`; the 2021 code wrote `√2 π Σ_y u`. The ratio of the two is
+exactly `√π`, the signature of `√(2π)` mistyped as `√2·π`, and it understated
+wet deposition by a factor of 1.772.
+
 ## Status
 
-The dilution and depletion solvers are in place and under test; ground
-deposition and resuspension are not yet written.
+The solver is complete: dilution, depletion, ground deposition and
+resuspension. Configuration and documentation remain.
 
 Done:
 
@@ -147,13 +154,13 @@ Done:
 - `Site`, which precomputes everything independent of receptor position
 - The three dilution regimes: instantaneous, extended, long term
 - Nuclides, and depletion by decay, dry deposition and washout
-- Static QA in the suite: Aqua, JET, ExplicitImports. 2771 tests, including
+- Dry and wet ground deposition, and resuspension
+- Static QA in the suite: Aqua, JET, ExplicitImports. 2805 tests, including
   exact agreement with the 2021 formulae wherever they were evaluable
 
 Next:
 
 - TOML-driven configuration, validated on load
-- Ground deposition and resuspension
 - Thin script entry points over the library
 - Documenter site; comparison against an independent implementation
 

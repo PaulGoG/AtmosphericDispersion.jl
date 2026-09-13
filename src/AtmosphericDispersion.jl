@@ -129,6 +129,12 @@ export decay_factor,
     wet_depletion_factor,
     depletion_factor,
     DEPLETION_INTEGRAL_FLOOR
+export dry_deposition,
+    wet_deposition,
+    wet_deposition_sector,
+    resuspension_factor,
+    resuspended_concentration,
+    RESUSPENSION_COEFFICIENTS
 
 include("source.jl")
 include("plumerise.jl")
@@ -137,5 +143,6 @@ include("site.jl")
 include("nuclides.jl")
 include("depletion.jl")
 include("dilution.jl")
+include("deposition.jl")
 
 end

@@ -40,6 +40,10 @@ function dilution_instantaneous(
     class::PasquillClass,
     wind_bearing::Real;
     release_duration::Real = SHORT_RELEASE_REFERENCE,
+    nuclide::Union{Nothing,Nuclide} = nothing,
+    washout_duration::Real = 0.0,
+    precipitation::PrecipitationType = PRECIPITATION_RAIN,
+    rate::Real = first(PRECIPITATION_RATES),
 )
     z ≥ 0 || throw(DomainError(z, "receptor height cannot be below ground"))
     x, y = plume_frame(east, north, wind_bearing)
@@ -51,9 +55,10 @@ function dilution_instantaneous(
     u = transport_wind_speed(site, class)
     u > 0 || return 0.0
 
+    D = _depletion(x, site, class, nuclide, washout_duration, precipitation, rate)
     crosswind = exp(-y^2 / (2Σy^2))
     vertical = exp(-(z - H)^2 / (2Σz^2)) + exp(-(z + H)^2 / (2Σz^2))
-    return crosswind * vertical / (2π * Σy * Σz * u)
+    return D * crosswind * vertical / (2π * Σy * Σz * u)
 end
 
 """
@@ -98,7 +103,11 @@ function dilution_extended(
     site::Site,
     class::PasquillClass,
     wind_bearing::Real,
-    sectors::SectorGrid = SectorGrid(16),
+    sectors::SectorGrid = SectorGrid(16);
+    nuclide::Union{Nothing,Nuclide} = nothing,
+    washout_duration::Real = 0.0,
+    precipitation::PrecipitationType = PRECIPITATION_RAIN,
+    rate::Real = first(PRECIPITATION_RATES),
 )
     x, y = plume_frame(east, north, wind_bearing)
     x > 0 || return 0.0
@@ -110,7 +119,8 @@ function dilution_extended(
     u = transport_wind_speed(site, class)
     u > 0 || return 0.0
 
-    return sqrt(2 / π) * exp(-H^2 / (2Σz^2)) / (Σz * u * x * θ_L)
+    D = _depletion(x, site, class, nuclide, washout_duration, precipitation, rate)
+    return D * sqrt(2 / π) * exp(-H^2 / (2Σz^2)) / (Σz * u * x * θ_L)
 end
 
 """
