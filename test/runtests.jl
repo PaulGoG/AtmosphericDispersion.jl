@@ -321,7 +321,12 @@ using TOML
                 'E' => (0.0609, 0.895, 1.96e-3, 0.684),
                 'F' => (0.0638, 0.783, 1.36e-3, 0.672),
             )
-            T2 = [  # Tabel_2.csv: z_0, c_1, d_1, c_2, d_2
+            # Tabel_2.csv: z_0, c_1, d_1, c_2, d_2. The first two c_1 read 1.58
+            # and 2.08 here, which is what the 2021 tables carried; Hosker
+            # publishes 1.56 and 2.02. This reference implementation keeps the
+            # 2021 values, so those two rows no longer match the package — see
+            # the assertion below, which pins the size of the correction.
+            T2 = [
                 (0.01, 1.58, 0.048, 6.25e-4, 0.45),
                 (0.04, 2.08, 0.0269, 7.76e-4, 0.37),
                 (0.1, 2.72, 0.0, 0.0, 0.0),
@@ -388,7 +393,17 @@ using TOML
                 P = letter(k)
                 for x in (1.0, 10.0, 137.0, 1000.0, 12_345.0, 100_000.0)
                     for (j, r) in enumerate(ROUGHNESS_CLASSES)
-                        @test vertical_dispersion(x, k, r) == original_σ_z(x, P, j)
+                        if j ≤ 2
+                            # Deliberate divergence, the only one in σ_z: the
+                            # corrected coefficients give a smaller plume, by
+                            # under 3 % over grassland and water and under 5 %
+                            # over arable land, at every distance tested.
+                            corrected = vertical_dispersion(x, k, r)
+                            @test corrected < original_σ_z(x, P, j)
+                            @test corrected / original_σ_z(x, P, j) > (j == 1 ? 0.97 : 0.95)
+                        else
+                            @test vertical_dispersion(x, k, r) == original_σ_z(x, P, j)
+                        end
                     end
                     for t_R in (60.0, 600.0, 3600.0, 86_400.0)
                         @test lateral_dispersion(x, k; release_duration = t_R) ==
@@ -1680,9 +1695,121 @@ using TOML
     # from the normative turn out to be standard published schemes, and where
     # they are, the identity is asserted rather than described.
     @testset "Literature validation" begin
-        # Briggs (1973) open-country lateral dispersion, as tabulated in
-        # NRC ML17047A449: σ_y = a x (1 + 10⁻⁴x)^(−1/2) with a running
-        # 0.22, 0.16, 0.11, 0.08, 0.06, 0.04 from class A to F.
+        # The vertical dispersion scheme is Hosker's fit to F.B. Smith (1972)
+        # and Briggs (1973), published as IAEA-SM-181/19 (1974) and printed in
+        # Smith and Simmonds (eds.), HPA-RPD-058, Health Protection Agency
+        # (2009), Table 3.3, and in Clarke, NRPB-R91 (1979), Table 3. Both
+        # printings agree digit for digit, and the ORNL codes that implement it
+        # (ORNL-5913 Table 6, ORNL/TM-6874 p. 25) carry the same numbers.
+        #
+        # Transcribing a table is exactly where a package of tabulated constants
+        # fails, so the whole table is asserted rather than sampled.
+        @testset "vertical dispersion coefficients are Hosker's" begin
+            # σ_z = a x^b / (1 + c x^d), x and σ_z in metres.
+            shape = (
+                (0.112, 1.06, 5.38e-4, 0.815),    # A
+                (0.130, 0.950, 6.52e-4, 0.750),   # B
+                (0.112, 0.920, 9.05e-4, 0.718),   # C
+                (0.098, 0.889, 1.35e-3, 0.688),   # D
+                (0.0609, 0.895, 1.96e-3, 0.684),  # E
+                (0.0638, 0.783, 1.36e-3, 0.672),  # F
+            )
+            for (i, class) in enumerate(PASQUILL_CLASSES)
+                c = vertical_shape_coefficients(class)
+                @test (c.a₁, c.b₁, c.a₂, c.b₂) == shape[i]
+            end
+
+            # F(z₀,x) = ln(f x^g [1 + {h x^j}⁻¹]) for z₀ > 0.1 m,
+            # F(z₀,x) = ln(f x^g [1 + h x^j]⁻¹)   for z₀ ≤ 0.1 m.
+            correction = (
+                (0.01, 1.56, 0.0480, 6.25e-4, 0.45),
+                (0.04, 2.02, 0.0269, 7.76e-4, 0.37),
+                (0.10, 2.72, 0.0, 0.0, 0.0),
+                (0.40, 5.16, -0.098, 18.6, -0.225),
+                (1.00, 7.37, -0.0957, 4.29e3, -0.60),
+                (4.00, 11.7, -0.128, 4.59e4, -0.78),
+            )
+            for (i, roughness) in enumerate(ROUGHNESS_CLASSES)
+                c = roughness_coefficients(roughness)
+                @test (c.z₀, c.c₁, c.d₁, c.c₂, c.d₂) == correction[i]
+            end
+
+            # z₀ = 10 cm is the reference the fit is normalised on, so its
+            # correction is ln(2.72) — unity to within the rounding of e.
+            @test roughness_correction(1000.0, ROUGHNESS_PASTURE) ≈ 1 atol = 7e-4
+        end
+
+        # The sector-averaged long-term form is a regulatory equation, stated
+        # identically by NRC Regulatory Guide 1.111 Rev. 1 (1977) Eq. (3) and
+        # XOQDOQ, NUREG/CR-2919 (1982) Eq. (1), by IAEA Safety Reports Series
+        # No. 19 (2001) Eq. (V-2), and by the German AVV zu §47 StrlSchV (2012)
+        # Eq. (4.4). RG 1.111 writes the constant as 2.032 and states in words
+        # that it is √(2/π) divided by a 22.5° sector in radians; SRS-19 works
+        # in twelve sectors, where the same constant is 1.5238.
+        @testset "the sector constant is the published regulatory value" begin
+            @test sqrt(2 / π) * 16 / (2π) ≈ 2.032 rtol = 2e-4
+            @test sqrt(2 / π) * 12 / (2π) ≈ 1.5238 rtol = 2e-4
+
+            stack = StackSource(;
+                height = 50.3,
+                diameter = 2.33,
+                exit_velocity = 10.0,
+                exit_density = 0.6,
+                exit_temperature = 324.0,
+            )
+            air = Atmosphere(;
+                reference_speed = 4.0,
+                temperature = 287.0,
+                density = 1.2,
+                lapse_rate = 2e-2,
+                surface = SURFACE_AGRICULTURAL,
+                roughness = ROUGHNESS_PASTURE,
+            )
+            site = Site(; source = stack, atmosphere = air)
+            distances = (500.0, 2000.0, 10_000.0)
+
+            for (n, published) in ((16, 2.032), (12, 1.5238))
+                sectors = SectorGrid(n)
+                for class in PASQUILL_CLASSES, r in distances
+                    H = effective_height(r, site, class)
+                    Σz = corrected_vertical_dispersion(r, site, class)
+                    u = transport_wind_speed(site, class)
+                    regulatory = published * exp(-H^2 / (2Σz^2)) / (Σz * u * r)
+                    @test dilution_extended(0.0, -r, site, class, 0.0, sectors) ≈ regulatory rtol =
+                        2e-4
+                end
+            end
+        end
+
+        # Known deviation, recorded rather than silently carried. The combined
+        # momentum-and-buoyancy law should reduce to the pure-buoyancy law when
+        # the momentum flux vanishes, and it does not: dropping Fₘ leaves
+        # (6F x²/u³)^(1/3), against the two-thirds law's (1.6³F x²/u³)^(1/3)
+        # used by `buoyant_rise`, so it overshoots by 13.6 %.
+        #
+        # The momentum half of the same expression is exactly Briggs — the
+        # denominator (1/3 + u/w₀)² is his β_j² — which puts the discrepancy in
+        # the buoyancy half alone: Briggs writes 3F x²/(2β²u³) with β = 0.6,
+        # i.e. a denominator of 0.72 where this code has 0.5. The constant is
+        # left as the thesis set it and pinned here, because correcting it moves
+        # published dose results and that is not a change to make silently.
+        @testset "combined rise overshoots the two-thirds law as Fₘ vanishes" begin
+            for F in (5.0, 50.0, 500.0), u in (2.0, 5.0, 9.0), x in (100.0, 500.0)
+                combined = 3^(1 / 3) * (F * x^2 / (0.5 * u^3))^(1 / 3)
+                two_thirds = 1.6 * F^(1 / 3) * x^(2 / 3) / u
+                @test combined / two_thirds ≈ (6 / 1.6^3)^(1 / 3) rtol = 1e-12
+                @test combined / two_thirds ≈ 1.1357 rtol = 1e-4
+            end
+            @test 3 / 1.6^3 ≈ 0.7324 rtol = 1e-4      # the consistent denominator
+            @test 2 * 0.6^2 ≈ 0.72                     # Briggs, from β = 0.6
+        end
+
+        # Briggs (1973) open-country lateral dispersion, as tabulated in Hanna,
+        # Briggs and Hosker, Handbook on Atmospheric Diffusion, DOE/TIC-11223
+        # (1982), Table 4.5, attributing ATDL Contribution No. 79:
+        # σ_y = a x (1 + 10⁻⁴x)^(−1/2) with a running
+        # 0.22, 0.16, 0.11, 0.08, 0.06, 0.04 from class A to F. The table states
+        # its own validity band as 10² < x < 10⁴ m.
         @testset "σ_y is Briggs 1973 open country" begin
             briggs_a = (0.22, 0.16, 0.11, 0.08, 0.06, 0.04)
             for (i, class) in enumerate(PASQUILL_CLASSES)

@@ -4,6 +4,37 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **Two coefficients of the roughness correction.** `F(z₀,x)` carried 1.58 and
+  2.08 for z₀ = 0.01 m and 0.04 m where Hosker publishes 1.56 and 2.02, making
+  σ_z 1.9 % too large over grassland and water and 3.6 % too large over arable
+  land. The remaining 22 coefficients, and all 24 of the shape function, were
+  already exact.
+
+### Added
+
+- The vertical dispersion scheme is identified: it is Hosker's fit
+  (IAEA-SM-181/19, 1974) to F.B. Smith (1972) and Briggs (1973), printed in
+  HPA-RPD-058 Table 3.3 and NRPB-R91 Table 3. Both tables are now asserted entry
+  by entry against those printings rather than sampled.
+- The long-term sector constant is asserted against its published value in NRC
+  Regulatory Guide 1.111 (2.032, sixteen sectors) and IAEA SRS-19 (1.5238,
+  twelve), for every stability class and distance.
+- A test recording the one known deviation from Briggs: the combined
+  momentum-and-buoyancy rise overshoots the two-thirds law by 13.6 % as the
+  momentum flux vanishes, because its buoyancy denominator is 0.5 where Briggs
+  gives 2β² = 0.72. The constant is left as the thesis set it; the test pins the
+  size of the discrepancy so it cannot drift unnoticed.
+
+### Changed
+
+- The σ_y citation named an NRC accession number that is not an NRC document.
+  Corrected to Hanna, Briggs and Hosker, *Handbook on Atmospheric Diffusion*,
+  DOE/TIC-11223 (1982), Table 4.5, which attributes ATDL Contribution No. 79.
+
 ## [0.1.0]
 
 First public release. The solver is complete and validated; the API is not yet

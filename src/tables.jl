@@ -7,6 +7,14 @@ are small, they never vary between runs, and the values are read inside the
 innermost loops of every field evaluation, where a keyed lookup into a data
 frame costs more than the dispersion calculation itself.
 
+The vertical dispersion tables are Hosker's, and the normative reproduces them:
+Hosker, R.P. Jr., "Estimates of dry deposition and plume depletion over forests
+and grassland", IAEA-SM-181/19, pp. 291-309 in Physical Behaviour of Radioactive
+Contaminants in the Atmosphere, IAEA, Vienna (1974) — an analytic fit to F.B.
+Smith (1972) and Briggs (1973). They are printed in Smith and Simmonds (eds.),
+HPA-RPD-058, Health Protection Agency (2009), Table 3.3, and in Clarke, R.H.,
+NRPB-R91 (1979), Table 3, and both printings are asserted in the test suite.
+
 Indexing is positional, through `classindex` and `Int(::enum)`, so every lookup
 is a tuple index with a concrete return type.
 =#
@@ -58,9 +66,12 @@ struct RoughnessCoefficients
     d₂::Float64
 end
 
+# HPA-RPD-058 Table 3.3, second panel; identical in NRPB-R91 Table 3. The first
+# two f values were transcribed as 1.58 and 2.08, which made σ_z too large by
+# 1.9 % over grassland and water and 3.6 % over arable land.
 const _ROUGHNESS = (
-    RoughnessCoefficients(0.01, 1.58, 0.048, 6.25e-4, 0.45),    # grassland and water
-    RoughnessCoefficients(0.04, 2.08, 0.0269, 7.76e-4, 0.37),   # arable
+    RoughnessCoefficients(0.01, 1.56, 0.048, 6.25e-4, 0.45),    # grassland and water
+    RoughnessCoefficients(0.04, 2.02, 0.0269, 7.76e-4, 0.37),   # arable
     RoughnessCoefficients(0.10, 2.72, 0.0, 0.0, 0.0),           # pasture
     RoughnessCoefficients(0.40, 5.16, -0.098, 18.6, -0.225),    # rural
     RoughnessCoefficients(1.00, 7.37, -0.0957, 4.29e3, -0.6),   # forest and urban

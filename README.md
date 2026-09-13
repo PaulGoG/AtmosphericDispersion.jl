@@ -228,18 +228,73 @@ the transport speed together.
 
 ### Against the published literature
 
-Several parameterisations the normative hands down turn out to be standard
-published schemes. Where they are, the identity is asserted rather than
+Every parameterisation the normative hands down turns out to be a standard
+published scheme. Where they are, the identity is asserted rather than
 described.
 
 | | Published form | Agreement |
 |---|---|---|
 | σ_y | Briggs (1973) open country, `a x(1+10⁻⁴x)^(−1/2)`, a = 0.22…0.04 | **exact**, all six classes |
+| σ_z shape `g(x)` | Hosker (1974), `a x^b/(1 + c x^d)` | **exact**, all 24 coefficients |
+| σ_z roughness `F(z₀,x)` | Hosker (1974), both branches | **exact**, all 24 coefficients — after correcting two |
+| Long-term sector constant | NRC RG 1.111 `2.032`, IAEA SRS-19 `1.5238` | **exact to the published rounding** |
 | Distance to final rise | Briggs `x_f = 14F^(5/8)`, `34F^(2/5)` | **exact** |
 | Neutral final buoyant rise | Briggs `21.4F^(3/4)/u`, `38.7F^(3/5)/u` | **exact up to the literature's own rounding** |
 | Stable final rise | Briggs `2.6[F/(us)]^(1/3)` | **exact** |
 | Transitional rise | the two-thirds law `1.6F^(1/3)x^(2/3)/u` | **exact** |
-| σ_z | Briggs open country | 0.4–1.6, systematically ordered |
+| Combined rise | Briggs, `3F_m x/β_j²u² + 3F x²/2β²u³` | momentum half exact, **buoyancy half 13.6 % high** |
+
+#### The vertical dispersion scheme, and two wrong digits
+
+`σ_z = g(x)F(z₀,x)` is Hosker's analytic fit to F.B. Smith (1972) and Briggs
+(1973), published as IAEA-SM-181/19 in *Physical Behaviour of Radioactive
+Contaminants in the Atmosphere* (IAEA, Vienna, 1974). The normative reproduces
+it without attribution. It is printed in full in **HPA-RPD-058** (Health
+Protection Agency, 2009) Table 3.3 and **NRPB-R91** (1979) Table 3, and both
+printings agree digit for digit.
+
+Asserting the whole table against those printings found **two transcription
+errors** in the roughness correction, carried over from the 2021 tables:
+
+| z₀ | was | published | effect on σ_z |
+|---|---|---|---|
+| 0.01 m, grassland and water | 1.58 | **1.56** | 1.9 % too large |
+| 0.04 m, arable | 2.08 | **2.02** | 3.6 % too large |
+
+The other 22 coefficients, and all 24 of the shape function, were already exact.
+This is the argument for asserting tables of constants entry by entry rather
+than sampling them: nothing else in the suite could have caught it, because the
+error is in the data, not the algebra.
+
+#### The long-term equation is a regulatory one
+
+`dilution_long_term` is not a bespoke form. The same equation, constant
+included, is stated by **NRC Regulatory Guide 1.111** Rev. 1 (1977) Eq. (3) and
+its implementation **XOQDOQ** (NUREG/CR-2919, 1982) Eq. (1), by **IAEA Safety
+Reports Series No. 19** (2001) Eq. (V-2), and by the German **AVV zu §47
+StrlSchV** (2012) Eq. (4.4). RG 1.111 writes the sector constant as `2.032` and
+says in words that it is `√(2/π)` divided by a 22.5° sector in radians; SRS-19
+works in twelve sectors, where the same constant is `1.5238`. Both are asserted,
+for every class and distance.
+
+`dilution_instantaneous` is likewise SRS-19 Eq. (V-1) literally.
+
+#### A known deviation, recorded rather than carried quietly
+
+The combined momentum-and-buoyancy rise should reduce to the pure-buoyancy law
+when the momentum flux vanishes. It does not. Dropping `F_m` leaves
+`(6F x²/u³)^(1/3)` against the two-thirds law's `(1.6³F x²/u³)^(1/3)` that
+`buoyant_rise` itself uses — an overshoot of **13.6 %**.
+
+The momentum half of the expression is exactly Briggs, `β_j = 1/3 + u/w₀`, which
+places the discrepancy in the buoyancy half alone: Briggs writes
+`3F x²/(2β²u³)` with `β = 0.6`, a denominator of `0.72`, where this code has
+`0.5`. Two independent routes give the same answer — `2β² = 0.72` and
+`3/1.6³ = 0.7324`.
+
+The constant is **left as the thesis set it**, and the discrepancy is pinned by
+a test instead. Correcting it moves published dose results, and that is a
+decision to take deliberately rather than as a side effect of a validation pass.
 
 The third row is worth a note. This code writes the neutral final rise as
 `1.6F^(1/3)(3.5x_f)^(2/3)/u`, which does not look like the published
@@ -248,13 +303,13 @@ The third row is worth a note. This code writes the neutral final rise as
 expression, and the literature rounds the constant. The tests assert both the
 algebra and the numbers.
 
-σ_z is the exception and deliberately so. It is not Briggs but the `g(x)F(x)`
-form of the normative — an NRPB-R91-style scheme carrying an explicit roughness
-correction, which Briggs does not have. It is therefore not asserted equal, only
-bracketed: within a factor 1.6 of Briggs across 0.1–10 km, and systematically
-ordered — less vertical spread than Briggs in unstable air, more in stable,
-closest in neutral. That is the spread that separates published σ schemes from
-one another.
+σ_z is not Briggs — it is Hosker, as above, carrying an explicit roughness
+correction that Briggs does not have. So the package mixes **Briggs σ_y with
+Hosker σ_z**, a pairing no single publication uses, and the two are therefore
+asserted against different sources. Against Briggs, σ_z is only bracketed:
+within a factor 1.6 across 0.1–10 km, and systematically ordered — less vertical
+spread than Briggs in unstable air, more in stable, closest in neutral. That is
+the spread that separates published σ schemes from one another.
 
 The last check needs a word. `Σ_z = H/√2` is derived holding `H` fixed and
 `Σ_y ∝ Σ_z`; asserted under those assumptions it is exact. In the real field the
@@ -280,17 +335,25 @@ Done:
 - Dry and wet ground deposition, and resuspension
 - TOML configuration validated key by key, and a script entry point over it
 - Physics validation against the analytic invariants of the Gaussian plume, and
-  against the published Briggs parameterisations
-- Static QA in the suite: Aqua, JET, ExplicitImports. 3125 tests, including
-  exact agreement with the 2021 formulae wherever they were evaluable
+  against the published Briggs, Hosker and regulatory parameterisations
+- Static QA in the suite: Aqua, JET, ExplicitImports. 3286 tests, including
+  exact agreement with the 2021 formulae wherever they were evaluable and the
+  one place they deliberately diverge
 - A Documenter site that builds clean, doctests included
 
 Next:
 
+- Decide the combined-rise buoyancy denominator, `0.5` against Briggs' `2β² =
+  0.72`. It is a 13.6 % overshoot and it moves published dose results
 - Establish the provenance of the 2021 wind rose — the convention is settled,
   the numbers are not
-- Re-run the thesis cases under the corrected convention, to say by how much the
-  published dose maps move
+- Re-run the thesis cases under the corrected convention and the corrected
+  roughness coefficients, to say by how much the published dose maps move
+- Source or re-derive the washout table and the resuspension factor. Neither has
+  been traced to a publication, and the washout rates for light rain fall below
+  every published range found
+- A mixing lid. Its absence is what limits agreement with published depletion
+  tables beyond about 20 km
 
 ## History
 
