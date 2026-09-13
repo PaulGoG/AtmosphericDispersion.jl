@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+title: AtmosphericDispersion.jl
+message: If you use this software, please cite it as below.
+type: software
+authors:
+  - given-names: Paul-Adrian
+    family-names: Gogîță
+    affiliation: Faculty of Physics, University of Bucharest
+repository-code: https://github.com/PaulGoG/AtmosphericDispersion.jl
+abstract: >-
+  Gaussian-plume atmospheric dispersion of stack releases: dilution factor,
+  time-integrated air concentration, dry and wet ground deposition, and
+  resuspension, over Pasquill-Gifford stability classes and a wind rose. The
+  solver is nuclide-agnostic; tritium release from a CANDU stack is a
+  parameterisation of it. Developed from a 2021 BSc thesis at the Faculty of
+  Physics, University of Bucharest.
+keywords:
+  - atmospheric dispersion
+  - Gaussian plume
+  - radiological assessment
+  - Briggs plume rise
+  - Pasquill-Gifford
+  - Julia
+license: MIT
+version: 0.1.0

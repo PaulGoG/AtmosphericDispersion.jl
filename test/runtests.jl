@@ -1628,7 +1628,9 @@ using TOML
                 u = transport_wind_speed(site, class)
                 inner(z) = quadgk(
                     y -> dilution_instantaneous(y, -r, z, site, class, 0.0),
-                    -3e4, 3e4; rtol = 1e-9,
+                    -3e4,
+                    3e4;
+                    rtol = 1e-9,
                 )[1]
                 total, _ = quadgk(inner, 0.0, 5000.0; rtol = 1e-8)
                 @test u * total ≈ 1 rtol = 1e-6
@@ -1666,9 +1668,104 @@ using TOML
             xs = 10 .^ range(1.5, 5, length = 4000)
             χ = [dilution_instantaneous(0.0, -x, 0.0, site, PASQUILL_D, 0.0) for x in xs]
             xm = xs[argmax(χ)]
-            ratio = corrected_vertical_dispersion(xm, site, PASQUILL_D) /
-                    (effective_height(xm, site, PASQUILL_D) / sqrt(2))
+            ratio =
+                corrected_vertical_dispersion(xm, site, PASQUILL_D) /
+                (effective_height(xm, site, PASQUILL_D) / sqrt(2))
             @test 0.9 < ratio < 1.1
+        end
+    end
+
+    # Validation against the published literature, as distinct from the analytic
+    # self-consistency above. Several of the parameterisations this code inherits
+    # from the normative turn out to be standard published schemes, and where
+    # they are, the identity is asserted rather than described.
+    @testset "Literature validation" begin
+        # Briggs (1973) open-country lateral dispersion, as tabulated in
+        # NRC ML17047A449: σ_y = a x (1 + 10⁻⁴x)^(−1/2) with a running
+        # 0.22, 0.16, 0.11, 0.08, 0.06, 0.04 from class A to F.
+        @testset "σ_y is Briggs 1973 open country" begin
+            briggs_a = (0.22, 0.16, 0.11, 0.08, 0.06, 0.04)
+            for (i, class) in enumerate(PASQUILL_CLASSES)
+                @test lateral_coefficient(class) == briggs_a[i]
+                for x in (10.0, 100.0, 1000.0, 10_000.0, 50_000.0)
+                    @test lateral_dispersion(x, class) ≈
+                          briggs_a[i] * x * (1 + 1e-4 * x)^(-0.5) rtol = 1e-12
+                end
+            end
+        end
+
+        # Briggs distance to final rise: x_f = 14F^(5/8) below 55 m⁴/s³,
+        # 34F^(2/5) above.
+        @testset "distance to final rise is Briggs" begin
+            for F in (1.0, 10.0, 54.9)
+                @test buoyancy_transition_distance(F) ≈ 14 * F^(5 / 8) rtol = 1e-12
+            end
+            for F in (55.0, 200.0, 5000.0)
+                @test buoyancy_transition_distance(F) ≈ 34 * F^(2 / 5) rtol = 1e-12
+            end
+        end
+
+        # The neutral final buoyant rise is written here as
+        # 1.6F^(1/3)(3.5x_f)^(2/3)/u. Briggs publishes it as 21.4F^(3/4)/u and
+        # 38.7F^(3/5)/u. Substituting x_f shows these are one expression:
+        # 1.6·49^(2/3) = 21.425 and 1.6·119^(2/3) = 38.71, which the literature
+        # rounds. The agreement is therefore exact up to that rounding, and the
+        # test asserts both the algebra and the numbers.
+        @testset "neutral final rise is the published Briggs form" begin
+            @test 1.6 * 49^(2 / 3) ≈ 21.425 rtol = 1e-4
+            @test 1.6 * 119^(2 / 3) ≈ 38.71 rtol = 1e-4
+            for F in (5.0, 20.0, 54.0), u in (3.0, 8.0)
+                @test final_buoyant_rise(F, u, -1e-6) ≈ 21.4 * F^0.75 / u rtol = 2e-3
+            end
+            for F in (56.0, 200.0, 1000.0), u in (3.0, 8.0)
+                @test final_buoyant_rise(F, u, -1e-6) ≈ 38.7 * F^0.6 / u rtol = 2e-3
+            end
+        end
+
+        # Briggs stable final rise, 2.6[F/(u s)]^(1/3), and the two-thirds law
+        # for the transitional rise.
+        @testset "stable final rise and the two-thirds law" begin
+            for F in (10.0, 100.0), u in (2.0, 6.0), S in (1e-4, 1e-3)
+                stable = 2.6 * (F / (u * S))^(1 / 3)
+                @test final_buoyant_rise(F, u, S) <= stable * (1 + 1e-12)
+                # where the stable branch is the binding one, it is exact
+                if stable <
+                   1.6 * F^(1/3) * (3.5 * buoyancy_transition_distance(F))^(2/3) / u &&
+                   stable < 5.0 * F^(1/4) * S^(-3/8)
+                    @test final_buoyant_rise(F, u, S) ≈ stable rtol = 1e-12
+                end
+            end
+            for F in (10.0, 100.0), u in (2.0, 6.0), x in (10.0, 100.0)
+                two_thirds = 1.6 * F^(1 / 3) * x^(2 / 3) / u
+                r = buoyant_rise(x, F, u, 1e-3)
+                @test r ≈ min(two_thirds, final_buoyant_rise(F, u, 1e-3)) rtol = 1e-12
+            end
+        end
+
+        # σ_z is *not* Briggs — it is the g(x)F(x) form of the normative, an
+        # NRPB-R91-style scheme with an explicit roughness correction. It is not
+        # asserted equal to Briggs; it is asserted to agree within the factor
+        # that separates published σ schemes, with the expected sign: less
+        # vertical spread than Briggs in unstable air, more in stable.
+        @testset "σ_z brackets Briggs open country" begin
+            briggs_z = Dict(
+                PASQUILL_A => (x -> 0.20x),
+                PASQUILL_B => (x -> 0.12x),
+                PASQUILL_C => (x -> 0.08x * (1 + 0.0002x)^(-0.5)),
+                PASQUILL_D => (x -> 0.06x * (1 + 0.0015x)^(-0.5)),
+                PASQUILL_E => (x -> 0.03x * (1 + 0.0003x)^(-1)),
+                PASQUILL_F => (x -> 0.016x * (1 + 0.0003x)^(-1)),
+            )
+            for class in PASQUILL_CLASSES, x in (100.0, 300.0, 1000.0, 3000.0, 10_000.0)
+                ratio =
+                    vertical_dispersion(x, class, ROUGHNESS_PASTURE) / briggs_z[class](x)
+                @test 0.4 < ratio < 1.6
+            end
+            # the sign of the difference, which is systematic
+            @test vertical_dispersion(1000.0, PASQUILL_A, ROUGHNESS_PASTURE) <
+                  briggs_z[PASQUILL_A](1000.0)
+            @test vertical_dispersion(1000.0, PASQUILL_F, ROUGHNESS_PASTURE) >
+                  briggs_z[PASQUILL_F](1000.0)
         end
     end
 

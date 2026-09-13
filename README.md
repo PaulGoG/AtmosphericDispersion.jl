@@ -183,6 +183,36 @@ crossing any downwind plane, carried at the transport speed, is the whole
 release — which exercises the 2πΣ_yΣ_z normalisation, the ground reflection and
 the transport speed together.
 
+### Against the published literature
+
+Several parameterisations the normative hands down turn out to be standard
+published schemes. Where they are, the identity is asserted rather than
+described.
+
+| | Published form | Agreement |
+|---|---|---|
+| σ_y | Briggs (1973) open country, `a x(1+10⁻⁴x)^(−1/2)`, a = 0.22…0.04 | **exact**, all six classes |
+| Distance to final rise | Briggs `x_f = 14F^(5/8)`, `34F^(2/5)` | **exact** |
+| Neutral final buoyant rise | Briggs `21.4F^(3/4)/u`, `38.7F^(3/5)/u` | **exact up to the literature's own rounding** |
+| Stable final rise | Briggs `2.6[F/(us)]^(1/3)` | **exact** |
+| Transitional rise | the two-thirds law `1.6F^(1/3)x^(2/3)/u` | **exact** |
+| σ_z | Briggs open country | 0.4–1.6, systematically ordered |
+
+The third row is worth a note. This code writes the neutral final rise as
+`1.6F^(1/3)(3.5x_f)^(2/3)/u`, which does not look like the published
+`21.4F^(3/4)/u`. Substituting `x_f = 14F^(5/8)` collapses it: `1.6·49^(2/3) =
+21.425`, and `1.6·119^(2/3) = 38.71` for the other branch. They are one
+expression, and the literature rounds the constant. The tests assert both the
+algebra and the numbers.
+
+σ_z is the exception and deliberately so. It is not Briggs but the `g(x)F(x)`
+form of the normative — an NRPB-R91-style scheme carrying an explicit roughness
+correction, which Briggs does not have. It is therefore not asserted equal, only
+bracketed: within a factor 1.6 of Briggs across 0.1–10 km, and systematically
+ordered — less vertical spread than Briggs in unstable air, more in stable,
+closest in neutral. That is the spread that separates published σ schemes from
+one another.
+
 The last check needs a word. `Σ_z = H/√2` is derived holding `H` fixed and
 `Σ_y ∝ Σ_z`; asserted under those assumptions it is exact. In the real field the
 maximum lands 5 % away from it, and the cause is not error but `Σ_y/Σ_z`
@@ -206,8 +236,9 @@ Done:
 - Nuclides, and depletion by decay, dry deposition and washout
 - Dry and wet ground deposition, and resuspension
 - TOML configuration validated key by key, and a script entry point over it
-- Physics validation against the analytic invariants of the Gaussian plume
-- Static QA in the suite: Aqua, JET, ExplicitImports. 3017 tests, including
+- Physics validation against the analytic invariants of the Gaussian plume, and
+  against the published Briggs parameterisations
+- Static QA in the suite: Aqua, JET, ExplicitImports. 3125 tests, including
   exact agreement with the 2021 formulae wherever they were evaluable
 - A Documenter site that builds clean, doctests included
 
@@ -223,6 +254,10 @@ Next:
 `original` holds the code exactly as submitted for the BSc thesis at the Faculty
 of Physics, University of Bucharest, in June 2021, together with the thesis
 itself. This branch shares no history with it.
+
+## Citing
+
+`CITATION.cff` carries the metadata; GitHub renders it as a citation block.
 
 ## Licence
 

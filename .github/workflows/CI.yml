@@ -23,8 +23,10 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1.10'
-          - '1.13'
+          # Must not go below the [compat] floor in Project.toml: the docs
+          # environment uses [sources], which needs 1.11.
+          - '1.11'
+          - '1'
           - 'pre'
         os:
           - ubuntu-latest
