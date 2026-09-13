@@ -538,6 +538,28 @@ Four rates, agreement within 16 %, from a measurement the normative does not
 cite. That is the evidence that the tritium row's snow column is the anomaly.
 `[model] washout = "hto"` selects Ogram's correlation; rain is unaffected.
 
+#### The tritium deposition velocities
+
+The last parameter in the reference configuration without a citation, and it
+turned out to have one. The notes to **NSR-23 Table 6** state the deposition
+velocity of HTO as **0.4–0.8 × 10⁻² m/s** and that of HT as an order of magnitude
+lower, **0.04–0.05 × 10⁻² m/s**, both attributed to experimental measurement —
+Murphy, *Tritium transport and cycling in the environment*, **Health Physics
+65**(6), 1993 — under the stated condition that the tropopause be taken at
+12–15 km. Those are exactly the four numbers the package carries.
+
+The lower bound is close to what others measure: 0.5 cm/s is the MACCS2 default
+and 0.42 the Savannah River Site value, both inside the range. AECL's 0.392–0.444
+straddles it — its lower end sits 2 % below the norm's 0.4 — so the normative's
+lower bound is at the edge of the measurements rather than inside them, which is
+asserted as such.
+
+**That HTO deposits at all is a divergence, and a deliberate one.** IAEA SRS-19
+§3.9, EUR 15760 §3.2 and HPA-RPD-058 §3.2.2.3 each assign tritium a deposition
+velocity of **zero**, handling it by specific activity instead. This package
+follows the normative the work was done under and says so; setting both
+velocities to zero follows the others.
+
 #### Where schemes disagree, the choice is in the configuration
 
 Three plume-rise constants differ between published schemes, and the 2021 code

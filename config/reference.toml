@@ -53,6 +53,11 @@ wake_coefficient = 1.0    # wake broadening coefficient; >= 0, zero disables the
 [nuclide]
 name = "HTO"
 decay_constant = 1.784e-9       # 1/s; >= 0
+# 0.4-0.8e-2 m/s for HTO, from the notes to NSR-23 Table 6, attributed there to
+# Murphy, Health Physics 65(6), 1993, on a tropopause taken at 12-15 km. HT is
+# an order of magnitude lower, 0.04-0.05e-2. Note that IAEA SRS-19 §3.9, EUR
+# 15760 §3.2 and HPA-RPD-058 §3.2.2.3 all assign tritium zero deposition and
+# handle it by specific activity; set both to 0 to follow them instead.
 deposition_velocity_low = 0.004  # m/s; >= 0, used for plume depletion
 deposition_velocity_high = 0.008 # m/s; >= low, used for ground deposition
 

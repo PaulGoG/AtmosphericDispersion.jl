@@ -66,6 +66,19 @@ const TRITIUM_DECAY_CONSTANT = 1.784e-9
 
 Tritium as HTO, the chemical form a heavy-water reactor releases in quantity
 and the one that deposits readily.
+
+Deposition velocity 0.4–0.8 × 10⁻² m/s, from the notes to CNCAN NSR-23 Table 6,
+which attribute it to experimental measurement — Murphy, C.E. Jr, "Tritium
+transport and cycling in the environment", *Health Physics* **65**(6), 1993 — and
+attach the condition that the tropopause be taken at 12–15 km. The lower bound
+agrees with the values in common use elsewhere: the MACCS2 default of 0.5,
+0.42 measured at the Savannah River Site, and 0.392–0.444 from AECL.
+
+**That HTO deposits at all is a divergence from other guidance**, and a
+deliberate one. IAEA SRS-19 §3.9, EUR 15760 §3.2 and HPA-RPD-058 §3.2.2.3 each
+assign tritium a deposition velocity of **zero** and handle it by specific
+activity instead. This package follows the normative the work was done under;
+set the velocities to zero to follow the others.
 """
 const TRITIATED_WATER = Nuclide(;
     name = "HTO",
@@ -77,6 +90,9 @@ const TRITIATED_WATER = Nuclide(;
     TRITIUM_GAS
 
 Tritium as HT, an order of magnitude less depositing than [`TRITIATED_WATER`](@ref).
+
+Deposition velocity 0.04–0.05 × 10⁻² m/s, the same source, which puts HT an
+order of magnitude below HTO under the same conditions.
 """
 const TRITIUM_GAS = Nuclide(;
     name = "HT",

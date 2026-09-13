@@ -15,6 +15,12 @@ follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
   category F at 30 m reads 0.13 at 50 km and 0.19 at 100 km, a depletion factor
   that rises with distance; this package gives 0.0188, one decimal point from
   the printed value. The test asserts both the defect and the computed value.
+- **The tritium deposition velocities are sourced.** The notes to NSR-23 Table 6
+  give HTO as 0.4–0.8 × 10⁻² m/s and HT as 0.04–0.05 × 10⁻², attributed to
+  Murphy, *Health Physics* **65**(6), 1993, on a tropopause taken at 12–15 km —
+  exactly the four values carried. They were the last uncited numbers in the
+  reference configuration. Asserted, along with the fact that AECL's 0.392 cm/s
+  sits 2 % *below* the norm's lower bound rather than inside it.
 - **A second end-to-end benchmark, Turner Table 7-4** — the concentration
   profile with height from the ground to 450 m at 1 km, the only published table
   found that exercises both reflection terms at arbitrary receptor height, where

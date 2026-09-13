@@ -2065,6 +2065,34 @@ using TOML
                 0.002
         end
 
+        # The notes to CNCAN NSR-23 Table 6 give the deposition velocity of
+        # HTO as 0.4-0.8e-2 m/s and of HT as an order of magnitude lower,
+        # 0.04-0.05e-2, attributed to Murphy, Health Physics 65(6), 1993.
+        @testset "tritium deposition velocities are NSR-23 Table 6" begin
+            hto = TRITIATED_WATER.deposition_velocity
+            ht = TRITIUM_GAS.deposition_velocity
+            @test hto.low == 0.4e-2
+            @test hto.high == 0.8e-2
+            @test ht.low == 0.04e-2
+            @test ht.high == 0.05e-2
+
+            # "an order of magnitude lower" — the norm's own words
+            @test hto.low / ht.low == 10
+            @test 10 ≤ hto.high / ht.high ≤ 20
+
+            # The lower HTO bound is close to what other sources put it at:
+            # the MACCS2 default 0.5 cm/s, the Savannah River measurement 0.42,
+            # the AECL range 0.392-0.444.
+            for v in (0.5e-2, 0.42e-2, 0.444e-2)
+                @test hto.low ≤ v ≤ hto.high
+            end
+            # AECL's lower end sits just outside, 2 % below the norm's 0.4 —
+            # worth pinning rather than rounding away, since it says the norm's
+            # lower bound is at the edge of the measurements and not inside them.
+            @test 0.392e-2 < hto.low
+            @test hto.low / 0.392e-2 ≈ 1.02 rtol = 0.01
+        end
+
         # HPA-RPD-058 §3.2.2.1 Eqs. (3.4) and (3.5), and Table 3.5(a), which
         # the report attributes to Clarke (1979) and Jones (1980).
         @testset "the mixing layer is HPA-RPD-058" begin
