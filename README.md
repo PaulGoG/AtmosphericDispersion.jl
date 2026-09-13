@@ -89,10 +89,15 @@ and on the stack diameter (2.33 vs 2.334 m).
 
 ## The thesis
 
-`Lucrare_licenta_2021.pdf` is the submitted thesis rebuilt from its LaTeX source
-with orthographic and grammatical corrections only, plus one corrected unit
-prefix in the dosimetric calculation and a repointed source-code citation. The
-argument, structure, figures and numerical results are as submitted.
+`BSc_thesis_2021.pdf` is the submitted thesis rebuilt from its LaTeX source with
+orthographic and grammatical corrections only, plus one corrected unit prefix in
+the dosimetric calculation and a repointed source-code citation. The argument,
+structure, figures and numerical results are as submitted.
+
+The thesis is in Romanian; the filename is not, so that it says what it is to a
+reader who meets it outside this repository — the same convention as
+`MSc_thesis_2023.pdf` on the `original` branch of
+[DeterministicSequentialEmission.jl](https://github.com/PaulGoG/DeterministicSequentialEmission.jl).
 
 ## Licence
 
