@@ -182,10 +182,12 @@ function figure_regimes(config)
     l1 = lines!(ax1, r ./ 1000, inst, color = PALETTE.blue, linewidth = 2)
     l2 = lines!(ax1, r ./ 1000, ext, color = PALETTE.orange, linewidth = 2)
     l3 = lines!(ax1, r ./ 1000, lt, color = PALETTE.green, linewidth = 2)
-    # Clipped to the range that carries information. Below about 300 m the
-    # elevated plume has not reached the ground and the factor falls through
-    # thirty decades, which is physical and not worth thirty decades of axis.
-    ylims!(ax1, 1e-12, 3e-7)
+    # Clipped at the bottom only. Below about 300 m the elevated plume has not
+    # reached the ground and the factor falls through thirty decades, which is
+    # physical and not worth thirty decades of axis. The top must contain the
+    # peaks: at 3e-7 the instantaneous and extended curves left the frame and
+    # re-entered it, which reads as a break in the data.
+    ylims!(ax1, 1e-12, 4e-6)
 
     ax2 = Axis(
         fig[2, 2],
@@ -224,12 +226,14 @@ function figure_regimes(config)
     )
     text!(
         ax2,
-        0.04,
-        site.source.height + 2;
+        0.11,
+        site.source.height + 1.5;
         text = "Stack height",
         fontsize = 14,
         align = (:left, :bottom),
     )
+    # Headroom below, so the stack-height line is not drawn on the frame.
+    ylims!(ax2, site.source.height - 12, nothing)
 
     Legend(
         fig[1, 1],
@@ -370,9 +374,14 @@ function panel_sweep(
     local hm
     for (i, (title, f)) in enumerate(panels)
         row, col = fldmod1(i, columns)
+        # The panel name goes above the frame. Inside it there is no corner
+        # free: the compass occupies the midpoint of all four edges, and any
+        # label long enough to be useful reaches one of them.
         ax = Axis(
             grid_layout[row, col],
             aspect = DataAspect(),
+            title = title,
+            titlesize = 16,
             xticks = ticks,
             yticks = ticks,
             xticklabelsvisible = row == rows,
@@ -388,6 +397,19 @@ function panel_sweep(
             colorscale = log10,
             colorrange = (lo, hi),
         )
+        # A smooth colour ramp over three decades hides everything but the
+        # largest differences. Decade contours give the eye a fixed reference:
+        # a panel where a contour sits further out is quantitatively different,
+        # whatever the ramp looks like.
+        contour!(
+            ax,
+            xs ./ 1000,
+            xs ./ 1000,
+            lift(v -> log10.(clamp.(v, lo, hi)), fields[i]),
+            levels = collect(log10(lo):0.5:log10(hi)),
+            color = (:white, 0.35),
+            linewidth = 0.7,
+        )
         scatter!(
             ax,
             [0.0],
@@ -399,18 +421,6 @@ function panel_sweep(
         )
         compass!(ax; fontsize = 13)
         # Top left, because the compass owns the top centre.
-        text!(
-            ax,
-            0.04,
-            0.96;
-            text = title,
-            space = :relative,
-            align = (:left, :top),
-            fontsize = 15,
-            color = :white,
-            strokecolor = :black,
-            strokewidth = 0.7,
-        )
         push!(axes, ax)
     end
 
@@ -460,6 +470,167 @@ function set_sweep_label!(rose)
 end
 
 """
+    comparison_sweep(path, base, variant; ...)
+
+Two cases of the same release and the ratio between them, swept over the
+compass.
+
+The ratio panel is the point. Two dilution fields that differ by a factor of a
+few look almost identical on a colour ramp spanning three decades, so the
+difference is drawn explicitly on a diverging scale centred on 1, where anything
+away from white is a real change and the colour bar reads as a factor.
+"""
+function comparison_sweep(
+    path,
+    base,
+    variant;
+    half_width = 12_000.0,
+    n = 111,
+    frames = 48,
+    lo = 1e-9,
+    hi = 3e-6,
+    ratio_span = 10.0,
+    caption = "",
+    marks = (),
+    width = 1400,
+    height = 500,
+)
+    xs = range(-half_width, half_width, length = n)
+    bearings = range(0, 2π, length = frames + 1)[1:frames]
+    fa, fb = Observable(zeros(n, n)), Observable(zeros(n, n))
+    ratio = Observable(zeros(n, n))
+    label = Observable("")
+
+    compute!(β) = begin
+        a = [base[2](e, nn, β) for e in xs, nn in xs]
+        b = [variant[2](e, nn, β) for e in xs, nn in xs]
+        fa[] = a
+        fb[] = b
+        # Only where both fields carry signal; elsewhere the ratio is noise
+        # between two numbers that are both effectively zero.
+        # eachindex over a matrix is linear, so a comprehension over it returns
+        # a vector. Build in place to keep the shape.
+        rv = similar(a)
+        for i in eachindex(a, b)
+            rv[i] =
+                (a[i] > lo && b[i] > lo) ?
+                clamp(b[i] / a[i], 1 / ratio_span, ratio_span) : 1.0
+        end
+        ratio[] = rv
+    end
+    compute!(0.0)
+
+    fig = Figure(size = (width, height))
+    grid_layout = fig[1, 1] = GridLayout()
+    ticks = ([-10.0, 0.0, 10.0], ["−10", "0", "10"])
+    local hm, hr
+    for (i, (title, field)) in
+        enumerate(((base[1], fa), (variant[1], fb), ("Ratio, with ÷ without", ratio)))
+        ax = Axis(
+            grid_layout[1, i],
+            aspect = DataAspect(),
+            title = title,
+            titlesize = 16,
+            xticks = ticks,
+            yticks = ticks,
+            yticklabelsvisible = i == 1,
+        )
+        if i < 3
+            hm = heatmap!(
+                ax,
+                xs ./ 1000,
+                xs ./ 1000,
+                lift(v -> clamp.(v, lo, hi), i == 1 ? fa : fb),
+                colormap = :viridis,
+                colorscale = log10,
+                colorrange = (lo, hi),
+            )
+            contour!(
+                ax,
+                xs ./ 1000,
+                xs ./ 1000,
+                lift(v -> log10.(clamp.(v, lo, hi)), i == 1 ? fa : fb),
+                levels = collect(log10(lo):0.5:log10(hi)),
+                color = (:white, 0.35),
+                linewidth = 0.7,
+            )
+        else
+            hr = heatmap!(
+                ax,
+                xs ./ 1000,
+                xs ./ 1000,
+                ratio,
+                colormap = :RdBu,
+                colorscale = log10,
+                colorrange = (1 / ratio_span, ratio_span),
+            )
+        end
+        scatter!(
+            ax,
+            [0.0],
+            [0.0],
+            color = :white,
+            strokecolor = :black,
+            strokewidth = 1.2,
+            markersize = 8,
+        )
+        for (mx, my, mtext) in marks
+            scatter!(
+                ax,
+                [mx / 1000],
+                [my / 1000],
+                color = PALETTE.red,
+                marker = :rect,
+                markersize = 11,
+                strokecolor = :white,
+                strokewidth = 1,
+            )
+            i == 1 && text!(
+                ax,
+                mx / 1000,
+                my / 1000;
+                text = "  " * mtext,
+                align = (:left, :center),
+                fontsize = 13,
+                color = PALETTE.red,
+                strokecolor = :white,
+                strokewidth = 0.8,
+            )
+        end
+        compass!(ax; fontsize = 13, color = i == 3 ? :black : :white)
+    end
+    Label(grid_layout[2, 1:3], AXIS_LABEL, fontsize = 16)
+    Label(grid_layout[1, 0], AXIS_LABEL, fontsize = 16, rotation = π / 2)
+
+    Colorbar(
+        fig[1, 2],
+        hm,
+        label = L"$\chi/Q$ [s m$^{-3}$]",
+        ticks = (
+            [1e-9, 1e-8, 1e-7, 1e-6],
+            [L"10^{-9}", L"10^{-8}", L"10^{-7}", L"10^{-6}"],
+        ),
+    )
+    Colorbar(
+        fig[1, 3],
+        hr,
+        label = "Ratio, second ÷ first",
+        ticks = ([0.1, 0.3, 1.0, 3.0, 10.0], ["0.1", "0.3", "1", "3", "10"]),
+    )
+    Label(fig[2, 1:3], label, fontsize = 16, tellwidth = false)
+    isempty(caption) || Label(fig[3, 1:3], caption, fontsize = 14, tellwidth = false)
+    colgap!(grid_layout, 10)
+    rowgap!(fig.layout, 1, 4)
+
+    mkpath(FIGURES)
+    record(fig, path, bearings; framerate = 12) do β
+        compute!(β)
+        label[] = SWEEP_LABEL[](β)
+    end
+    return path
+end
+
+"""
     figure_classes(config)
 
 The same release under all six Pasquill classes, on one colour scale.
@@ -483,30 +654,40 @@ end
 """
     figure_buildings(config)
 
-The same release with and without a building beside the stack.
+The same release with and without a building beside the stack, in the worst
+case: one tall enough to swallow the plume entirely.
+
+The wake criterion is a threshold, not a gradient. A stack clearing two and a
+half building heights escapes untouched; one leaving *below* the building top is
+entrained into the aerodynamic cavity and released at ground level. A 60 m
+building next to this 50.3 m stack is on the far side of that threshold, so the
+effective release height goes from 50.3 m to **zero** and the comparison shows
+the whole effect rather than a fraction of it.
 """
 function figure_buildings(config)
     source, air = config.site.source, config.site.atmosphere
     bare = Site(; source, atmosphere = air)
-    building = Building(; east = 30.0, north = 0.0, height = 45.0, frontal_area = 1800.0)
+    east, north, h = 25.0, 0.0, 60.0
+    building = Building(; east, north, height = h, frontal_area = 3600.0)
     waked = Site(; source, atmosphere = air, buildings = BuildingEnvelope([building]))
-    panels = [
+    @printf(
+        "  building wake: release height %.1f m bare, %.1f m waked\n",
+        release_height(bare),
+        release_height(waked)
+    )
+    return comparison_sweep(
+        joinpath(FIGURES, "building_wake.gif"),
         (
             "No building",
             (e, nn, β) -> dilution_instantaneous(e, nn, 0.0, bare, PASQUILL_D, β),
         ),
         (
-            "45 m building, 30 m away",
+            "With a 60 m building",
             (e, nn, β) -> dilution_instantaneous(e, nn, 0.0, waked, PASQUILL_D, β),
-        ),
-    ]
-    return panel_sweep(
-        joinpath(FIGURES, "building_wake.gif"),
-        panels;
-        columns = 2,
-        width = 900,
-        height = 515,
-        caption = "Class D. The wake broadens the plume and lowers the release height",
+        );
+        half_width = 12_000.0,
+        marks = ((east, north, "Building"),),
+        caption = "Class D, 60 m building 25 m from a 50.3 m stack. The plume is entrained into the cavity and released at ground level: 50.3 m becomes 0 m",
     )
 end
 
@@ -547,37 +728,35 @@ end
     figure_depletion(config)
 
 The same release with and without depletion by decay, deposition and washout.
+
+Depletion is a multiplicative factor below one that grows with distance, so on a
+three-decade colour ramp the two fields look the same. The ratio panel is what
+shows it.
 """
 function figure_depletion(config)
     site, nuclide = config.site, config.nuclide
     washout = 3600.0
-    panels = [
+    depleted(e, nn, β) = dilution_instantaneous(
+        e,
+        nn,
+        0.0,
+        site,
+        PASQUILL_D,
+        β;
+        nuclide,
+        washout_duration = washout,
+        precipitation = config.precipitation,
+        rate = config.precipitation_rate,
+    )
+    return comparison_sweep(
+        joinpath(FIGURES, "depletion.gif"),
         (
             "Undepleted",
             (e, nn, β) -> dilution_instantaneous(e, nn, 0.0, site, PASQUILL_D, β),
         ),
-        (
-            "Depleted",
-            (e, nn, β) -> dilution_instantaneous(
-                e,
-                nn,
-                0.0,
-                site,
-                PASQUILL_D,
-                β;
-                nuclide,
-                washout_duration = washout,
-                precipitation = config.precipitation,
-                rate = config.precipitation_rate,
-            ),
-        ),
-    ]
-    return panel_sweep(
-        joinpath(FIGURES, "depletion.gif"),
-        panels;
-        columns = 2,
-        width = 900,
-        height = 515,
+        ("Depleted", depleted);
+        half_width = 20_000.0,
+        ratio_span = 3.0,
         caption = "Class D, $(nuclide.name), one hour of washout at the configured rate",
     )
 end

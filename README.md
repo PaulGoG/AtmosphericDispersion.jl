@@ -56,6 +56,13 @@ Four sweeps of the same release, each varying one thing. Every panel of a figure
 shares one colour scale, so the comparison is quantitative rather than a set of
 separately normalised pictures.
 
+Two things make the differences legible. Half-decade **contours** are drawn over
+each field, because a smooth ramp across three decades hides everything but the
+largest changes and a contour that sits further out is a difference you can
+measure. And the paired comparisons carry a third panel with the **ratio** of
+the two fields on a diverging scale centred on one, where anything away from
+white is a real change and the colour bar reads as a factor.
+
 ![Stability classes A to F](figures/stability_classes.gif)
 
 **Stability.** The single largest control on where the release lands. Class A
@@ -70,10 +77,14 @@ That is why an assessment stands or falls on the joint frequency of direction
 
 ![Building wake](figures/building_wake.gif)
 
-**Building wake.** A 45 m building 30 m from a 50.3 m stack. The wake entrains
-the plume, broadening it and lowering the effective release height, so more
-material reaches the ground close in. This is the near-field term that a plain
-Gaussian plume misses entirely.
+**Building wake, worst case.** A 60 m building 25 m from a 50.3 m stack. The
+wake criterion is a threshold, not a gradient: a stack clearing two and a half
+building heights escapes untouched, one leaving *below* the building top is
+entrained into the aerodynamic cavity and released at ground level. This
+building is on the far side of it, so the effective release height goes from
+**50.3 m to zero**. The building is marked on the map, and the third panel is
+the ratio of the two fields — up to ten times more at ground level near the
+source, converging to one far downwind.
 
 ![Release height](figures/release_height.gif)
 
@@ -89,7 +100,8 @@ four times the height.
 and an hour of washout. For HTO the loss is modest over this range — the decay
 constant is 1.78 × 10⁻⁹ s⁻¹ and the deposition velocity 4 mm/s — but it
 accumulates with distance, and the factors compose by multiplication, not
-addition.
+addition. Again the ratio panel is what shows it: two fields differing by tens
+of per cent are indistinguishable on a ramp spanning three decades.
 
 Regenerate all of them with `julia --project=scripts scripts/figures.jl`.
 
