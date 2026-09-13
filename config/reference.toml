@@ -60,6 +60,10 @@ deposition_velocity_high = 0.008 # m/s; >= low, used for ground deposition
 sectors = 16              # even, >= 4
 convention = "blowing_from"  # one of: blowing_from | blowing_toward
 # One frequency per sector, clockwise from north, summing to 1.
+# Illustrative, not a measured rose for any one site: these came from
+# meteorological data for the Pitesti fuel plant and the Cernavoda NPP, read at
+# the time under the wrong direction convention. Replace them before using this
+# configuration for an assessment.
 frequencies = [
   0.078491, 0.078491, 0.072211, 0.073781,
   0.078491, 0.059651, 0.056511, 0.047100,

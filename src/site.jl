@@ -68,7 +68,8 @@ end
 
 """
     Site(; source, atmosphere, buildings = BuildingEnvelope(), rise, mixing,
-         fixed_height = nothing, fixed_wind = nothing)
+         fixed_height = nothing, fixed_wind = nothing,
+         fixed_lateral = nothing, fixed_vertical = nothing)
 
 A stack in its surroundings: everything a dispersion calculation needs that
 does not vary over the receptor grid.
@@ -79,12 +80,16 @@ they are computed once here. The 2021 code recomputed them inside the innermost
 loop — the building reduction and the downwash correction, the latter six
 wind-profile evaluations deep, were repeated for every point of every field.
 
-`fixed_height` and `fixed_wind` override the effective release height in metres
-and the transport wind speed in m/s, bypassing plume rise and the wind profile.
+`fixed_height`, `fixed_wind`, `fixed_lateral` and `fixed_vertical` override the
+effective release height in metres, the transport wind speed in m/s, and the two
+dispersion parameters in metres — bypassing plume rise, the wind profile, the
+dispersion parameterisation and the building wake.
 Published benchmarks state both as inputs rather than deriving them — Turner's
 worked problems, the HPA-RPD-058 depletion tables, the NRC test cases — so
 reproducing one requires setting them, not reverse-engineering a stack geometry
-that happens to produce them.
+and a roughness class that happen to produce them. Turner's worked problems
+print σ_y and σ_z read off his figures, and a σ read off a graph is an input to
+the problem, not something to be recomputed.
 """
 
 struct Site
@@ -95,6 +100,8 @@ struct Site
     mixing::MixingLayer
     fixed_height::Union{Nothing,Float64}
     fixed_wind::Union{Nothing,Float64}
+    fixed_lateral::Union{Nothing,Float64}
+    fixed_vertical::Union{Nothing,Float64}
     release_height::Float64
     buoyancy::Float64
     momentum::Float64
@@ -108,6 +115,8 @@ struct Site
         mixing::MixingLayer = MIXING_TABULATED,
         fixed_height::Union{Nothing,Real} = nothing,
         fixed_wind::Union{Nothing,Real} = nothing,
+        fixed_lateral::Union{Nothing,Real} = nothing,
+        fixed_vertical::Union{Nothing,Real} = nothing,
     )
         fixed_height === nothing ||
             fixed_height ≥ 0 ||
@@ -115,6 +124,12 @@ struct Site
         fixed_wind === nothing ||
             fixed_wind > 0 ||
             throw(ArgumentError("a fixed transport wind speed must be positive"))
+        fixed_lateral === nothing ||
+            fixed_lateral > 0 ||
+            throw(ArgumentError("a fixed lateral dispersion parameter must be positive"))
+        fixed_vertical === nothing ||
+            fixed_vertical > 0 ||
+            throw(ArgumentError("a fixed vertical dispersion parameter must be positive"))
         return new(
             source,
             atmosphere,
@@ -123,6 +138,8 @@ struct Site
             mixing,
             fixed_height === nothing ? nothing : Float64(fixed_height),
             fixed_wind === nothing ? nothing : Float64(fixed_wind),
+            fixed_lateral === nothing ? nothing : Float64(fixed_lateral),
+            fixed_vertical === nothing ? nothing : Float64(fixed_vertical),
             wake_height(source, atmosphere, buildings),
             buoyancy_flux(source, atmosphere),
             momentum_flux(source, atmosphere),
@@ -206,6 +223,8 @@ function corrected_lateral_dispersion(
     class::PasquillClass;
     release_duration::Real = SHORT_RELEASE_REFERENCE,
 )
+    fixed = site.fixed_lateral
+    fixed === nothing || return fixed
     σy = lateral_dispersion(x, class; release_duration)
     return wake_broadened(σy, effective_height(x, site, class), site.buildings)
 end
@@ -216,6 +235,8 @@ end
 Vertical dispersion parameter in metres, broadened by the building wake.
 """
 function corrected_vertical_dispersion(x::Real, site::Site, class::PasquillClass)
+    fixed = site.fixed_vertical
+    fixed === nothing || return fixed
     σz = vertical_dispersion(x, class, site.atmosphere.roughness)
     return wake_broadened(σz, effective_height(x, site, class), site.buildings)
 end

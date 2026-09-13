@@ -1882,6 +1882,91 @@ using TOML
             end
         end
 
+        # Turner, Workbook of Atmospheric Dispersion Estimates, PHS 999-AP-26
+        # (rev. 1970), Problem 9 and Table 7-4: the concentration profile with
+        # height from the ground to 450 m, at x = 1 km on the plume axis.
+        #
+        # Q = 151 g/s, H = 150 m, u = 4 m/s, σ_y = 157 m, σ_z = 110 m. This is
+        # the only published table found that exercises *both* reflection terms
+        # at arbitrary receptor height; everything else evaluates at z = 0,
+        # where the two coincide and a sign error in either would cancel.
+        @testset "vertical profile against Turner Table 7-4" begin
+            Q, H, u, σy, σz = 151.0, 150.0, 4.0, 157.0, 110.0
+            # z in m, published χ in g/m³
+            published = (
+                (0, 2.78e-4),
+                (30, 2.85e-4),
+                (60, 3.06e-4),
+                (90, 3.34e-4),
+                (120, 3.55e-4),
+                (150, 3.58e-4),
+                (180, 3.41e-4),
+                (210, 3.03e-4),
+                (240, 2.51e-4),
+                (270, 1.94e-4),
+                (300, 1.39e-4),
+                (330, 9.14e-5),
+                (360, 5.64e-5),
+                (390, 3.26e-5),
+                (420, 1.75e-5),
+                (450, 8.40e-6),
+            )
+
+            stack = StackSource(;
+                height = H,
+                diameter = 1.0,
+                exit_velocity = 1e-9,
+                exit_density = 1.2,
+                exit_temperature = 288.0,
+            )
+            air = Atmosphere(;
+                reference_speed = 4.0,
+                temperature = 288.0,
+                density = 1.2,
+                lapse_rate = 0.0098,
+                surface = SURFACE_AGRICULTURAL,
+                roughness = ROUGHNESS_PASTURE,
+            )
+            site = Site(;
+                source = stack,
+                atmosphere = air,
+                fixed_height = H,
+                fixed_wind = u,
+                fixed_lateral = σy,
+                fixed_vertical = σz,
+                mixing = MIXING_UNBOUNDED,        # Turner has no lid
+            )
+
+            worst = 0.0
+            for (z, χ) in published
+                computed =
+                    Q *
+                    dilution_instantaneous(0.0, -1000.0, Float64(z), site, PASQUILL_D, 0.0)
+                @test computed ≈ χ rtol = 0.025
+                worst = max(worst, abs(computed / χ - 1))
+            end
+            # The residual is Turner's own rounding: his intermediate columns
+            # carry three significant figures and the exponentials are summed
+            # from those.
+            @test worst < 0.025
+
+            # The profile peaks at plume height and is symmetric about it only
+            # in the first term; the ground reflection is what lifts z = 0 above
+            # the pure Gaussian and what makes the peak sit slightly below H.
+            χs = [
+                Q * dilution_instantaneous(0.0, -1000.0, Float64(z), site, PASQUILL_D, 0.0)
+                for (z, _) in published
+            ]
+            @test argmax(χs) == 6                       # z = 150 m, the release height
+            @test χs[1] > Q * exp(-0.5 * (H / σz)^2) / (2π * σy * σz * u)
+
+            # Turner prints the prefactor as 3.5e-5 g/m³ where his own table
+            # requires 3.5e-4: 151/(2π·157·110·4) = 3.479e-4. A second typo in a
+            # published source, after HPA Table 3.7's non-monotonic cell.
+            @test Q / (2π * σy * σz * u) ≈ 3.479e-4 rtol = 1e-3
+            @test published[1][2] / 0.794 ≈ 3.5e-4 rtol = 0.01
+        end
+
         # HPA-RPD-058 Table 3.7, "Fractions of material remaining in the plume
         # due to dry deposition for a deposition velocity of 10⁻² m s⁻¹":
         # 3 effective release heights × 7 stability categories × 8 distances,

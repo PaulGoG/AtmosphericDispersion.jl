@@ -15,6 +15,16 @@ follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
   category F at 30 m reads 0.13 at 50 km and 0.19 at 100 km, a depletion factor
   that rises with distance; this package gives 0.0188, one decimal point from
   the printed value. The test asserts both the defect and the computed value.
+- **A second end-to-end benchmark, Turner Table 7-4** — the concentration
+  profile with height from the ground to 450 m at 1 km, the only published table
+  found that exercises both reflection terms at arbitrary receptor height, where
+  everything else evaluates at z = 0 and the two coincide. All 16 rows reproduce
+  to within 2.4 %, the residual being Turner's own three-significant-figure
+  rounding. His printed prefactor, 3.5 × 10⁻⁵ g/m³, is a typo: 151/(2π·157·110·4)
+  is 3.479 × 10⁻⁴, which is what his own table uses.
+- **`Site` takes `fixed_lateral` and `fixed_vertical`** as well, overriding the
+  two dispersion parameters. Turner's problems print σ read off his figures, and
+  a σ read off a graph is an input to the problem.
 - **`Site` takes `fixed_height` and `fixed_wind`**, overriding the effective
   release height and transport wind speed. Published benchmarks state both as
   inputs rather than deriving them, so reproducing one requires setting them.

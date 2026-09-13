@@ -362,6 +362,30 @@ for every class and distance.
 
 `dilution_instantaneous` is likewise SRS-19 Eq. (V-1) literally.
 
+#### How far the 2021 results actually move
+
+Every correction above is real, but only some of them bite on the CANDU case the
+thesis assessed. Running that configuration both ways:
+
+| Correction | Effect on the reference case |
+|---|---|
+| **Wind-direction convention** | **Most-exposed sector S instead of N — a half turn — and χ/Q there higher by a factor of 1.51 at every distance** |
+| Plume-rise constants | none: the stack is buoyancy-dominated, 57.7 m of buoyant rise against 10.6 m of momentum, so the corrected constants are never reached |
+| Building-wake coefficient | none: no buildings in the reference configuration |
+| Roughness coefficients | none: the corrected rows are z₀ = 0.01 and 0.04 m, and the case is pasture at 0.1 m |
+| Mixing layer | none within 30 km in class D; σ_z never approaches 800 m there |
+
+So the answer is a single number: **the published dose maps are rotated by a half
+turn, and the most-exposed sector carries 1.51 times what was reported.**
+Everything else corrected here would change a different configuration — a
+momentum-dominated stack, a site with buildings, grassland or arable roughness,
+or the far field in unstable air — and leaves this one alone.
+
+That is worth saying plainly because the reverse would have been easy to assume.
+A dozen corrections do not compound into a dozen shifts; most of them are
+inactive in any one configuration, and the one that dominated was the one that
+needed no numerics to see.
+
 #### An end-to-end benchmark
 
 Everything above checks one piece at a time. **HPA-RPD-058 Table 3.7** checks
@@ -624,10 +648,26 @@ Done:
 
 Next:
 
-- Establish the provenance of the 2021 wind rose — the convention is settled,
-  the numbers are not
-- Re-run the thesis cases under the corrected convention and the corrected
-  roughness coefficients, to say by how much the published dose maps move
+- Enforce the stated validity bands. Briggs' Table 4.5 is quoted for
+  10² < x < 10⁴ m and the package extrapolates past both ends without saying so
+- The urban σ_y and σ_z sets, which Briggs publishes alongside the open-country
+  ones and this package does not carry
+- The stable final rise takes `u` at release height; Handbook Eq. 2.19 says it
+  should be averaged over the rise depth
+- Two more published benchmarks are now unblocked by the σ overrides: NRC
+  XOQDOQ Test Case 2 needs its Eimutis–Konicek σ_z injected, and IAEA SRS-19
+  Annex IV needs the wake and cavity regimes
+
+Closed, and recorded here because they were open for a long time:
+
+- **The wind rose's provenance.** The frequencies are not a measured rose for
+  this site. They are values the author took from meteorological data for the
+  Pitești fuel plant and the Cernavodă NPP while misreading the blowing-from and
+  blowing-toward conventions — which is the same misreading the code carried.
+  The convention is fixed; the numbers remain an illustrative case and the
+  configuration says so rather than implying a site.
+- **How far the published results move** — a half-turn rotation and a factor of
+  1.51, quantified above.
 
 ## History
 
