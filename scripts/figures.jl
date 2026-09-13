@@ -317,7 +317,14 @@ function figure_animation(config; half_width = 8_000.0, n = 141, frames = 72)
     mkpath(FIGURES)
     record(fig, path, bearings; framerate = 12) do β
         compute!(β)
-        label[] = "Wind from " * sector_name(g, sector_of(g, β))
+        # Both halves, deliberately. "Wind from N" alone is correct and reads
+        # backwards at a glance — the plume is on the opposite side to the
+        # direction named — and that ambiguity is what put the 2021 dose field
+        # the wrong way round. The label states the consequence as well as the
+        # convention so it cannot be misread.
+        from = sector_name(g, sector_of(g, β))
+        to = sector_name(g, opposite(g, sector_of(g, β)))
+        label[] = "Wind from " * from * "  →  plume to " * to
     end
     return path
 end
