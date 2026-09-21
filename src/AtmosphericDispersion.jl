@@ -98,7 +98,7 @@ export buoyancy_transition_distance,
     RiseCoefficients,
     BRIGGS_RISE,
     XOQDOQ_RISE,
-    THESIS_RISE,
+    NSR23_RISE,
     plume_rise,
     BUOYANCY_FLUX_BREAKPOINT,
     MECHANISM_BALANCE_TOLERANCE
@@ -117,8 +117,11 @@ export Building,
     wake_broadened,
     WAKE_INFLUENCE_RADII,
     DEFAULT_WAKE_COEFFICIENT,
-    NORMATIVE_WAKE_COEFFICIENT
-export Site,
+    NSR23_WAKE_COEFFICIENT
+export AbstractSite,
+    Site,
+    PrescribedPlume,
+    mixing_layer,
     mean_wind_speed,
     downwash_height,
     wake_height,
@@ -134,26 +137,24 @@ export ResuspensionModel, RESUSPENSION_IAEA_SS57, RESUSPENSION_MAXWELL_ANSPAUGH
 export WashoutModel, WASHOUT_NORMATIVE, WASHOUT_HTO, ogram_snow_washout
 export WashoutSpecies, WASHOUT_TRITIUM_IODINE, WASHOUT_OTHER_NUCLIDES
 export MixingLayer,
+    LidRule,
+    RISE_INHIBITED,
+    FULL_PENETRATION,
     MIXING_TABULATED,
     MIXING_UNBOUNDED,
-    MIXING_UNIFORM_800,
     mixing_depth,
     vertical_factor,
     crosswind_integrated_factor,
-    RECOMMENDED_MIXING_DEPTH,
-    UNIFORM_MIXING_RATIO
-export decay_factor,
+    RECOMMENDED_MIXING_DEPTH
+export WashoutEvent,
+    decay_factor,
     depletion_integral,
     dry_depletion_factor,
     wet_depletion_factor,
     depletion_factor,
     DEPLETION_INTEGRAL_FLOOR
 export dry_deposition,
-    wet_deposition,
-    wet_deposition_sector,
-    resuspension_factor,
-    resuspended_concentration,
-    RESUSPENSION_COEFFICIENTS
+    wet_deposition, wet_deposition_sector, resuspension_factor, resuspended_concentration
 export ConfigurationError, RunConfiguration, load_configuration, configuration_from
 
 include("source.jl")

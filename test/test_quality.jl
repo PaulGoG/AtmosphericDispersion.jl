@@ -10,28 +10,34 @@
 end
 
 # Guard the boundary that report is really about: the quadrature call must
-# stay concretely typed, or the whole of QuadGK resolves dynamically.
+# stay concretely typed, or the whole of QuadGK resolves dynamically. The
+# integrand closes over the site, so both site types are guarded.
 @testset "Inference at the quadrature boundary" begin
-    stack = StackSource(;
-        height = 50.3,
-        diameter = 2.33,
-        exit_velocity = 10.0,
-        exit_density = 0.6,
-        exit_temperature = 324.0,
-    )
-    air = Atmosphere(;
-        reference_speed = 4.0,
-        temperature = 287.0,
-        density = 1.2,
-        lapse_rate = 2e-2,
-        surface = SURFACE_AGRICULTURAL,
-        roughness = ROUGHNESS_PASTURE,
-    )
-    site = Site(; source = stack, atmosphere = air)
-    @test Base.return_types(depletion_integral, (Float64, Site, PasquillClass)) == [Float64]
-    @test @inferred(depletion_integral(1000.0, site, PASQUILL_D)) isa Float64
-    @test @inferred(dry_depletion_factor(1000.0, site, PASQUILL_D, TRITIATED_WATER)) isa
-          Float64
+    site = REFERENCE_SITE
+    plume = PrescribedPlume(site; height = 80.0, wind = 5.0)
+    for s in (site, plume)
+        @test Base.return_types(depletion_integral, (Float64, typeof(s), PasquillClass)) ==
+              [Float64]
+        @test @inferred(depletion_integral(1000.0, s, PASQUILL_D)) isa Float64
+        @test @inferred(dry_depletion_factor(1000.0, s, PASQUILL_D, TRITIATED_WATER)) isa
+              Float64
+    end
     @test @inferred(effective_height(1000.0, site, PASQUILL_D)) isa Float64
     @test @inferred(corrected_vertical_dispersion(1000.0, site, PASQUILL_D)) isa Float64
+end
+
+# The kernels are written against AbstractSite. A PrescribedPlume holds its
+# parameters as Union{Nothing,Float64}, and that union must not reach the return
+# type of anything the kernels call.
+@testset "Inference of the site interface" begin
+    site = REFERENCE_SITE
+    prescribed =
+        PrescribedPlume(site; height = 80.0, wind = 5.0, lateral = 120.0, vertical = 60.0)
+    for s in (site, PrescribedPlume(site), prescribed)
+        @test @inferred(effective_height(1000.0, s, PASQUILL_D)) isa Float64
+        @test @inferred(transport_wind_speed(s, PASQUILL_D)) isa Float64
+        @test @inferred(corrected_lateral_dispersion(1000.0, s, PASQUILL_D)) isa Float64
+        @test @inferred(corrected_vertical_dispersion(1000.0, s, PASQUILL_D)) isa Float64
+        @test @inferred(mixing_layer(s)) isa MixingLayer
+    end
 end

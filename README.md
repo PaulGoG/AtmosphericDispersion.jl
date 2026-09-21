@@ -555,7 +555,7 @@ that `(3/0.72)^(1/3) = 1.60915` where the literature rounds the two-thirds
 coefficient to 1.6, the same rounding that makes the neutral final rise 21.425
 against a published 21.4.
 
-`plume_rise = "thesis_2021"` restores the old constants exactly, and the
+`plume_rise = "nsr23"` restores the old constants exactly, and the
 fidelity tests use it, so the 2021 results remain reproducible.
 
 **The reference case does not move**, and that is worth saying rather than
@@ -576,7 +576,7 @@ NUREG/CR-7270).
 **The building-wake coefficient now defaults to 1.0**, which is IAEA SRS-19
 Eq. (6), `Σ_z = (σ_z² + A_B/π)^(1/2)`, and the German AVV Eqs. (4.31)/(4.32),
 `√(σ² + I_G²/π)`. NSR-23 used 1.5 and no source outside it was found;
-`NORMATIVE_WAKE_COEFFICIENT` restores it. RG 1.111 Eq. (9) is a third convention
+`NSR23_WAKE_COEFFICIENT` restores it. RG 1.111 Eq. (9) is a third convention
 again, applying 0.5 to the building *height* rather than its area.
 
 **Snow washout is now selectable by species.** The normative's snow columns are

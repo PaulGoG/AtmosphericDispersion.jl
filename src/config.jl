@@ -88,6 +88,7 @@ const _ROOT_KEYS = (
     "atmosphere",
     "buildings",
     "model",
+    "mixing_layer",
     "nuclide",
     "wind_rose",
     "release",
@@ -105,7 +106,8 @@ const _ATMOSPHERE_KEYS = (
     "surface",
     "roughness",
 )
-const _MODEL_KEYS = ("plume_rise", "resuspension", "mixing_layer", "washout")
+const _MODEL_KEYS = ("plume_rise", "resuspension", "washout")
+const _MIXING_KEYS = ("scheme", "above_lid", "uniform_depth", "depths")
 const _BUILDINGS_KEYS = ("wake_coefficient", "building")
 const _BUILDING_KEYS = ("east", "north", "height", "frontal_area")
 const _NUCLIDE_KEYS = (
@@ -121,13 +123,12 @@ const _PRECIPITATION_KEYS = ("type", "rate", "washout_duration")
 const _GRID_KEYS = ("extent", "spacing")
 
 const _RISE_CHOICES =
-    Dict("briggs" => BRIGGS_RISE, "xoqdoq" => XOQDOQ_RISE, "thesis_2021" => THESIS_RISE)
+    Dict("briggs" => BRIGGS_RISE, "xoqdoq" => XOQDOQ_RISE, "nsr23" => NSR23_RISE)
 
-const _MIXING_CHOICES = Dict(
-    "tabulated" => MIXING_TABULATED,
-    "unbounded" => MIXING_UNBOUNDED,
-    "uniform_800" => MIXING_UNIFORM_800,
-)
+const _MIXING_SCHEMES = ("tabulated", "uniform", "custom", "unbounded")
+
+const _LID_CHOICES =
+    Dict("rise_inhibited" => RISE_INHIBITED, "full_penetration" => FULL_PENETRATION)
 
 const _WASHOUT_CHOICES = Dict("normative" => WASHOUT_NORMATIVE, "hto" => WASHOUT_HTO)
 
@@ -169,11 +170,10 @@ Everything a dispersion run needs, assembled and validated from a TOML file by
 - `site` — the [`Site`](@ref), with its source, atmosphere and buildings
 - `rose` — the [`WindRose`](@ref), already resolved to blowing-towards
 - `nuclide` — the released [`Nuclide`](@ref)
-- `resuspension` — which [`ResuspensionModel`](@ref) to apply
-- `washout_model` — which [`WashoutModel`](@ref) to apply
+- `resuspension` — the [`ResuspensionModel`](@ref) to apply
+- `washout` — the [`WashoutEvent`](@ref), of zero duration for a dry plume
 - `activity` — released activity, Bq
 - `release_duration` — duration of the release, s
-- `precipitation`, `precipitation_rate`, `washout_duration` — the washout case
 - `extent`, `spacing` — the receptor grid, m
 """
 struct RunConfiguration
@@ -181,12 +181,9 @@ struct RunConfiguration
     rose::WindRose{Float64}
     nuclide::Nuclide
     resuspension::ResuspensionModel
-    washout_model::WashoutModel
+    washout::WashoutEvent
     activity::Float64
     release_duration::Float64
-    precipitation::PrecipitationType
-    precipitation_rate::Float64
-    washout_duration::Float64
     extent::Float64
     spacing::Float64
 end
@@ -238,11 +235,9 @@ function configuration_from(root::AbstractDict)
         "model.washout",
     )
 
-    mixing = _choice(
-        _value(model, "mixing_layer", String, "model"; default = "tabulated"),
-        _MIXING_CHOICES,
-        "model.mixing_layer",
-    )
+    lid = get(root, "mixing_layer", Dict{String,Any}())
+    lid isa AbstractDict || _fail("mixing_layer", "expected a table, got $(typeof(lid))")
+    mixing = _mixing_from(lid)
 
     site = Site(; source, atmosphere, buildings, rise, mixing)
 
@@ -285,20 +280,59 @@ function configuration_from(root::AbstractDict)
     spacing < extent ||
         _fail("grid.spacing", "must be smaller than grid.extent ($extent m), got $spacing")
 
+    event = WashoutEvent(; duration = washout, precipitation, rate, model = washout_model)
+
     return RunConfiguration(
         site,
         rose,
         nuclide,
         resuspension,
-        washout_model,
+        event,
         activity,
         release_duration,
-        precipitation,
-        rate,
-        washout,
         extent,
         spacing,
     )
+end
+
+function _mixing_from(t::AbstractDict)
+    _reject_unknown(t, _MIXING_KEYS, "mixing_layer")
+    scheme = _value(t, "scheme", String, "mixing_layer"; default = "tabulated")
+    scheme in _MIXING_SCHEMES || _fail(
+        "mixing_layer.scheme",
+        "must be one of $(join(_MIXING_SCHEMES, ", ")), got $(repr(scheme))",
+    )
+    above_lid = _choice(
+        _value(t, "above_lid", String, "mixing_layer"; default = "rise_inhibited"),
+        _LID_CHOICES,
+        "mixing_layer.above_lid",
+    )
+    # A key the chosen scheme does not read is refused, like any other unread key.
+    for (key, owner) in (("uniform_depth", "uniform"), ("depths", "custom"))
+        haskey(t, key) &&
+            scheme != owner &&
+            _fail("mixing_layer.$key", "is read only with scheme = $(repr(owner))")
+    end
+    scheme == "tabulated" && return MixingLayer(MIXING_TABULATED.depths; above_lid)
+    scheme == "unbounded" && return MixingLayer(Inf; above_lid)
+    if scheme == "uniform"
+        depth = _positive(
+            _value(t, "uniform_depth", Float64, "mixing_layer"),
+            "mixing_layer.uniform_depth",
+        )
+        return MixingLayer(depth; above_lid)
+    end
+    depths = _floatvector(t, "depths", "mixing_layer")
+    nclasses = length(PASQUILL_CLASSES)
+    length(depths) == nclasses || _fail(
+        "mixing_layer.depths",
+        "must hold one depth per Pasquill class ($nclasses), got $(length(depths))",
+    )
+    for (i, d) in enumerate(depths)
+        d > 0 ||
+            _fail("mixing_layer.depths[$i]", "must be positive, `inf` for none, got $d")
+    end
+    return MixingLayer(depths; above_lid)
 end
 
 function _source_from(t::AbstractDict)

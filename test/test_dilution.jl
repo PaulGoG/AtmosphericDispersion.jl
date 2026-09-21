@@ -1,20 +1,5 @@
 @testset "Dilution" begin
-    stack = StackSource(;
-        height = 50.3,
-        diameter = 2.33,
-        exit_velocity = 10.0,
-        exit_density = 0.6,
-        exit_temperature = 324.0,
-    )
-    air = Atmosphere(;
-        reference_speed = 4.0,
-        temperature = 287.0,
-        density = 1.2,
-        lapse_rate = 2e-2,
-        surface = SURFACE_AGRICULTURAL,
-        roughness = ROUGHNESS_PASTURE,
-    )
-    site = Site(; source = stack, atmosphere = air)
+    site = REFERENCE_SITE
 
     @testset "plume frame" begin
         # Wind from the north transports to the south.
@@ -85,8 +70,7 @@
 
     @testset "long-term field" begin
         g = SectorGrid(16)
-        stab = [0.06533, 0.06533, 0.06533, 0.488, 0.158, 0.158]
-        stab ./= sum(stab)
+        stab = normalised_stability()
 
         # A uniform rose gives a rotationally symmetric field.
         uniform = WindRose(g, fill(1 / 16, 16), BlowingToward(); stability = stab)
@@ -158,7 +142,7 @@
         # regime and the depletion integral but not the long-term sum.
         g = SectorGrid(16)
         F_k = fill(1 / 16, 16)
-        lid_off = Site(; source = stack, atmosphere = air, mixing = MIXING_UNBOUNDED)
+        lid_off = UNBOUNDED_SITE
         for (i, class) in enumerate(PASQUILL_CLASSES)
             stab = zeros(6)
             stab[i] = 1.0
@@ -181,5 +165,41 @@
         @test ratio(only_A, 2e4) ≈ 1.44 atol = 0.01
         @test ratio(only_A, 5e4) ≈ 2.23 atol = 0.01
         @test ratio(only_D, 2e4) ≈ 1 atol = 1e-3
+    end
+
+    # Which row of the washout table applies is a property of the species, so
+    # rain with nothing named for it to act on is refused rather than ignored.
+    @testset "washout needs a nuclide" begin
+        rain = WashoutEvent(; duration = 3600.0)
+        rose = WindRose(
+            SectorGrid(16),
+            fill(1 / 16, 16),
+            BlowingToward();
+            stability = normalised_stability(),
+        )
+        @test_throws ArgumentError dilution_instantaneous(
+            0.0,
+            -1000.0,
+            0.0,
+            site,
+            PASQUILL_D,
+            0.0;
+            washout = rain,
+        )
+        @test_throws ArgumentError dilution_extended(
+            0.0,
+            -1000.0,
+            site,
+            PASQUILL_D,
+            0.0;
+            washout = rain,
+        )
+        @test_throws ArgumentError dilution_long_term(
+            0.0,
+            -1000.0,
+            site,
+            rose;
+            washout = rain,
+        )
     end
 end

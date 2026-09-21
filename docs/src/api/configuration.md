@@ -37,7 +37,7 @@ optional and defaults to the first value listed.
 |---|---|---|
 | `plume_rise` | `briggs` | [`BRIGGS_RISE`](@ref): `2β² = 0.72`, `3 w₀D/u`, `2.6 [F/(uS)]^(1/3)` |
 | | `xoqdoq` | [`XOQDOQ_RISE`](@ref): as `briggs`, with the stable coefficient 2.4 of NUREG/CR-2919 |
-| | `thesis_2021` | [`THESIS_RISE`](@ref): 0.5 and 1.5, the constants of CNCAN NSR-23 as the 2021 code carried them |
+| | `nsr23` | [`NSR23_RISE`](@ref): 0.5 and 1.5, the constants of CNCAN NSR-23 as the 2021 code carried them |
 | `resuspension` | `iaea_ss57` | IAEA Safety Series 57 (1982), Eq. (3.14A) |
 | | `maxwell_anspaugh` | Maxwell and Anspaugh, *Health Physics* **101** (2011); NUREG/CR-7270 |
 | `mixing_layer` | `tabulated` | HPA-RPD-058 Table 3.5(a) by class: A 1300, B 900, C 850, D 800, E 400, F 100 m |
@@ -65,7 +65,7 @@ default, or `other` for every other radionuclide. See [`WashoutSpecies`](@ref).
 
 `wake_coefficient` is `C` in `√(σ² + C A/π)`. The default of 1 is IAEA SRS-19
 Eq. (6) and AVV Eqs. (4.31)/(4.32); NSR-23 uses 1.5
-([`NORMATIVE_WAKE_COEFFICIENT`](@ref)). Zero disables the correction.
+([`NSR23_WAKE_COEFFICIENT`](@ref)). Zero disables the correction.
 
 ## The `[wind_rose]` table
 

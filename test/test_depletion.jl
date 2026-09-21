@@ -1,25 +1,6 @@
 @testset "Depletion" begin
-    stack = StackSource(;
-        height = 50.3,
-        diameter = 2.33,
-        exit_velocity = 10.0,
-        exit_density = 0.6,
-        exit_temperature = 324.0,
-    )
-    air = Atmosphere(;
-        reference_speed = 4.0,
-        temperature = 287.0,
-        density = 1.2,
-        lapse_rate = 2e-2,
-        surface = SURFACE_AGRICULTURAL,
-        roughness = ROUGHNESS_PASTURE,
-    )
-    site = Site(; source = stack, atmosphere = air)
-    inert = Nuclide(;
-        name = "inert",
-        decay_constant = 0.0,
-        deposition_velocity = DepositionVelocity(0.0, 0.0),
-    )
+    site = REFERENCE_SITE
+    inert = INERT
 
     @testset "nuclides" begin
         @test TRITIATED_WATER.decay_constant == TRITIUM_DECAY_CONSTANT
@@ -81,60 +62,93 @@
         end
     end
 
+    @testset "WashoutEvent" begin
+        event = WashoutEvent(; duration = 3600)
+        @test event.precipitation === PRECIPITATION_RAIN
+        @test event.rate == first(PRECIPITATION_RATES)
+        @test event.duration == 3600.0
+        @test event.model === WASHOUT_NORMATIVE
+        # The washout table is defined only at the tabulated intensities.
+        @test_throws ArgumentError WashoutEvent(; duration = 3600.0, rate = 2.0)
+        @test_throws ArgumentError WashoutEvent(; duration = 3600.0, rate = 0.0)
+        @test_throws ArgumentError WashoutEvent(; duration = -1.0)
+        @test_throws ArgumentError WashoutEvent(;
+            duration = -1.0,
+            precipitation = PRECIPITATION_RAIN,
+            rate = 1.0,
+        )
+        # The event looks its own coefficients up.
+        for p in PRECIPITATION_TYPES,
+            r in PRECIPITATION_RATES,
+            m in (WASHOUT_NORMATIVE, WASHOUT_HTO)
+
+            e = WashoutEvent(; duration = 600.0, precipitation = p, rate = r, model = m)
+            for species in (WASHOUT_TRITIUM_IODINE, WASHOUT_OTHER_NUCLIDES)
+                @test washout_coefficients(e, species) ==
+                      washout_coefficients(p, r, m, species)
+            end
+            @test washout_coefficients(e) == washout_coefficients(p, r, m)
+        end
+    end
+
     @testset "wet depletion" begin
-        @test wet_depletion_factor(0.0, PRECIPITATION_RAIN, 1.0) == 1
+        wet(t, p, r) =
+            wet_depletion_factor(WashoutEvent(; duration = t, precipitation = p, rate = r))
+        @test wet(0.0, PRECIPITATION_RAIN, 1.0) == 1
         for p in PRECIPITATION_TYPES, r in PRECIPITATION_RATES
-            f = [wet_depletion_factor(t, p, r) for t in (0.0, 600.0, 3600.0, 86400.0)]
+            f = [wet(t, p, r) for t in (0.0, 600.0, 3600.0, 86400.0)]
             @test all(v -> 0 < v ≤ 1, f)
             @test issorted(f; rev = true)
         end
         # Heavier rain washes out faster; snow barely at all.
-        @test wet_depletion_factor(3600.0, PRECIPITATION_RAIN, 5.0) <
-              wet_depletion_factor(3600.0, PRECIPITATION_RAIN, 0.5)
-        @test wet_depletion_factor(3600.0, PRECIPITATION_SNOW, 5.0) >
-              wet_depletion_factor(3600.0, PRECIPITATION_RAIN, 0.5)
-        @test_throws DomainError wet_depletion_factor(-1.0, PRECIPITATION_RAIN, 1.0)
+        @test wet(3600.0, PRECIPITATION_RAIN, 5.0) < wet(3600.0, PRECIPITATION_RAIN, 0.5)
+        @test wet(3600.0, PRECIPITATION_SNOW, 5.0) > wet(3600.0, PRECIPITATION_RAIN, 0.5)
     end
 
     # The composition is multiplicative, not additive. With nothing removed
     # at all every factor is one and so is the product. The 2021 code added
     # the wet and dry factors and returned two in this limit.
     @testset "the no-depletion limit is one" begin
+        no_rain = WashoutEvent(; duration = 0.0)
         for class in PASQUILL_CLASSES, x in (10.0, 1e3, 1e5)
             @test depletion_factor(x, site, class, inert) == 1
-            @test depletion_factor(x, site, class, inert; washout_duration = 0.0) == 1
+            # Rain that lasts no time removes nothing either.
+            @test depletion_factor(x, site, class, inert; washout = no_rain) == 1
         end
     end
 
     @testset "composition" begin
         for class in PASQUILL_CLASSES
             x, t = 1e4, 3600.0
+            rain =
+                WashoutEvent(; duration = t, precipitation = PRECIPITATION_RAIN, rate = 1.0)
             u = transport_wind_speed(site, class)
             expected =
                 decay_factor(x, u, TRITIATED_WATER) *
                 dry_depletion_factor(x, site, class, TRITIATED_WATER) *
-                wet_depletion_factor(t, PRECIPITATION_RAIN, 1.0)
+                wet_depletion_factor(rain)
+            @test depletion_factor(x, site, class, TRITIATED_WATER; washout = rain) ≈
+                  expected
+            @test 0 < expected ≤ 1
+            # Rain can only remove more.
             @test depletion_factor(
                 x,
                 site,
                 class,
                 TRITIATED_WATER;
-                washout_duration = t,
-                precipitation = PRECIPITATION_RAIN,
-                rate = 1.0,
-            ) ≈ expected
-            @test 0 < expected ≤ 1
-            # Rain can only remove more.
-            @test depletion_factor(x, site, class, TRITIATED_WATER; washout_duration = t) <
-                  depletion_factor(x, site, class, TRITIATED_WATER)
+                washout = WashoutEvent(; duration = t),
+            ) < depletion_factor(x, site, class, TRITIATED_WATER)
         end
     end
 
     @testset "depletion inside the long-term class sum" begin
         g = SectorGrid(16)
-        stab = [0.06533, 0.06533, 0.06533, 0.488, 0.158, 0.158]
-        stab ./= sum(stab)
-        rose = WindRose(g, fill(1 / 16, 16), BlowingToward(); stability = stab)
+        rose = WindRose(
+            g,
+            fill(1 / 16, 16),
+            BlowingToward();
+            stability = normalised_stability(),
+        )
         bare = dilution_long_term(0.0, -5000.0, site, rose)
         # An inert species leaves the field untouched: the depletion factor
         # is exactly one, not six as the unweighted sum of the 2021 code
@@ -150,7 +164,7 @@
             site,
             rose;
             nuclide = TRITIATED_WATER,
-            washout_duration = 3600.0,
+            washout = WashoutEvent(; duration = 3600.0),
         ) < depleted
     end
 end

@@ -99,11 +99,12 @@
     # from, by way of reference [3] of CNCAN NSR-23, and no successor
     # restates them. See RESUSPENSION_MAXWELL_ANSPAUGH for the modern form.
     @testset "resuspension is IAEA Safety Series 57" begin
-        c = RESUSPENSION_COEFFICIENTS
-        @test c.A == 1e-5
-        @test c.B == 1e-9
-        @test c.λ₁ == 1e-2
-        @test c.λ₂ == 2e-5
+        c = RESUSPENSION_IAEA_SS57
+        @test c.fast_amplitude == 1e-5
+        @test c.slow_amplitude == 1e-9
+        @test c.fast_rate == 1e-2
+        @test c.slow_rate == 2e-5
+        @test c.floor == 0
     end
 
     # The washout table follows the published intensity dependence and
@@ -200,14 +201,12 @@
             surface = SURFACE_AGRICULTURAL,
             roughness = ROUGHNESS_PASTURE,
         )
-        site = Site(;
-            source = stack,
-            atmosphere = air,
-            fixed_height = H,
-            fixed_wind = u,
-            fixed_lateral = σy,
-            fixed_vertical = σz,
-            mixing = MIXING_UNBOUNDED,        # Turner has no lid
+        site = PrescribedPlume(
+            Site(; source = stack, atmosphere = air, mixing = MIXING_UNBOUNDED); # Turner has no lid
+            height = H,
+            wind = u,
+            lateral = σy,
+            vertical = σz,
         )
 
         # The residual is Turner's own rounding: his intermediate columns
@@ -282,6 +281,7 @@
             exit_density = 1.2,
             exit_temperature = 288.0,
         )
+        release = Site(; source = stack, atmosphere = air)
 
         # The one cell that is wrong in the source: category F at 30 m runs
         # 0.13 at 50 km and 0.19 at 100 km. A depletion factor cannot rise
@@ -290,8 +290,7 @@
         # 0.0188 there, which is both monotone and a decimal point away from
         # the printed 0.19.
         for (H, class, u, published) in rows
-            site =
-                Site(; source = stack, atmosphere = air, fixed_height = H, fixed_wind = u)
+            site = PrescribedPlume(release; height = H, wind = u)
             for (k, x) in enumerate(xs)
                 (H == 30.0 && class == PASQUILL_F && k == 8) && continue
                 f = dry_depletion_factor(x, site, class, marker)
@@ -304,8 +303,7 @@
         end
 
         # The typo cell, computed rather than read
-        typo_site =
-            Site(; source = stack, atmosphere = air, fixed_height = 30.0, fixed_wind = 2.65)
+        typo_site = PrescribedPlume(release; height = 30.0, wind = 2.65)
         @test dry_depletion_factor(1e5, typo_site, PASQUILL_F, marker) ≈ 0.019 atol = 0.002
     end
 
@@ -328,7 +326,6 @@
         end
     end
 
-
     # The building-wake coefficient. IAEA Safety Reports Series No. 19
     # (2001) Eq. (6) writes the wake-broadened vertical parameter as
     # (σ_z² + A_B/π)^(1/2), and the German AVV zu §47 StrlSchV (2012)
@@ -336,7 +333,7 @@
     @testset "wake coefficient is the published one" begin
         b = Building(; east = 25.0, north = 0.0, height = 60.0, frontal_area = 3600.0)
         iaea = BuildingEnvelope([b])
-        normative = BuildingEnvelope([b]; wake_coefficient = NORMATIVE_WAKE_COEFFICIENT)
+        normative = BuildingEnvelope([b]; wake_coefficient = NSR23_WAKE_COEFFICIENT)
         A = equivalent_area(iaea)
         for σ in (10.0, 50.0, 200.0)
             # released inside the cavity, where the correction is undiluted
@@ -403,7 +400,7 @@
     # buoyancy law when the momentum flux vanishes. Briggs writes its
     # buoyancy term as 3F x²/(2β²u³) with β = 0.6, a denominator of
     # 2β² = 0.72, and that is now the default; the 2021 code had 0.5, which
-    # overshoots the two-thirds law by 13.6 % and is kept as THESIS_RISE.
+    # overshoots the two-thirds law by 13.6 % and is kept as NSR23_RISE.
     @testset "combined rise reduces to the two-thirds law" begin
         # With c = 2β² = 0.72 the combined law implies a two-thirds
         # coefficient of (3/0.72)^(1/3) = 1.60915, against the 1.6 the
@@ -420,15 +417,15 @@
                 final_momentum_rise(1e-14, 10.0, 2.0, u, -1e-6, r) +
                 final_buoyant_rise(F, u, -1e-6, r)
             briggs = combined_rise(x, F, 1e-14, 10.0, u, -1e-6, 2.0, BRIGGS_RISE)
-            thesis = combined_rise(x, F, 1e-14, 10.0, u, -1e-6, 2.0, THESIS_RISE)
-            (briggs < 0.99cap(BRIGGS_RISE) && thesis < 0.99cap(THESIS_RISE)) || continue
+            thesis = combined_rise(x, F, 1e-14, 10.0, u, -1e-6, 2.0, NSR23_RISE)
+            (briggs < 0.99cap(BRIGGS_RISE) && thesis < 0.99cap(NSR23_RISE)) || continue
             checked += 1
             @test briggs ≈ two_thirds rtol = 6e-3
             @test thesis / two_thirds ≈ (6 / 1.6^3)^(1 / 3) rtol = 2e-3
         end
         @test checked ≥ 6          # the sweep must actually exercise the branch
         @test BRIGGS_RISE.combined_buoyancy == 2 * 0.6^2       # Briggs, β = 0.6
-        @test THESIS_RISE.combined_buoyancy == 0.5
+        @test NSR23_RISE.combined_buoyancy == 0.5
     end
 
     # The neutral momentum rise is 3 w₀D/u in Briggs (1969) Eq. 5.2, as
@@ -436,7 +433,7 @@
     @testset "neutral momentum rise is Briggs" begin
         for w₀ in (5.0, 15.0), D in (1.0, 3.0), u in (2.0, 8.0)
             @test final_momentum_rise(0.0, w₀, D, u, -1e-6, BRIGGS_RISE) ≈ 3 * w₀ * D / u
-            @test final_momentum_rise(0.0, w₀, D, u, -1e-6, THESIS_RISE) ≈ 1.5 * w₀ * D / u
+            @test final_momentum_rise(0.0, w₀, D, u, -1e-6, NSR23_RISE) ≈ 1.5 * w₀ * D / u
         end
     end
 

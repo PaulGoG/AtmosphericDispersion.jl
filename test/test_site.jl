@@ -1,20 +1,8 @@
 @testset "Site" begin
-    stack = StackSource(;
-        height = 50.3,
-        diameter = 2.33,
-        exit_velocity = 10.0,
-        exit_density = 0.6,
-        exit_temperature = 324.0,
-    )
-    air = Atmosphere(;
-        reference_speed = 4.0,
-        temperature = 287.0,
-        density = 1.2,
-        lapse_rate = 2e-2,
-        surface = SURFACE_AGRICULTURAL,
-        roughness = ROUGHNESS_PASTURE,
-    )
-    site = Site(; source = stack, atmosphere = air)
+    stack, air, site = REFERENCE_STACK, REFERENCE_AIR, REFERENCE_SITE
+    tall = BuildingEnvelope([
+        Building(; east = 50.0, north = 0.0, height = 100.0, frontal_area = 2000.0),
+    ])
 
     @testset "precomputation matches the direct evaluation" begin
         @test release_height(site) == wake_height(stack, air, BuildingEnvelope())
@@ -27,21 +15,8 @@
         # A vigorous efflux in a light wind clears the stack untouched.
         @test downwash_height(stack, air) == stack.height
         # A weak efflux in a strong wind is drawn down.
-        calm = StackSource(;
-            height = 50.3,
-            diameter = 2.33,
-            exit_velocity = 1.0,
-            exit_density = 0.6,
-            exit_temperature = 324.0,
-        )
-        windy = Atmosphere(;
-            reference_speed = 15.0,
-            temperature = 287.0,
-            density = 1.2,
-            lapse_rate = 2e-2,
-            surface = SURFACE_AGRICULTURAL,
-            roughness = ROUGHNESS_PASTURE,
-        )
+        calm = reference_stack(; exit_velocity = 1.0)
+        windy = reference_atmosphere(; reference_speed = 15.0)
         @test downwash_height(calm, windy) < calm.height
     end
 
@@ -49,16 +24,10 @@
         # No buildings: release height is the downwash-corrected stack height.
         @test wake_height(stack, air, BuildingEnvelope()) == downwash_height(stack, air)
         # A building taller than the stack traps the plume at ground level.
-        tall = BuildingEnvelope([
-            Building(; east = 50.0, north = 0.0, height = 100.0, frontal_area = 2000.0),
-        ])
         @test wake_height(stack, air, tall) == 0
     end
 
     @testset "transport wind is floored at the reference height" begin
-        tall = BuildingEnvelope([
-            Building(; east = 50.0, north = 0.0, height = 100.0, frontal_area = 2000.0),
-        ])
         trapped = Site(; source = stack, atmosphere = air, buildings = tall)
         @test release_height(trapped) == 0
         # Without the floor this would be zero and every dilution factor
@@ -75,6 +44,124 @@
             hs = [effective_height(x, site, class) for x in (1.0, 100.0, 1000.0, 1e5)]
             @test issorted(hs)
             @test all(≥(release_height(site)), hs)
+        end
+    end
+
+    @testset "the mixing layer of a site" begin
+        @test mixing_layer(site) === MIXING_TABULATED        # the default
+        @test mixing_layer(UNBOUNDED_SITE) === MIXING_UNBOUNDED
+    end
+end
+
+@testset "PrescribedPlume" begin
+    site = REFERENCE_SITE
+    distances = (10.0, 1000.0, 1e5)
+
+    @testset "validation" begin
+        @test_throws ArgumentError PrescribedPlume(site; height = -1.0)
+        for v in (0.0, -1.0)
+            @test_throws ArgumentError PrescribedPlume(site; wind = v)
+            @test_throws ArgumentError PrescribedPlume(site; lateral = v)
+            @test_throws ArgumentError PrescribedPlume(site; vertical = v)
+        end
+        # A ground-level release is a legitimate prescription.
+        @test effective_height(100.0, PrescribedPlume(site; height = 0), PASQUILL_D) == 0
+    end
+
+    @testset "what is not prescribed comes from the site" begin
+        bare = PrescribedPlume(site)
+        @test mixing_layer(bare) === mixing_layer(site)
+        for class in PASQUILL_CLASSES
+            @test transport_wind_speed(bare, class) == transport_wind_speed(site, class)
+            for x in distances
+                @test effective_height(x, bare, class) == effective_height(x, site, class)
+                @test corrected_lateral_dispersion(x, bare, class) ==
+                      corrected_lateral_dispersion(x, site, class)
+                @test corrected_lateral_dispersion(
+                    x,
+                    bare,
+                    class;
+                    release_duration = 3600,
+                ) == corrected_lateral_dispersion(x, site, class; release_duration = 3600)
+                @test corrected_vertical_dispersion(x, bare, class) ==
+                      corrected_vertical_dispersion(x, site, class)
+            end
+        end
+    end
+
+    @testset "what is prescribed is returned as given" begin
+        H, u, σy, σz = 150.0, 4.0, 157.0, 110.0
+        plume = PrescribedPlume(site; height = H, wind = u, lateral = σy, vertical = σz)
+        @test mixing_layer(plume) === mixing_layer(site)
+        for class in PASQUILL_CLASSES
+            @test transport_wind_speed(plume, class) == u
+            for x in distances
+                @test effective_height(x, plume, class) == H
+                @test corrected_lateral_dispersion(x, plume, class) == σy
+                @test corrected_vertical_dispersion(x, plume, class) == σz
+            end
+        end
+        # One field at a time: the others are untouched. There are no buildings
+        # here, so the dispersion parameters do not see a prescribed height.
+        only_wind = PrescribedPlume(site; wind = u)
+        only_height = PrescribedPlume(site; height = H)
+        for class in PASQUILL_CLASSES, x in distances
+            @test effective_height(x, only_wind, class) == effective_height(x, site, class)
+            @test transport_wind_speed(only_height, class) ==
+                  transport_wind_speed(site, class)
+            @test corrected_vertical_dispersion(x, only_height, class) ==
+                  corrected_vertical_dispersion(x, site, class)
+        end
+    end
+
+    # A constant σ_z is a statement about one distance, and the integral runs
+    # over all of them.
+    @testset "the depletion integral refuses a prescribed σ_z" begin
+        @test_throws ArgumentError depletion_integral(
+            1000.0,
+            PrescribedPlume(site; vertical = 110.0),
+            PASQUILL_D,
+        )
+        @test_throws ArgumentError dry_depletion_factor(
+            1000.0,
+            PrescribedPlume(site; vertical = 110.0),
+            PASQUILL_D,
+            TRITIATED_WATER,
+        )
+        @test depletion_integral(
+            1000.0,
+            PrescribedPlume(site; height = 80.0, wind = 5.0, lateral = 157.0),
+            PASQUILL_D,
+        ) > 0
+    end
+
+    # The wake broadening is decided by the height of the plume, and a plume
+    # whose height is prescribed is judged on that height.
+    @testset "the wake test sees the prescribed height" begin
+        envelope = BuildingEnvelope([
+            Building(; east = 30.0, north = 0.0, height = 40.0, frontal_area = 1600.0),
+        ])
+        built = Site(;
+            source = REFERENCE_STACK,
+            atmosphere = REFERENCE_AIR,
+            buildings = envelope,
+        )
+        h = equivalent_height(envelope)
+        clear = PrescribedPlume(built; height = 2.5h + 1)
+        inside = PrescribedPlume(built; height = h / 2)
+        roughness = REFERENCE_AIR.roughness
+        for class in PASQUILL_CLASSES, x in (100.0, 500.0)
+            σy = lateral_dispersion(x, class)
+            σz = vertical_dispersion(x, class, roughness)
+            # The site's own plume is still within reach of the wake here.
+            @test effective_height(x, built, class) < 2.5h
+            @test corrected_vertical_dispersion(x, built, class) > σz
+            @test corrected_vertical_dispersion(x, clear, class) == σz
+            @test corrected_lateral_dispersion(x, clear, class) == σy
+            @test corrected_vertical_dispersion(x, inside, class) ==
+                  wake_broadened(σz, h / 2, envelope)
+            @test corrected_lateral_dispersion(x, inside, class) ==
+                  wake_broadened(σy, h / 2, envelope)
         end
     end
 end

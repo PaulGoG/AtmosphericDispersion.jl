@@ -23,16 +23,19 @@ choice is made in the configuration rather than buried in the source.
 
   - `combined_buoyancy` — the denominator of the buoyancy term in the combined
     law. Briggs writes `3F x²/(2β²u³)` with an entrainment parameter `β = 0.6`,
-    giving **0.72**; the 2021 thesis code had **0.5**, which does not reduce to
-    the two-thirds law as the momentum flux vanishes.
+    giving **0.72**; NSR-23 has **0.5**, which does not reduce to the two-thirds
+    law as the momentum flux vanishes.
   - `neutral_momentum` — the coefficient of the neutral final momentum rise,
     `c w₀D/u`. Briggs (1969) Eq. 5.2, as implemented by EPA ISC3 Eq. (1-16),
-    gives **3**; the 2021 code had **1.5**, for which no source was found.
+    gives **3**. CNCAN NSR-23 has **1.5**, which is the momentum term of
+    Holland's formula, `Δh = (w₀D/u)[1.5 + 2.68×10⁻³ p (T_s − T_a)D/T_s]` with
+    `p` in mbar (Holland 1953; Turner, *Workbook of Atmospheric Dispersion
+    Estimates*, 1970, Eq. 4.1), taken without its buoyancy term.
   - `stable_final` — the coefficient of the stable final buoyant rise,
     `c [F/(uS)]^(1/3)`. Briggs and the Handbook on Atmospheric Diffusion give
     **2.6**; NRC XOQDOQ writes **2.4**.
 
-See [`BRIGGS_RISE`](@ref), [`XOQDOQ_RISE`](@ref) and [`THESIS_RISE`](@ref).
+See [`BRIGGS_RISE`](@ref), [`XOQDOQ_RISE`](@ref) and [`NSR23_RISE`](@ref).
 """
 struct RiseCoefficients
     combined_buoyancy::Float64
@@ -78,12 +81,13 @@ Briggs, with the stable coefficient NRC XOQDOQ (NUREG/CR-2919) writes as 2.4.
 const XOQDOQ_RISE = RiseCoefficients(stable_final = 2.4)
 
 """
-    THESIS_RISE
+    NSR23_RISE
 
-The constants as the 2021 thesis code had them. Kept so its results can be
-reproduced; `combined_buoyancy` here does not reduce to the two-thirds law.
+The constants of CNCAN NSR-23, the Romanian normative, which the 2021 thesis
+code followed: 0.5 in the combined law and Holland's 1.5 for the momentum rise.
+`combined_buoyancy` here does not reduce to the two-thirds law.
 """
-const THESIS_RISE = RiseCoefficients(combined_buoyancy = 0.5, neutral_momentum = 1.5)
+const NSR23_RISE = RiseCoefficients(combined_buoyancy = 0.5, neutral_momentum = 1.5)
 
 """
     buoyancy_transition_distance(F)

@@ -49,10 +49,7 @@ function main(args)
             site,
             rose;
             nuclide = config.nuclide,
-            washout_duration = config.washout_duration,
-            precipitation = config.precipitation,
-            rate = config.precipitation_rate,
-            washout_model = config.washout_model,
+            washout = config.washout,
         )
         χ = χQ * config.activity
         @printf(

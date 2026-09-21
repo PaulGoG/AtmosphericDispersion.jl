@@ -1,19 +1,5 @@
 @testset "Plume rise" begin
-    stack = StackSource(;
-        height = 50.3,
-        diameter = 2.33,
-        exit_velocity = 10.0,
-        exit_density = 0.6,
-        exit_temperature = 324.0,
-    )
-    air = Atmosphere(;
-        reference_speed = 4.0,
-        temperature = 287.0,
-        density = 1.2,
-        lapse_rate = 2e-2,
-        surface = SURFACE_AGRICULTURAL,
-        roughness = ROUGHNESS_PASTURE,
-    )
+    stack, air = REFERENCE_STACK, REFERENCE_AIR
     F = buoyancy_flux(stack, air)
     Fₘ = momentum_flux(stack, air)
     S = stability_parameter(air)
@@ -47,26 +33,13 @@
     end
 
     @testset "stratification caps the rise" begin
-        neutral = Atmosphere(;
-            reference_speed = 4.0,
-            temperature = 287.0,
-            density = 1.2,
-            lapse_rate = -STANDARD_GRAVITY / DRY_AIR_SPECIFIC_HEAT,
-            surface = SURFACE_AGRICULTURAL,
-            roughness = ROUGHNESS_PASTURE,
-        )
+        neutral =
+            reference_atmosphere(; lapse_rate = -STANDARD_GRAVITY / DRY_AIR_SPECIFIC_HEAT)
         @test final_buoyant_rise(F, 4.0, stability_parameter(neutral)) ≥
               final_buoyant_rise(F, 4.0, S)
         # Unstable air has no stable ceiling, and must not raise a domain
         # error from a fractional power of a negative stability parameter.
-        unstable = Atmosphere(;
-            reference_speed = 4.0,
-            temperature = 287.0,
-            density = 1.2,
-            lapse_rate = -0.02,
-            surface = SURFACE_AGRICULTURAL,
-            roughness = ROUGHNESS_PASTURE,
-        )
+        unstable = reference_atmosphere(; lapse_rate = -0.02)
         Su = stability_parameter(unstable)
         @test Su < 0
         @test isfinite(final_buoyant_rise(F, 4.0, Su))
@@ -129,14 +102,14 @@
 
         w₀, D = 10.0, 2.33
         for u in (0.5, 1.0, 4.0, 7.3, 15.0), Sv in (1e-4, 8.63e-4, 1e-3, 5e-3)
-            @test final_buoyant_rise(F, u, Sv, THESIS_RISE) == original_hb_final(F, u, Sv)
-            @test final_momentum_rise(Fₘ, w₀, D, u, Sv, THESIS_RISE) ==
+            @test final_buoyant_rise(F, u, Sv, NSR23_RISE) == original_hb_final(F, u, Sv)
+            @test final_momentum_rise(Fₘ, w₀, D, u, Sv, NSR23_RISE) ==
                   original_hm_final(Fₘ, w₀, D, u, Sv)
             for x in (1.0, 10.0, 137.0, 1000.0, 10_000.0)
-                @test buoyant_rise(x, F, u, Sv, THESIS_RISE) == original_hb(x, F, u, Sv)
-                @test momentum_rise(x, Fₘ, w₀, D, u, Sv, THESIS_RISE) ==
+                @test buoyant_rise(x, F, u, Sv, NSR23_RISE) == original_hb(x, F, u, Sv)
+                @test momentum_rise(x, Fₘ, w₀, D, u, Sv, NSR23_RISE) ==
                       original_hm(x, Fₘ, w₀, D, u, Sv)
-                @test combined_rise(x, F, Fₘ, w₀, u, Sv, D, THESIS_RISE) ==
+                @test combined_rise(x, F, Fₘ, w₀, u, Sv, D, NSR23_RISE) ==
                       original_hmb(x, F, Fₘ, w₀, D, u, Sv)
             end
         end
@@ -152,19 +125,12 @@
             exit_density = 1.2,
             exit_temperature = 287.0,
         )
-        neutral = Atmosphere(;
-            reference_speed = 4.0,
-            temperature = 287.0,
-            density = 1.2,
-            lapse_rate = -0.0098,
-            surface = SURFACE_AGRICULTURAL,
-            roughness = ROUGHNESS_PASTURE,
-        )
+        neutral = reference_atmosphere(; lapse_rate = -0.0098)
         @test buoyancy_flux(jet, neutral) == 0
         u, x = 5.0, 1e5
         @test plume_rise(x, jet, neutral, u) == 3 * 20.0 * 1.0 / u
-        @test plume_rise(x, jet, neutral, u, THESIS_RISE) == 1.5 * 20.0 * 1.0 / u
-        for rise in (BRIGGS_RISE, XOQDOQ_RISE, THESIS_RISE)
+        @test plume_rise(x, jet, neutral, u, NSR23_RISE) == 1.5 * 20.0 * 1.0 / u
+        for rise in (BRIGGS_RISE, XOQDOQ_RISE, NSR23_RISE)
             site = Site(; source = jet, atmosphere = neutral, rise)
             v = transport_wind_speed(site, PASQUILL_D)
             @test plume_rise(x, site, PASQUILL_D) == plume_rise(x, jet, neutral, v, rise)

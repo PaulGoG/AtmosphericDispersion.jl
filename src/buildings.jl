@@ -50,17 +50,17 @@ the Romanian normative it was written against, and no source outside that
 normative was found for it; NRC Regulatory Guide 1.111 Eq. (9) is a third
 convention again, applying 0.5 to the building *height* rather than its area.
 
-See [`NORMATIVE_WAKE_COEFFICIENT`](@ref) to restore the 2021 value.
+See [`NSR23_WAKE_COEFFICIENT`](@ref) to restore the 2021 value.
 """
 const DEFAULT_WAKE_COEFFICIENT = 1.0
 
 """
-    NORMATIVE_WAKE_COEFFICIENT
+    NSR23_WAKE_COEFFICIENT
 
 The wake coefficient of the Romanian normative the 2021 thesis followed, kept so
 its results can be reproduced. See [`DEFAULT_WAKE_COEFFICIENT`](@ref).
 """
-const NORMATIVE_WAKE_COEFFICIENT = 1.5
+const NSR23_WAKE_COEFFICIENT = 1.5
 
 """
     BuildingEnvelope(buildings = Building[]; wake_coefficient = DEFAULT_WAKE_COEFFICIENT)

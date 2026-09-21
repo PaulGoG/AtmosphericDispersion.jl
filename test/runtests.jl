@@ -6,6 +6,8 @@ using JET
 using QuadGK
 using TOML
 
+include("fixtures.jl")
+
 @testset "AtmosphericDispersion.jl" begin
     include("test_quality.jl")
     include("test_sectors.jl")

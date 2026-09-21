@@ -17,10 +17,15 @@ surface = "agricultural"  # wind-profile surface; one of: water | agricultural |
 roughness = "pasture"     # roughness class; one of: grassland_water | arable | pasture | rural | forest_urban | metropolis
 
 [model]
-plume_rise = "briggs"       # plume-rise constants; one of: briggs | xoqdoq | thesis_2021
+plume_rise = "briggs"       # plume-rise constants; one of: briggs | xoqdoq | nsr23
 resuspension = "iaea_ss57"  # resuspension factor; one of: iaea_ss57 | maxwell_anspaugh
-mixing_layer = "tabulated"  # mixing-layer depth; one of: tabulated | unbounded | uniform_800
 washout = "normative"       # washout scheme; one of: normative | hto
+
+[mixing_layer]
+scheme = "tabulated"          # depth of the mixing layer; one of: tabulated | uniform | custom | unbounded
+above_lid = "rise_inhibited"  # plume above the lid; one of: rise_inhibited | full_penetration
+# uniform_depth = 800.0       # single depth for all classes, m; > 0; only with scheme = "uniform"
+# depths = [1300.0, 900.0, 850.0, 800.0, 400.0, 100.0]  # per class A to F, m; each > 0, inf for none; only with scheme = "custom"
 
 [buildings]
 wake_coefficient = 1.0    # wake broadening coefficient C in sqrt(sigma^2 + C A/pi); >= 0, 0 disables

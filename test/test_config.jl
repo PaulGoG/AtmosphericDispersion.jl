@@ -12,7 +12,10 @@
         @test c.nuclide.decay_constant == TRITIUM_DECAY_CONSTANT
         @test nsectors(grid(c.rose)) == 16
         @test c.activity == 6.8e14
-        @test c.precipitation === PRECIPITATION_RAIN
+        @test c.washout.precipitation === PRECIPITATION_RAIN
+        @test c.washout.rate == 1.0
+        @test c.washout.duration == 0.0
+        @test c.washout.model === WASHOUT_NORMATIVE
         @test c.spacing < c.extent
         # It drives the solver.
         @test dilution_long_term(0.0, -c.extent, c.site, c.rose; nuclide = c.nuclide) > 0

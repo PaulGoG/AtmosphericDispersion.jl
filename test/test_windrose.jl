@@ -34,7 +34,7 @@
 
     @testset "stability fractions" begin
         f = fill(1 / 16, 16)
-        s = [0.06533, 0.06533, 0.06533, 0.488, 0.158, 0.158]  # the 2021 input table
+        s = collect(STABILITY_2021)
         rose = WindRose(g, f, BlowingFrom(); stability = s)
         for k = 1:16
             @test sum(stability_fraction(rose, k, c) for c in PASQUILL_CLASSES) ≈ 1 atol =
