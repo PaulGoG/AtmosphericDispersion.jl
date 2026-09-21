@@ -91,7 +91,6 @@ and a roughness class that happen to produce them. Turner's worked problems
 print σ_y and σ_z read off his figures, and a σ read off a graph is an input to
 the problem, not something to be recomputed.
 """
-
 struct Site
     source::StackSource
     atmosphere::Atmosphere

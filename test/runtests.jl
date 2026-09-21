@@ -971,6 +971,40 @@ using TOML
             @test χ(only_north, 1) > 0
             @test χ(only_north, 9) == 0
         end
+
+        @testset "long term is the rose-weighted extended regime" begin
+            # With every hour spent in one class, the long-term factor on a
+            # sector axis is the extended factor times the frequency of
+            # transport towards that sector — identically, whatever the vertical
+            # profile. It fails if the two regimes treat the mixing lid
+            # differently, which they once did: the lid reached the extended
+            # regime and the depletion integral but not the long-term sum.
+            g = SectorGrid(16)
+            F_k = fill(1 / 16, 16)
+            lid_off = Site(; source = stack, atmosphere = air, mixing = MIXING_UNBOUNDED)
+            for (i, class) in enumerate(PASQUILL_CLASSES)
+                stab = zeros(6)
+                stab[i] = 1.0
+                rose = WindRose(g, F_k, BlowingFrom(); stability = stab)
+                for s in (site, lid_off), r in (2e3, 1e4, 2e4, 5e4), k in (1, 6, 12)
+                    β = sector_bearing(g, k)
+                    east, north = r * sin(β), r * cos(β)
+                    from = sector_bearing(g, opposite(g, k))
+                    @test dilution_long_term(east, north, s, rose) ≈
+                          dilution_extended(east, north, s, class, from, g) / 16 rtol = 1e-12
+                end
+            end
+            # The lid is felt where it should be: class A, whose σ_z reaches its
+            # 1300 m depth within 20 km, and not class D within the same range.
+            only_A = WindRose(g, F_k, BlowingFrom(); stability = [1.0, 0, 0, 0, 0, 0])
+            only_D = WindRose(g, F_k, BlowingFrom(); stability = [0, 0, 0, 1.0, 0, 0])
+            ratio(rose, r) =
+                dilution_long_term(0.0, -r, site, rose) /
+                dilution_long_term(0.0, -r, lid_off, rose)
+            @test ratio(only_A, 2e4) ≈ 1.44 atol = 0.01
+            @test ratio(only_A, 5e4) ≈ 2.23 atol = 0.01
+            @test ratio(only_D, 2e4) ≈ 1 atol = 1e-3
+        end
     end
 
     @testset "Depletion" begin

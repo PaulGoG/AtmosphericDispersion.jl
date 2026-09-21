@@ -140,6 +140,12 @@ summed over the Pasquill classes, with `F_k` the frequency of wind blowing
 **towards** the receptor's sector `k` and `F_ki` the fraction of that time
 spent in class `i`.
 
+That is the form without a mixing lid. Under one, `√(2/π) exp(−H²/2Σ_z²)/Σ_z`
+is replaced class by class with [`crosswind_integrated_factor`](@ref), exactly
+as in [`dilution_extended`](@ref): the long-term factor is the extended one
+summed over classes and weighted by the rose, and the two must agree on the
+vertical profile.
+
 `D_i` is the depletion factor of class `i`, which is one unless a `nuclide` is
 given. It sits **inside** the class sum because it depends on the class through
 both the transport speed and the vertical dispersion. The 2021 code instead
@@ -183,10 +189,13 @@ function dilution_long_term(
         u = transport_wind_speed(site, class)
         u > 0 || continue
         D = _depletion(r, site, class, nuclide, washout_duration, precipitation, rate)
-        total += F_ki * D * exp(-H^2 / (2Σz^2)) / (Σz * u)
+        # The same vertical factor as the extended regime, of which this is the
+        # frequency-weighted sum, so the mixing lid enters here as it does there.
+        vertical = crosswind_integrated_factor(H, Σz, mixing_depth(class, site.mixing))
+        total += F_ki * D * vertical / u
     end
 
-    return sqrt(2 / π) * F_k * total / (r * sector_width(g))
+    return F_k * total / (r * sector_width(g))
 end
 
 # Dispatched rather than branched, so the undepleted path stays free of the

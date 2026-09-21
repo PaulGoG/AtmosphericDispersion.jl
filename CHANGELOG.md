@@ -86,6 +86,13 @@ follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **The mixing layer did not reach the long-term regime.** `dilution_long_term`
+  kept the unbounded vertical factor while `dilution_extended`, of which it is
+  the rose-weighted sum, and the depletion integral inside it both carried the
+  lid. In class A the long-term factor was low by a factor of 1.44 at 20 km and
+  2.23 at 50 km. The two regimes now share `crosswind_integrated_factor`, and
+  the suite asserts their identity for every class with and without a lid.
+- `Site` had no docstring: a blank line separated it from the `struct`.
 - **Two coefficients of the roughness correction.** `F(z₀,x)` carried 1.58 and
   2.08 for z₀ = 0.01 m and 0.04 m where Hosker publishes 1.56 and 2.02, making
   σ_z 1.9 % too large over grassland and water and 3.6 % too large over arable
