@@ -274,7 +274,14 @@ Closed, and recorded here because they were open for a long time:
 ├── test/
 │   ├── Project.toml
 │   ├── activate.jl
-│   └── runtests.jl         unit tests + Aqua, JET, ExplicitImports
+│   ├── runtests.jl         includes the files below, in dependency order
+│   ├── fixtures.jl         the reference stack, atmosphere and site the suite shares
+│   ├── test_quality.jl     Aqua, JET, ExplicitImports
+│   ├── test_<source>.jl    one file per source file: sectors, stability, windrose,
+│   │                       tables, dispersion, source, plumerise, buildings, site,
+│   │                       mixing, dilution, depletion, deposition, config
+│   ├── test_physics_validation.jl   analytic invariants of the Gaussian plume
+│   └── test_literature.jl  published tables and constants, source by source
 ├── docs/
 │   ├── Project.toml
 │   ├── activate.jl
