@@ -40,14 +40,26 @@ optional and defaults to the first value listed.
 | | `nsr23` | [`NSR23_RISE`](@ref): 0.5 and 1.5, the constants of CNCAN NSR-23 as the 2021 code carried them |
 | `resuspension` | `iaea_ss57` | IAEA Safety Series 57 (1982), Eq. (3.14A) |
 | | `maxwell_anspaugh` | Maxwell and Anspaugh, *Health Physics* **101** (2011); NUREG/CR-7270 |
-| `mixing_layer` | `tabulated` | HPA-RPD-058 Table 3.5(a) by class: A 1300, B 900, C 850, D 800, E 400, F 100 m |
-| | `unbounded` | no lid |
-| | `uniform_800` | 800 m for every class, HPA-RPD-058 §3.2.2.2.3 |
 | `washout` | `normative` | NSR-23 Table 7 throughout |
 | | `hto` | snow scavenging from Ogram (1985) Eq. (38), for tritiated water; rain unchanged |
 
-See [`RiseCoefficients`](@ref), [`ResuspensionModel`](@ref),
-[`MixingLayer`](@ref) and [`WashoutModel`](@ref) for the physics behind each.
+See [`RiseCoefficients`](@ref), [`ResuspensionModel`](@ref) and
+[`WashoutModel`](@ref) for the physics behind each.
+
+## The `[mixing_layer]` table
+
+| Key | Value | Meaning |
+|---|---|---|
+| `scheme` | `tabulated` | HPA-RPD-058 Table 3.5(a) by class: A 1300, B 900, C 850, D 800, E 400, F 100 m |
+| | `uniform` | one depth for every class, given as `uniform_depth` in metres; HPA-RPD-058 §3.2.2.2.3 recommends 800 |
+| | `custom` | six `depths` in metres, class A to F; `inf` leaves a class unbounded |
+| | `unbounded` | no lid |
+| `above_lid` | `rise_inhibited` | a plume above the lid is held at it, NRPB-R157 §B2.3 |
+| | `full_penetration` | a plume above the lid leaves the layer and gives no ground-level concentration, EPA ISC3 vol. II §1.1.6.1 |
+
+`uniform_depth` is required by, and only legal with, `scheme = "uniform"`, and
+`depths` likewise with `scheme = "custom"`. See [`MixingLayer`](@ref) and
+[`LidRule`](@ref).
 
 ## The `[nuclide]` table
 

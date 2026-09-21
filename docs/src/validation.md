@@ -93,21 +93,21 @@ The one exception is not the package. Category F at 30 m reads **0.13 at 50 km
 and 0.19 at 100 km** — a depletion factor that rises with distance, which is
 impossible: material already deposited does not come back. This package gives
 **0.0188** there, which is monotone and one decimal point from the printed 0.19.
-The test asserts the cell is wrong in the source and asserts the computed value
-instead.
+The test leaves that cell out and pins the computed value instead.
 
-That benchmark also settled a boundary this package had guessed at. A plume
-released *above* the inversion is decoupled and must not be capped; a plume
-released *exactly at* it still is. Table 3.7 tabulates a 100 m release in
-category F, whose mixing depth is 100 m, and only the capped form reproduces it —
-0.357 and 0.089 at 50 and 100 km against a published 0.33 and 0.083, where the
-uncapped form gives 0.599 and 0.311. The condition is `H > A`, not `H ≥ A`, and
-the table is what decided it.
+That benchmark also fixes what a lid does to a source standing at it. Table 3.7
+tabulates a 100 m release in category F, whose mixing depth is 100 m, and only
+the capped form reproduces it — 0.356 and 0.089 at 50 and 100 km against a
+published 0.33 and 0.083, where the uncapped form gives 0.599 and 0.311. What
+happens to a plume *above* the lid is a separate matter, and one of convention;
+see the mixing layer below.
 
 Reproducing published benchmarks at all needed one thing the package lacked: they
 state the effective release height and the transport wind speed as inputs, where
-the package derives both. `Site` now takes `fixed_height` and `fixed_wind`, which
-bypass plume rise and the wind profile.
+the package derives both. `PrescribedPlume` wraps a `Site` and takes them as
+given — the two σ as well, for Turner's problems — bypassing plume rise, the wind
+profile and the dispersion curves. A prescribed σ_z holds at one distance only,
+so the depletion integral refuses it.
 
 ### The mixing layer
 
@@ -116,9 +116,17 @@ inversion, and once σ_z approaches that depth the plume is trapped between the
 ground and the lid and reflects off both. The package had no lid, which is what
 limited agreement with published depletion tables in the far field.
 
-It has one now, `HPA-RPD-058` §3.2.2.1 Eq. (3.4) — the image sum over virtual
-sources at `2sA ± h_e`, truncated at `|s| = 1` as the report prescribes — going
-over to Eq. (3.5), a uniform profile of `1/A`, once σ_z reaches the depth.
+It has one now: `HPA-RPD-058` §3.2.2.1 Eq. (3.4), the image sum over virtual
+sources at `2sA ± h_e`. The report truncates it at `|s| = 1` and changes to the
+uniform profile `1/A` of Eq. (3.5) once σ_z reaches the depth, noting that the
+series "can be summed to any prescribed accuracy". The package sums it: the
+image series while `Σ_z < 0.7 A`, and above that the cosine series of the same
+function, whose leading term *is* Eq. (3.5). There is no change of formula, the
+activity between the ground and the lid integrates to one to within 4 × 10⁻¹⁶
+at every σ_z, and the profile tends to `1/A` of its own accord: 1.4 % above it
+at `Σ_z = A`, 5 × 10⁻⁹ at `2A`. The truncated sum stays within 0.06 % of the
+converged one up to `Σ_z = A` and is 3 % low at `1.5 A`.
+
 Depths are Table 3.5(a), which the report attributes to Clarke (1979) and Jones
 (1980):
 
@@ -126,40 +134,59 @@ Depths are Table 3.5(a), which the report attributes to Clarke (1979) and Jones
 |---|---|---|---|---|---|
 | 1300 m | 900 m | 850 m | 800 m | 400 m | 100 m |
 
-Deeper in unstable air, shallower in stable, which is the physical ordering.
-`[model] mixing_layer` selects `tabulated` (the default), `unbounded` (the old
-behaviour), or `uniform_800` — the single depth HPA-RPD-058 §3.2.2.2.3
-recommends "for all conditions" when the real one is unknown.
+Deeper in unstable air, shallower in stable, which is the physical ordering. The
+depth is a site measurement where there is one, so `MixingLayer` takes any six
+depths. In a configuration, `[mixing_layer] scheme` selects `tabulated` (the
+default), `uniform` with a `uniform_depth` — HPA-RPD-058 §3.2.2.2.3 recommends
+800 m "for all conditions" when the real one is unknown — `custom` with six
+`depths`, or `unbounded`.
 
-**What it changes**, as a ratio to the unbounded field at ground level:
+**What it changes**, as a ratio to the unbounded field at ground level, for the
+reference case:
 
 | | 10 km | 20 km | 50 km |
 |---|---|---|---|
-| A | 1.06 | **1.44** | **2.23** |
-| B | 1.00 | 1.13 | 1.67 |
+| A | 1.06 | **1.45** | **2.23** |
+| B | 1.00 | 1.12 | 1.67 |
 | C | 1.00 | 1.01 | 1.16 |
 | D | 1.00 | 1.00 | 1.00 |
 | E | 1.00 | 1.00 | 1.01 |
-| F | 1.00 | 1.00 | 1.00 |
+| F | **2.28** | **2.14** | **2.12** |
 
 The unstable classes reach the lid first, despite having the deepest one,
 because σ_z grows fastest there. The lid can only raise ground-level
 concentration — it reflects back down material that would otherwise have kept
 rising — so the correction is in the conservative direction.
 
-**Class F is exempt, and deliberately.** Its tabulated depth is 100 m while
-plume rise puts the effective release at 103 m, so the plume starts *above* the
-inversion. HPA's Diagram 3.1 places the source below it, and a plume above one
-is decoupled from the ground until the inversion breaks — fumigation, a
-different model this package does not implement. Trapping it against a lid it is
-already above would have roughly doubled the ground-level concentration on no
-physical grounds, so where `H ≥ A` the lid is ignored.
+**A plume above the lid.** Class F is a different case: its tabulated depth is
+100 m while plume rise puts the effective release at 103.5 m. Published practice
+treats a plume above the lid in two ways, and the package carries both, as
+`above_lid`:
 
-The material is confined to `0 ≤ z ≤ A`, and the released activity integrated
-over that interval is **1.000000000**, which is the test the `|s| = 1`
-truncation had to survive.
+- `rise_inhibited`, the default. NRPB-R157 §B2.3: "plume rise will be inhibited
+  by a capping inversion to the mixing layer. If a plume rises into such an
+  inversion the amount of material in the mixing layer, and hence ground-level
+  concentration, will be reduced." Holding the whole plume at the lid,
+  `H = min(H, A)`, is therefore the conservative reading. It is continuous in
+  `H`, and it is the case Table 3.7 tabulates. It is also what doubles class F
+  in the table above: a source at a reflecting lid is its own image.
+- `full_penetration`. EPA ISC3, User's Guide vol. II §1.1.6.1: "if the effective
+  stack height, he, exceeds the mixing height, zi, the plume is assumed to fully
+  penetrate the elevated inversion and the ground-level concentration is set
+  equal to zero". ISC3 also takes stable air as unbounded, which is a depth of
+  `inf` for classes E and F.
 
-Note that the analytic invariants below — the crosswind integral, the sector
+An earlier version of this package ignored the lid where `H > A`, on the
+argument that such a plume is decoupled from the ground until the inversion
+breaks — fumigation, which is not modelled here. That matched neither published
+convention and made the field discontinuous: a plume 0.1 m below a 100 m lid
+gave twice the ground-level concentration of one 0.1 m above it.
+
+In the reference case the choice moves the undepleted long-term χ/Q at 20 km in
+the most exposed sector from 4.2 × 10⁻⁹ s m⁻³ with no lid to 5.2 × 10⁻⁹ with
+the rise inhibited, and to 3.4 × 10⁻⁹ with full penetration.
+
+Note that the analytic invariants — the crosswind integral, the sector
 average, the `Σ_z = H/√2` maximum — are properties of the *unbounded* Gaussian
 and are asserted against a site with the lid switched off. They are statements
 about the kernel's normalisation, not about the atmosphere.
