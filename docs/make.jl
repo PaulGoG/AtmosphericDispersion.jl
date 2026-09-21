@@ -21,6 +21,9 @@ makedocs(;
     ),
     pages = [
         "Home" => "index.md",
+        "Conventions" => "conventions.md",
+        "Validation" => "validation.md",
+        "The 2021 thesis code" => "thesis.md",
         "API" => [
             "Sectors, stability and the wind rose" => "api/geometry.md",
             "Site and dispersion parameters" => "api/parameters.md",
