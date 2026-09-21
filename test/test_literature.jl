@@ -429,7 +429,7 @@
     end
 
     # The neutral momentum rise is 3 w₀D/u in Briggs (1969) Eq. 5.2, as
-    # implemented by EPA ISC3 Eq. (1-16). The 2021 code had 1.5, unsourced.
+    # implemented by EPA ISC3 Eq. (1-16). The 2021 code had the 1.5 of Holland (1953).
     @testset "neutral momentum rise is Briggs" begin
         for w₀ in (5.0, 15.0), D in (1.0, 3.0), u in (2.0, 8.0)
             @test final_momentum_rise(0.0, w₀, D, u, -1e-6, BRIGGS_RISE) ≈ 3 * w₀ * D / u

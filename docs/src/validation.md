@@ -287,7 +287,7 @@ value selected by `[model] plume_rise`, defaulting to Briggs:
 | | Briggs, the default | 2021 code | Also published |
 |---|---|---|---|
 | Combined-law buoyancy denominator | **0.72** = 2β², β = 0.6 | 0.5 | — |
-| Neutral momentum rise, `c w₀D/u` | **3** — Briggs (1969) Eq. 5.2, EPA ISC3 Eq. (1-16) | 1.5, unsourced | — |
+| Neutral momentum rise, `c w₀D/u` | **3** — Briggs (1969) Eq. 5.2, EPA ISC3 Eq. (1-16) | 1.5, the momentum term of Holland (1953), Turner Eq. (4.1) | — |
 | Stable final rise, `c[F/(uS)]^(1/3)` | **2.6** — Briggs, Handbook on Atmospheric Diffusion | 2.6 | 2.4, NRC XOQDOQ |
 
 The first is the one that matters. The combined momentum-and-buoyancy law must
