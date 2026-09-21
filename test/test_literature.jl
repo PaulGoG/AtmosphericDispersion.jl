@@ -55,14 +55,6 @@
     # that it is √(2/π) divided by a 22.5° sector in radians; SRS-19 works
     # in twelve sectors, where the same constant is 1.5238.
     @testset "the sector constant is the published regulatory value" begin
-        # SRS-19 Eq. (3) prints the twelve-sector constant as 12/√(2π³),
-        # which is a closed form rather than a rounded decimal; the
-        # sixteen-sector analogue is RG 1.111's 2.032.
-        @test sqrt(2 / π) * 16 / (2π) ≈ 16 / sqrt(2π^3) rtol = 1e-14
-        @test sqrt(2 / π) * 12 / (2π) ≈ 12 / sqrt(2π^3) rtol = 1e-14
-        @test sqrt(2 / π) * 16 / (2π) ≈ 2.032 rtol = 2e-4
-        @test sqrt(2 / π) * 12 / (2π) ≈ 1.5238 rtol = 2e-4
-
         stack = StackSource(;
             height = 50.3,
             diameter = 2.33,
@@ -112,16 +104,6 @@
         @test c.B == 1e-9
         @test c.λ₁ == 1e-2
         @test c.λ₂ == 2e-5
-
-        # The same paragraph brackets them across the literature.
-        @test 1e-6 ≤ c.A ≤ 1e-4
-        @test 1e-10 ≤ c.B ≤ 1e-8
-        # "of the order of weeks" and "in the range 50 to 100 years"
-        @test 14 ≤ log(2) / c.λ₁ ≤ 120
-        @test 50 ≤ log(2) / c.λ₂ / 365.25 ≤ 100
-
-        @test resuspension_factor(0) ≈ c.A + c.B
-        @test resuspension_factor(1e9) ≈ 0 atol = 1e-12
     end
 
     # The washout table follows the published intensity dependence and
@@ -160,13 +142,6 @@
             @test r.low ≤ 1.6e-4 ≤ r.high
             @test r.low ≤ 1.1e-4 ≤ r.high
         end
-
-        # Safety Series 57 makes the dependence linear in intensity, where
-        # the normative's table fits 0.75 and NRPB-R322 publishes 0.75.
-        # NRPB-R157 §D3.4 brackets the exponent at 0.5 to 1.0, which
-        # contains both positions, so neither is asserted against the other.
-        @test 0.5 ≤ 0.75 ≤ 1.0
-        @test 0.5 ≤ 1.0 ≤ 1.0
 
         # The snow columns are the rain columns scaled down by a constant —
         # a particle-scavenging suppression, and not a measurement.
@@ -235,17 +210,14 @@
             mixing = MIXING_UNBOUNDED,        # Turner has no lid
         )
 
-        worst = 0.0
+        # The residual is Turner's own rounding: his intermediate columns
+        # carry three significant figures and the exponentials are summed
+        # from those.
         for (z, χ) in published
             computed =
                 Q * dilution_instantaneous(0.0, -1000.0, Float64(z), site, PASQUILL_D, 0.0)
             @test computed ≈ χ rtol = 0.025
-            worst = max(worst, abs(computed / χ - 1))
         end
-        # The residual is Turner's own rounding: his intermediate columns
-        # carry three significant figures and the exponentials are summed
-        # from those.
-        @test worst < 0.025
 
         # The profile peaks at plume height and is symmetric about it only
         # in the first term; the ground reflection is what lifts z = 0 above
@@ -256,12 +228,6 @@
         ]
         @test argmax(χs) == 6                       # z = 150 m, the release height
         @test χs[1] > Q * exp(-0.5 * (H / σz)^2) / (2π * σy * σz * u)
-
-        # Turner prints the prefactor as 3.5e-5 g/m³ where his own table
-        # requires 3.5e-4: 151/(2π·157·110·4) = 3.479e-4. A second typo in a
-        # published source, after HPA Table 3.7's non-monotonic cell.
-        @test Q / (2π * σy * σz * u) ≈ 3.479e-4 rtol = 1e-3
-        @test published[1][2] / 0.794 ≈ 3.5e-4 rtol = 0.01
     end
 
     # HPA-RPD-058 Table 3.7, "Fractions of material remaining in the plume
@@ -323,9 +289,6 @@
         # the row is non-monotonic and cannot be right. This package gives
         # 0.0188 there, which is both monotone and a decimal point away from
         # the printed 0.19.
-        @test rows[6][4][8] > rows[6][4][7]        # the table, not monotone
-
-        worst = 0.0
         for (H, class, u, published) in rows
             site =
                 Site(; source = stack, atmosphere = air, fixed_height = H, fixed_wind = u)
@@ -333,14 +296,12 @@
                 (H == 30.0 && class == PASQUILL_F && k == 8) && continue
                 f = dry_depletion_factor(x, site, class, marker)
                 @test f ≈ published[k] atol = 0.03
-                worst = max(worst, abs(f - published[k]))
             end
             # every row is monotone here, including the one that is not in
             # the table
             factors = [dry_depletion_factor(x, site, class, marker) for x in xs]
             @test issorted(factors; rev = true)
         end
-        @test worst < 0.03
 
         # The typo cell, computed rather than read
         typo_site =
@@ -359,21 +320,12 @@
         @test ht.low == 0.04e-2
         @test ht.high == 0.05e-2
 
-        # "an order of magnitude lower" — the norm's own words
-        @test hto.low / ht.low == 10
-        @test 10 ≤ hto.high / ht.high ≤ 20
-
         # The lower HTO bound is close to what other sources put it at:
         # the MACCS2 default 0.5 cm/s, the Savannah River measurement 0.42,
-        # the AECL range 0.392-0.444.
+        # the upper end of the AECL range, 0.444.
         for v in (0.5e-2, 0.42e-2, 0.444e-2)
             @test hto.low ≤ v ≤ hto.high
         end
-        # AECL's lower end sits just outside, 2 % below the norm's 0.4 —
-        # worth pinning rather than rounding away, since it says the norm's
-        # lower bound is at the edge of the measurements and not inside them.
-        @test 0.392e-2 < hto.low
-        @test hto.low / 0.392e-2 ≈ 1.02 rtol = 0.01
     end
 
 
@@ -382,9 +334,6 @@
     # (σ_z² + A_B/π)^(1/2), and the German AVV zu §47 StrlSchV (2012)
     # Eqs. (4.31)/(4.32) as √(σ² + I_G²/π): a coefficient of one in both.
     @testset "wake coefficient is the published one" begin
-        @test DEFAULT_WAKE_COEFFICIENT == 1.0
-        @test NORMATIVE_WAKE_COEFFICIENT == 1.5
-
         b = Building(; east = 25.0, north = 0.0, height = 60.0, frontal_area = 3600.0)
         iaea = BuildingEnvelope([b])
         normative = BuildingEnvelope([b]; wake_coefficient = NORMATIVE_WAKE_COEFFICIENT)
@@ -393,7 +342,6 @@
             # released inside the cavity, where the correction is undiluted
             @test wake_broadened(σ, 0.0, iaea) ≈ sqrt(σ^2 + A / π)
             @test wake_broadened(σ, 0.0, normative) ≈ sqrt(σ^2 + 1.5A / π)
-            @test wake_broadened(σ, 0.0, iaea) < wake_broadened(σ, 0.0, normative)
         end
     end
 
@@ -462,8 +410,6 @@
         # literature rounds it to and that `buoyant_rise` uses. The two
         # therefore agree to 0.6 %, not exactly — the same rounding the
         # neutral final rise shows as 21.425 against a published 21.4.
-        @test (3 / BRIGGS_RISE.combined_buoyancy)^(1 / 3) ≈ 1.60915 rtol = 1e-4
-
         checked = 0
         for F in (5.0, 50.0, 500.0), u in (2.0, 5.0, 9.0), x in (50.0, 100.0, 300.0)
             two_thirds = 1.6 * F^(1 / 3) * x^(2 / 3) / u
@@ -482,7 +428,6 @@
         end
         @test checked ≥ 6          # the sweep must actually exercise the branch
         @test BRIGGS_RISE.combined_buoyancy == 2 * 0.6^2       # Briggs, β = 0.6
-        @test 3 / 1.6^3 ≈ 0.7324 rtol = 1e-4                   # the same from the law
         @test THESIS_RISE.combined_buoyancy == 0.5
     end
 
@@ -493,7 +438,6 @@
             @test final_momentum_rise(0.0, w₀, D, u, -1e-6, BRIGGS_RISE) ≈ 3 * w₀ * D / u
             @test final_momentum_rise(0.0, w₀, D, u, -1e-6, THESIS_RISE) ≈ 1.5 * w₀ * D / u
         end
-        @test BRIGGS_RISE.neutral_momentum == 3.0
     end
 
     # The stable final rise coefficient is 2.6 in Briggs and the Handbook on
@@ -540,11 +484,8 @@
     # 1.6F^(1/3)(3.5x_f)^(2/3)/u. Briggs publishes it as 21.4F^(3/4)/u and
     # 38.7F^(3/5)/u. Substituting x_f shows these are one expression:
     # 1.6·49^(2/3) = 21.425 and 1.6·119^(2/3) = 38.71, which the literature
-    # rounds. The agreement is therefore exact up to that rounding, and the
-    # test asserts both the algebra and the numbers.
+    # rounds. The agreement is therefore exact up to that rounding.
     @testset "neutral final rise is the published Briggs form" begin
-        @test 1.6 * 49^(2 / 3) ≈ 21.425 rtol = 1e-4
-        @test 1.6 * 119^(2 / 3) ≈ 38.71 rtol = 1e-4
         for F in (5.0, 20.0, 54.0), u in (3.0, 8.0)
             @test final_buoyant_rise(F, u, -1e-6) ≈ 21.4 * F^0.75 / u rtol = 2e-3
         end

@@ -125,9 +125,6 @@
         Σy = corrected_lateral_dispersion(x, site, PASQUILL_D)
         expected = Λ * Q * decay_factor(x, u, TRITIATED_WATER) / (sqrt(2π) * Σy * u)
         @test ω ≈ expected
-        @test sqrt(2) * π / sqrt(2π) ≈ sqrt(π)
-        @test ω ≈
-              sqrt(π) * Λ * Q * decay_factor(x, u, TRITIATED_WATER) / (sqrt(2) * π * Σy * u)
     end
 
     @testset "sector-averaged wet deposition" begin
