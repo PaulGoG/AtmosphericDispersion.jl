@@ -68,9 +68,11 @@ Ratio of `σ_z` to the mixing depth beyond which the vertical profile is taken a
 uniform rather than summed over images.
 
 HPA-RPD-058 §3.2.2.1 puts the transition at "when the value of the vertical
-dispersion coefficient becomes greater than the depth of the mixing layer". The
-image sum and the uniform form agree to better than 1 % well before that, and
-the switch is made at 1.0 so the two descriptions coincide.
+dispersion coefficient becomes greater than the depth of the mixing layer", so
+the switch is made at 1.0. The two descriptions do not quite meet there: with
+the image sum truncated at `|s| = 1` the profile at `Σ_z = A` still departs from
+`1/A`, by 1.4 % at the ground for a low release and by up to 4 % at the lid for
+a release at the lid, so the factor steps by that much across the switch.
 """
 const UNIFORM_MIXING_RATIO = 1.0
 
@@ -90,8 +92,12 @@ divided by `√(2π) Σ_z`, truncated at `|s| = 1` as the report prescribes. Onc
 `Σ_z` reaches the depth the profile is uniform and it becomes `1/A`, which is
 Eq. (3.5).
 
-Above the lid the factor is zero: the material is confined to `0 ≤ z ≤ A`, and
-integrating over that interval returns the whole release.
+Above the lid the factor is zero: the material is confined to `0 ≤ z ≤ A`.
+Integrating over that interval returns the whole release to better than 5 parts
+in 10⁴ while `Σ_z ≤ 0.6 A`. Beyond that the truncation of the image sum starts
+to tell: just below the switch to the uniform profile, which is exact again,
+the integral is 0.997 for a release at a tenth of the depth and 0.977 for one at
+the lid itself.
 
 **A release strictly above the lid is not treated.** HPA-RPD-058's Diagram 3.1
 places the source below the inversion, and a plume released above one is

@@ -2348,6 +2348,24 @@ using TOML
                 mass, _ = quadgk(z -> vertical_factor(z, H, Σz, A), 0.0, A; rtol = 1e-12)
                 @test mass ≈ 1 rtol = 1e-8
             end
+            # Those cases sit below Σz = 0.4 A or in the uniform branch, where
+            # conservation is exact. Between them the truncation at |s| = 1
+            # loses activity, most just below the switch; it is bounded here so
+            # that it cannot grow unnoticed.
+            A = 800.0
+            conserved(H, ratio) =
+                quadgk(z -> vertical_factor(z, H, ratio * A, A), 0.0, A)[1]
+            for H = 0.0:100.0:A
+                @test 1 - 5e-4 < conserved(H, 0.6) ≤ 1 + 1e-12
+                @test 0.977 < conserved(H, 0.999) ≤ 1 + 1e-12
+            end
+            @test conserved(80.0, 0.999) ≈ 0.997 atol = 1e-3
+            @test conserved(A, 0.999) ≈ 0.977 atol = 1e-3
+            # And the step across the switch is what the docstring states.
+            step(H, z) = abs(vertical_factor(z, H, prevfloat(A), A) * A - 1)
+            @test step(0.0, 0.0) ≈ 0.014 atol = 1e-3
+            @test maximum(step(H, z) for H = 0.0:100.0:A, z = 0.0:100.0:A) ≈ 0.040 atol =
+                1e-3
 
             # A lid can only raise the ground-level concentration: it reflects
             # material back down that would otherwise have gone on rising.

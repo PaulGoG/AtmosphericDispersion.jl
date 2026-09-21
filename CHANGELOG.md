@@ -45,7 +45,9 @@ follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
     2.23× at 50 km, 1.67× in class B at 50 km, and essentially not at all in
     class D. The unstable classes reach the lid first because σ_z grows fastest
     there, despite their deeper lids.
-  - Activity is confined to `0 ≤ z ≤ A` and conserved exactly over it.
+  - Activity is confined to `0 ≤ z ≤ A` and conserved over it to within the
+    truncation of the image sum: better than 5 parts in 10⁴ up to `σ_z = 0.6 A`,
+    and 2.3 % at worst, for a release at the lid just below `σ_z = A`.
   - A release strictly above the lid is not trapped by it: class F's tabulated
     depth is 100 m against a 103 m effective release, so the plume starts above
     the inversion and is decoupled until it breaks — fumigation, which this

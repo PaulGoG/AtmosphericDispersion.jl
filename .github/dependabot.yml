@@ -17,6 +17,12 @@ updates:
       - "/test"
     schedule:
       interval: "weekly"
+    # Standard libraries are versioned with Julia itself, so a [compat] entry
+    # on one is not a requirement that can be bumped.
+    ignore:
+      - dependency-name: "Test"
+      - dependency-name: "TOML"
+      - dependency-name: "Printf"
     # To group all Julia dependency updates into a single PR, uncomment the following:
     # groups:
     #   julia-dependencies:
