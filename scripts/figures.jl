@@ -2,11 +2,13 @@
 #
 # Representative figures for the README, from the reference configuration.
 #
-#     julia --project=scripts scripts/figures.jl
+#     julia scripts/figures.jl
 #
 # Plotting lives in its own environment so that the package itself does not
 # depend on Makie: a library that computes dispersion factors should not oblige
 # every user of it to build a plotting stack.
+
+include(joinpath(@__DIR__, "activate.jl"))
 
 using AtmosphericDispersion
 using Printf, Statistics

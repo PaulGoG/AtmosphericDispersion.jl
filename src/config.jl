@@ -3,9 +3,11 @@ Configuration.
 
 A run is described by a TOML file, not by editing source. The loader enforces
 exactly what the file's comments promise — presence, type, enumerated choice,
-numerical bound — and every failure names the key it failed on, by its full
-dotted path, so that a rejected file says what to change rather than where the
-parser happened to stop.
+numerical bound, and that no key is present which the loader does not read —
+and every failure names the key it failed on, by its full dotted path, so that
+a rejected file says what to change rather than where the parser happened to
+stop. An unread key is an error because it is otherwise indistinguishable from
+a misspelt one, which would fall back to its default without a word.
 
 A pipeline must be unable to start from a configuration it cannot honour, so
 the checks run at load and construct the solver types immediately: anything the
@@ -73,6 +75,51 @@ function _choice(value::AbstractString, options::AbstractDict, path::AbstractStr
     return _fail(path, "must be one of $choices, got $(repr(value))")
 end
 
+function _reject_unknown(t::AbstractDict, allowed, path::AbstractString)
+    for key in sort!(collect(keys(t)))
+        key in allowed && continue
+        _fail(_join(path, key), "unknown key; expected one of $(join(allowed, ", "))")
+    end
+    return nothing
+end
+
+const _ROOT_KEYS = (
+    "source",
+    "atmosphere",
+    "buildings",
+    "model",
+    "nuclide",
+    "wind_rose",
+    "release",
+    "precipitation",
+    "grid",
+)
+const _SOURCE_KEYS =
+    ("height", "diameter", "exit_velocity", "exit_density", "exit_temperature")
+const _ATMOSPHERE_KEYS = (
+    "reference_speed",
+    "temperature",
+    "density",
+    "lapse_rate",
+    "specific_heat",
+    "surface",
+    "roughness",
+)
+const _MODEL_KEYS = ("plume_rise", "resuspension", "mixing_layer", "washout")
+const _BUILDINGS_KEYS = ("wake_coefficient", "building")
+const _BUILDING_KEYS = ("east", "north", "height", "frontal_area")
+const _NUCLIDE_KEYS = (
+    "name",
+    "decay_constant",
+    "deposition_velocity_low",
+    "deposition_velocity_high",
+    "washout_species",
+)
+const _ROSE_KEYS = ("sectors", "convention", "frequencies", "stability")
+const _RELEASE_KEYS = ("activity", "duration")
+const _PRECIPITATION_KEYS = ("type", "rate", "washout_duration")
+const _GRID_KEYS = ("extent", "spacing")
+
 const _RISE_CHOICES =
     Dict("briggs" => BRIGGS_RISE, "xoqdoq" => XOQDOQ_RISE, "thesis_2021" => THESIS_RISE)
 
@@ -83,6 +130,9 @@ const _MIXING_CHOICES = Dict(
 )
 
 const _WASHOUT_CHOICES = Dict("normative" => WASHOUT_NORMATIVE, "hto" => WASHOUT_HTO)
+
+const _SPECIES_CHOICES =
+    Dict("tritium_iodine" => WASHOUT_TRITIUM_IODINE, "other" => WASHOUT_OTHER_NUCLIDES)
 
 const _RESUSPENSION_CHOICES = Dict(
     "iaea_ss57" => RESUSPENSION_IAEA_SS57,
@@ -161,12 +211,17 @@ end
 Validate an already-parsed TOML table into a [`RunConfiguration`](@ref).
 """
 function configuration_from(root::AbstractDict)
+    _reject_unknown(root, _ROOT_KEYS, "")
     source = _source_from(_table(root, "source", ""))
     atmosphere = _atmosphere_from(_table(root, "atmosphere", ""))
-    buildings = _buildings_from(get(root, "buildings", Dict{String,Any}()))
+    envelope = get(root, "buildings", Dict{String,Any}())
+    envelope isa AbstractDict ||
+        _fail("buildings", "expected a table, got $(typeof(envelope))")
+    buildings = _buildings_from(envelope)
 
     model = get(root, "model", Dict{String,Any}())
     model isa AbstractDict || _fail("model", "expected a table, got $(typeof(model))")
+    _reject_unknown(model, _MODEL_KEYS, "model")
     rise = _choice(
         _value(model, "plume_rise", String, "model"; default = "briggs"),
         _RISE_CHOICES,
@@ -195,12 +250,16 @@ function configuration_from(root::AbstractDict)
     nuclide = _nuclide_from(_table(root, "nuclide", ""))
 
     release = _table(root, "release", "")
+    _reject_unknown(release, _RELEASE_KEYS, "release")
     activity =
         _nonnegative(_value(release, "activity", Float64, "release"), "release.activity")
     release_duration =
         _positive(_value(release, "duration", Float64, "release"), "release.duration")
 
     precip = get(root, "precipitation", Dict{String,Any}())
+    precip isa AbstractDict ||
+        _fail("precipitation", "expected a table, got $(typeof(precip))")
+    _reject_unknown(precip, _PRECIPITATION_KEYS, "precipitation")
     precipitation = _choice(
         _value(precip, "type", String, "precipitation"; default = "rain"),
         _PRECIPITATION_CHOICES,
@@ -220,6 +279,7 @@ function configuration_from(root::AbstractDict)
     )
 
     grid = _table(root, "grid", "")
+    _reject_unknown(grid, _GRID_KEYS, "grid")
     extent = _positive(_value(grid, "extent", Float64, "grid"), "grid.extent")
     spacing = _positive(_value(grid, "spacing", Float64, "grid"), "grid.spacing")
     spacing < extent ||
@@ -242,6 +302,7 @@ function configuration_from(root::AbstractDict)
 end
 
 function _source_from(t::AbstractDict)
+    _reject_unknown(t, _SOURCE_KEYS, "source")
     return StackSource(;
         height = _positive(_value(t, "height", Float64, "source"), "source.height"),
         diameter = _positive(_value(t, "diameter", Float64, "source"), "source.diameter"),
@@ -261,6 +322,7 @@ function _source_from(t::AbstractDict)
 end
 
 function _atmosphere_from(t::AbstractDict)
+    _reject_unknown(t, _ATMOSPHERE_KEYS, "atmosphere")
     lapse = _value(t, "lapse_rate", Float64, "atmosphere")
     isfinite(lapse) || _fail("atmosphere.lapse_rate", "must be finite, got $lapse")
     return Atmosphere(;
@@ -301,6 +363,7 @@ function _atmosphere_from(t::AbstractDict)
 end
 
 function _buildings_from(t::AbstractDict)
+    _reject_unknown(t, _BUILDINGS_KEYS, "buildings")
     coefficient = _nonnegative(
         _value(
             t,
@@ -318,6 +381,7 @@ function _buildings_from(t::AbstractDict)
     for (i, entry) in enumerate(entries)
         p = "buildings.building[$i]"
         entry isa AbstractDict || _fail(p, "expected a table, got $(typeof(entry))")
+        _reject_unknown(entry, _BUILDING_KEYS, p)
         push!(
             buildings,
             Building(;
@@ -335,6 +399,7 @@ function _buildings_from(t::AbstractDict)
 end
 
 function _nuclide_from(t::AbstractDict)
+    _reject_unknown(t, _NUCLIDE_KEYS, "nuclide")
     low = _nonnegative(
         _value(t, "deposition_velocity_low", Float64, "nuclide"),
         "nuclide.deposition_velocity_low",
@@ -354,10 +419,16 @@ function _nuclide_from(t::AbstractDict)
             "nuclide.decay_constant",
         ),
         deposition_velocity = DepositionVelocity(low, high),
+        washout_species = _choice(
+            _value(t, "washout_species", String, "nuclide"; default = "tritium_iodine"),
+            _SPECIES_CHOICES,
+            "nuclide.washout_species",
+        ),
     )
 end
 
 function _rose_from(t::AbstractDict)
+    _reject_unknown(t, _ROSE_KEYS, "wind_rose")
     n = _value(t, "sectors", Int, "wind_rose"; default = 16)
     (n ≥ 4 && iseven(n)) ||
         _fail("wind_rose.sectors", "must be an even number of at least 4, got $n")

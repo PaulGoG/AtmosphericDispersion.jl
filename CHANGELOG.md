@@ -86,6 +86,21 @@ follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **The washout options were unreachable.** `[model] washout` was parsed,
+  validated and stored, and nothing read it: no dilution or deposition function
+  accepted a washout model, so `washout = "hto"` changed no result. The second
+  row of NSR-23 Table 7 had the same fate, reachable only by calling
+  `washout_coefficients` by hand. Both now reach every kernel — the model as a
+  `washout_model` keyword on the three dilution factors and the two
+  wet-deposition functions, the species as a `washout_species` field of
+  `Nuclide`, read from `[nuclide] washout_species`.
+- **The loader accepted keys it did not read**, so a misspelt optional key took
+  its default in silence. Unknown keys are now a `ConfigurationError` naming the
+  key; an optional table of the wrong type is named rather than raising a
+  `MethodError`.
+- `plume_rise(x, source, atmosphere, u)` ignored the rise coefficients and
+  duplicated the mechanism selection of the `Site` method. It takes a `rise`
+  argument and both methods share one implementation.
 - **The mixing layer did not reach the long-term regime.** `dilution_long_term`
   kept the unbounded vertical factor while `dilution_extended`, of which it is
   the rose-weighted sum, and the depletion integral inside it both carried the
@@ -122,6 +137,12 @@ follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- The scripts and `docs/make.jl` activate their own environment, so
+  `julia scripts/run.jl config/reference.toml` runs as written, without
+  `--project`.
+- The comments of `config/reference.toml` state what each key is, its unit and
+  its bounds, and nothing else. What the choices mean is in the configuration
+  page of the manual.
 - The σ_y citation named an NRC accession number that is not an NRC document.
   Corrected to Hanna, Briggs and Hosker, *Handbook on Atmospheric Diffusion*,
   DOE/TIC-11223 (1982), Table 4.5, which attributes ATDL Contribution No. 79.

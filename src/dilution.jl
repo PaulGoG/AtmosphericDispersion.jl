@@ -18,7 +18,11 @@ the direction convention.
 
 """
     dilution_instantaneous(east, north, z, site, class, wind_bearing;
-                           release_duration = SHORT_RELEASE_REFERENCE)
+                           release_duration = SHORT_RELEASE_REFERENCE,
+                           nuclide = nothing, washout_duration = 0,
+                           precipitation = PRECIPITATION_RAIN,
+                           rate = first(PRECIPITATION_RATES),
+                           washout_model = WASHOUT_NORMATIVE)
 
 Dilution factor χ/Q in s/m³ at the receptor `(east, north, z)` in metres, for a
 release short enough that the wind holds a single direction `wind_bearing`,
@@ -44,6 +48,7 @@ function dilution_instantaneous(
     washout_duration::Real = 0.0,
     precipitation::PrecipitationType = PRECIPITATION_RAIN,
     rate::Real = first(PRECIPITATION_RATES),
+    washout_model::WashoutModel = WASHOUT_NORMATIVE,
 )
     z ≥ 0 || throw(DomainError(z, "receptor height cannot be below ground"))
     x, y = plume_frame(east, north, wind_bearing)
@@ -55,7 +60,16 @@ function dilution_instantaneous(
     u = transport_wind_speed(site, class)
     u > 0 || return 0.0
 
-    D = _depletion(x, site, class, nuclide, washout_duration, precipitation, rate)
+    D = _depletion(
+        x,
+        site,
+        class,
+        nuclide,
+        washout_duration,
+        precipitation,
+        rate,
+        washout_model,
+    )
     crosswind = exp(-y^2 / (2Σy^2)) / (sqrt(2π) * Σy)
     vertical = vertical_factor(z, H, Σz, mixing_depth(class, site.mixing))
     return D * crosswind * vertical / u
@@ -82,7 +96,11 @@ function plume_frame(east::Real, north::Real, wind_bearing::Real)
 end
 
 """
-    dilution_extended(east, north, site, class, wind_bearing)
+    dilution_extended(east, north, site, class, wind_bearing, sectors = SectorGrid(16);
+                      nuclide = nothing, washout_duration = 0,
+                      precipitation = PRECIPITATION_RAIN,
+                      rate = first(PRECIPITATION_RATES),
+                      washout_model = WASHOUT_NORMATIVE)
 
 Ground-level dilution factor χ/Q in s/m³ for a release long enough that the
 wind direction meanders across a sector but short enough that it does not
@@ -108,6 +126,7 @@ function dilution_extended(
     washout_duration::Real = 0.0,
     precipitation::PrecipitationType = PRECIPITATION_RAIN,
     rate::Real = first(PRECIPITATION_RATES),
+    washout_model::WashoutModel = WASHOUT_NORMATIVE,
 )
     x, y = plume_frame(east, north, wind_bearing)
     x > 0 || return 0.0
@@ -119,7 +138,16 @@ function dilution_extended(
     u = transport_wind_speed(site, class)
     u > 0 || return 0.0
 
-    D = _depletion(x, site, class, nuclide, washout_duration, precipitation, rate)
+    D = _depletion(
+        x,
+        site,
+        class,
+        nuclide,
+        washout_duration,
+        precipitation,
+        rate,
+        washout_model,
+    )
     # The crosswind-integrated vertical factor, spread over the arc the sector
     # subtends. Without a lid this is √(2/π)exp(−H²/2Σ_z²)/Σ_z exactly.
     vertical = crosswind_integrated_factor(H, Σz, mixing_depth(class, site.mixing))
@@ -127,9 +155,11 @@ function dilution_extended(
 end
 
 """
-    dilution_long_term(east, north, site, rose; nuclide = nothing,
-                       washout_duration = 0, precipitation = PRECIPITATION_RAIN,
-                       rate = first(PRECIPITATION_RATES))
+    dilution_long_term(east, north, site, rose;
+                       nuclide = nothing, washout_duration = 0,
+                       precipitation = PRECIPITATION_RAIN,
+                       rate = first(PRECIPITATION_RATES),
+                       washout_model = WASHOUT_NORMATIVE)
 
 Ground-level dilution factor χ/Q in s/m³ for a release long enough that the
 wind direction samples the whole rose,
@@ -171,6 +201,7 @@ function dilution_long_term(
     washout_duration::Real = 0.0,
     precipitation::PrecipitationType = PRECIPITATION_RAIN,
     rate::Real = first(PRECIPITATION_RATES),
+    washout_model::WashoutModel = WASHOUT_NORMATIVE,
 )
     r = hypot(east, north)
     r > 0 || return 0.0
@@ -188,7 +219,16 @@ function dilution_long_term(
         Σz = corrected_vertical_dispersion(r, site, class)
         u = transport_wind_speed(site, class)
         u > 0 || continue
-        D = _depletion(r, site, class, nuclide, washout_duration, precipitation, rate)
+        D = _depletion(
+            r,
+            site,
+            class,
+            nuclide,
+            washout_duration,
+            precipitation,
+            rate,
+            washout_model,
+        )
         # The same vertical factor as the extended regime, of which this is the
         # frequency-weighted sum, so the mixing lid enters here as it does there.
         vertical = crosswind_integrated_factor(H, Σz, mixing_depth(class, site.mixing))
@@ -208,6 +248,7 @@ _depletion(
     ::Real,
     ::PrecipitationType,
     ::Real,
+    ::WashoutModel,
 ) = 1.0
 
 _depletion(
@@ -218,4 +259,14 @@ _depletion(
     washout_duration::Real,
     precipitation::PrecipitationType,
     rate::Real,
-) = depletion_factor(x, site, class, nuclide; washout_duration, precipitation, rate)
+    washout_model::WashoutModel,
+) = depletion_factor(
+    x,
+    site,
+    class,
+    nuclide;
+    washout_duration,
+    precipitation,
+    rate,
+    washout_model,
+)

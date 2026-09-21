@@ -1,3 +1,5 @@
+include(joinpath(@__DIR__, "activate.jl"))
+
 using AtmosphericDispersion
 using Documenter
 

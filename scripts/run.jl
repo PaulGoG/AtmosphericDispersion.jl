@@ -2,16 +2,17 @@
 #
 # Long-term dispersion field for a configured run.
 #
-#     julia --project scripts/run.jl config/reference.toml
+#     julia scripts/run.jl config/reference.toml
 #
-# Writes nothing; prints the sector maxima and the most exposed sector. A
-# pipeline that persists results belongs in the workspace, not in the package.
+# Writes nothing; prints the sector maxima and the most exposed sector.
+
+include(joinpath(@__DIR__, "activate.jl"))
 
 using AtmosphericDispersion
 using Printf
 
 function main(args)
-    length(args) == 1 || error("usage: julia --project scripts/run.jl <config.toml>")
+    length(args) == 1 || error("usage: julia scripts/run.jl <config.toml>")
     config = load_configuration(only(args))
     site = config.site
     rose = config.rose
@@ -51,6 +52,7 @@ function main(args)
             washout_duration = config.washout_duration,
             precipitation = config.precipitation,
             rate = config.precipitation_rate,
+            washout_model = config.washout_model,
         )
         χ = χQ * config.activity
         @printf(

@@ -24,13 +24,14 @@ struct DepositionVelocity
 end
 
 """
-    Nuclide(; name, decay_constant, deposition_velocity)
+    Nuclide(; name, decay_constant, deposition_velocity, washout_species = WASHOUT_TRITIUM_IODINE)
 
 A released species: what it is called, how fast it decays, and how readily it
 deposits.
 
 - `decay_constant` — radioactive decay constant `λ`, s⁻¹
 - `deposition_velocity` — [`DepositionVelocity`](@ref) over the receptor surface
+- `washout_species` — the [`WashoutSpecies`](@ref) row of the washout table the nuclide falls under
 
 The dispersion core is otherwise independent of the species; a nuclide enters
 only through depletion and deposition.
@@ -39,16 +40,23 @@ struct Nuclide
     name::String
     decay_constant::Float64
     deposition_velocity::DepositionVelocity
+    washout_species::WashoutSpecies
 
     function Nuclide(;
         name::AbstractString,
         decay_constant::Real,
         deposition_velocity::DepositionVelocity,
+        washout_species::WashoutSpecies = WASHOUT_TRITIUM_IODINE,
     )
         decay_constant ≥ 0 || throw(
             ArgumentError("decay constant cannot be negative, got $decay_constant s⁻¹"),
         )
-        return new(String(name), float(decay_constant), deposition_velocity)
+        return new(
+            String(name),
+            float(decay_constant),
+            deposition_velocity,
+            washout_species,
+        )
     end
 end
 

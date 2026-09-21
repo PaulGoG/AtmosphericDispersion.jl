@@ -684,6 +684,36 @@ using TOML
                 end
             end
         end
+
+        @testset "both methods of plume_rise honour the coefficients" begin
+            # A cold jet in a neutral atmosphere: no buoyancy, no stratification,
+            # so the final rise is c w₀D/u and the two sets differ by exactly 3/1.5.
+            jet = StackSource(;
+                height = 30.0,
+                diameter = 1.0,
+                exit_velocity = 20.0,
+                exit_density = 1.2,
+                exit_temperature = 287.0,
+            )
+            neutral = Atmosphere(;
+                reference_speed = 4.0,
+                temperature = 287.0,
+                density = 1.2,
+                lapse_rate = -0.0098,
+                surface = SURFACE_AGRICULTURAL,
+                roughness = ROUGHNESS_PASTURE,
+            )
+            @test buoyancy_flux(jet, neutral) == 0
+            u, x = 5.0, 1e5
+            @test plume_rise(x, jet, neutral, u) == 3 * 20.0 * 1.0 / u
+            @test plume_rise(x, jet, neutral, u, THESIS_RISE) == 1.5 * 20.0 * 1.0 / u
+            for rise in (BRIGGS_RISE, XOQDOQ_RISE, THESIS_RISE)
+                site = Site(; source = jet, atmosphere = neutral, rise)
+                v = transport_wind_speed(site, PASQUILL_D)
+                @test plume_rise(x, site, PASQUILL_D) ==
+                      plume_rise(x, jet, neutral, v, rise)
+            end
+        end
     end
 
     @testset "Buildings" begin
@@ -991,7 +1021,8 @@ using TOML
                     east, north = r * sin(β), r * cos(β)
                     from = sector_bearing(g, opposite(g, k))
                     @test dilution_long_term(east, north, s, rose) ≈
-                          dilution_extended(east, north, s, class, from, g) / 16 rtol = 1e-12
+                          dilution_extended(east, north, s, class, from, g) / 16 rtol =
+                        1e-12
                 end
             end
             # The lid is felt where it should be: class A, whose σ_z reaches its
@@ -1402,6 +1433,82 @@ using TOML
                   ) <
                   bare_e
         end
+
+        @testset "the washout model and species reach every kernel" begin
+            # Reference values are read off NSR-23 Table 7 at 1 mm/h and Ogram
+            # Eq. (38), not off the package: rain (low, high) is (1e-5, 2e-4) for
+            # tritium and iodine and (2e-5, 3e-4) for every other nuclide; the
+            # tritium snow column is (1e-7, 4e-7).
+            other = Nuclide(;
+                name = "other",
+                decay_constant = TRITIUM_DECAY_CONSTANT,
+                deposition_velocity = TRITIATED_WATER.deposition_velocity,
+                washout_species = WASHOUT_OTHER_NUCLIDES,
+            )
+            @test TRITIATED_WATER.washout_species === WASHOUT_TRITIUM_IODINE
+            T = 3600.0
+            wash = (; washout_duration = T, precipitation = PRECIPITATION_RAIN, rate = 1.0)
+
+            # Depletion takes the low coefficient, so the species moves every
+            # dilution regime by exp(−ΔΛ_low T) and nothing else.
+            expected = exp(-(2e-5 - 1e-5) * T)
+            g = SectorGrid(16)
+            # One class, so the depletion ratio is not blurred by the class sum.
+            rose = WindRose(
+                g,
+                fill(1 / 16, 16),
+                BlowingFrom();
+                stability = [0.0, 0.0, 0.0, 1.0, 0.0, 0.0],
+            )
+            inst(n) = dilution_instantaneous(
+                0.0,
+                -5000.0,
+                0.0,
+                site,
+                PASQUILL_D,
+                0.0;
+                nuclide = n,
+                wash...,
+            )
+            ext(n) =
+                dilution_extended(0.0, -5000.0, site, PASQUILL_D, 0.0; nuclide = n, wash...)
+            lt(n) = dilution_long_term(0.0, -5000.0, site, rose; nuclide = n, wash...)
+            for χ in (inst, ext, lt)
+                @test χ(other) / χ(TRITIATED_WATER) ≈ expected rtol = 1e-12
+            end
+
+            # Deposition takes the high coefficient as well: 3e-4 against 2e-4.
+            ω(n; kw...) =
+                wet_deposition(0.0, -5000.0, site, PASQUILL_D, 0.0, n; activity = Q, kw...)
+            ωs(n; kw...) =
+                wet_deposition_sector(5000.0, site, PASQUILL_D, n; activity = Q, kw...)
+            for f in (ω, ωs)
+                @test f(other; wash...) / f(TRITIATED_WATER; wash...) ≈ 1.5 * expected rtol =
+                    1e-12
+            end
+
+            # The model changes snow only, and only the high coefficient: Ogram
+            # at 1 mm/h is 1.2e-4 + 3.0e-4 against the tabulated 4e-7.
+            snow = (; precipitation = PRECIPITATION_SNOW, rate = 1.0)
+            for f in (ω, ωs)
+                @test f(TRITIATED_WATER; snow..., washout_model = WASHOUT_HTO) /
+                      f(TRITIATED_WATER; snow...) ≈ 4.2e-4 / 4e-7 rtol = 1e-12
+                @test f(TRITIATED_WATER; wash..., washout_model = WASHOUT_HTO) ==
+                      f(TRITIATED_WATER; wash...)
+            end
+            # The low coefficient is shared, so depletion does not see the model.
+            @test inst(TRITIATED_WATER) == dilution_instantaneous(
+                0.0,
+                -5000.0,
+                0.0,
+                site,
+                PASQUILL_D,
+                0.0;
+                nuclide = TRITIATED_WATER,
+                wash...,
+                washout_model = WASHOUT_HTO,
+            )
+        end
     end
 
     @testset "Configuration" begin
@@ -1630,6 +1737,73 @@ using TOML
             # An unadorned TOML integer is accepted where a float is wanted.
             @test configuration_from(withkey(t -> (t["source"]["height"] = 50))).site.source.height ==
                   50.0
+        end
+
+        @testset "unknown keys are rejected, by their dotted path" begin
+            # A key the loader does not read is indistinguishable from a
+            # misspelt one, which would otherwise take its default in silence.
+            cases = (
+                (t -> t["sorce"] = Dict("height" => 1.0), "sorce"),
+                (t -> t["source"]["hieght"] = 1.0, "source.hieght"),
+                (t -> t["atmosphere"]["rougness"] = "pasture", "atmosphere.rougness"),
+                (t -> t["model"]["mixing_layr"] = "unbounded", "model.mixing_layr"),
+                (t -> t["buildings"]["wake_coeficient"] = 1.0, "buildings.wake_coeficient"),
+                (t -> t["nuclide"]["half_life"] = 12.3, "nuclide.half_life"),
+                (t -> t["wind_rose"]["sector"] = 16, "wind_rose.sector"),
+                (t -> t["release"]["activty"] = 1.0, "release.activty"),
+                (t -> t["precipitation"]["kind"] = "rain", "precipitation.kind"),
+                (t -> t["grid"]["extend"] = 1.0, "grid.extend"),
+                (
+                    t ->
+                        t["buildings"]["building"] = [
+                            Dict(
+                                "east" => 1.0,
+                                "north" => 0.0,
+                                "height" => 5.0,
+                                "frontal_area" => 10.0,
+                                "width" => 3.0,
+                            ),
+                        ],
+                    "buildings.building[1].width",
+                ),
+            )
+            for (mutate, path) in cases
+                err = try
+                    configuration_from(withkey(mutate))
+                    nothing
+                catch e
+                    e
+                end
+                @test err isa ConfigurationError
+                @test err.path == path
+                @test occursin("unknown key", err.message)
+            end
+            # An optional table of the wrong type is named rather than crashing.
+            for table in ("buildings", "precipitation", "model")
+                err = try
+                    configuration_from(withkey(t -> t[table] = 3))
+                    nothing
+                catch e
+                    e
+                end
+                @test err isa ConfigurationError
+                @test err.path == table
+            end
+        end
+
+        @testset "the washout species is read from the nuclide table" begin
+            @test load_configuration(reference).nuclide.washout_species ===
+                  WASHOUT_TRITIUM_IODINE
+            c = configuration_from(withkey(t -> t["nuclide"]["washout_species"] = "other"))
+            @test c.nuclide.washout_species === WASHOUT_OTHER_NUCLIDES
+            err = try
+                configuration_from(withkey(t -> t["nuclide"]["washout_species"] = "caesium"))
+                nothing
+            catch e
+                e
+            end
+            @test err isa ConfigurationError
+            @test err.path == "nuclide.washout_species"
         end
     end
 

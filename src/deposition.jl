@@ -32,6 +32,7 @@ end
     wet_deposition(east, north, site, class, wind_bearing, nuclide;
                    activity, precipitation = PRECIPITATION_RAIN,
                    rate = first(PRECIPITATION_RATES), washout_duration = 0,
+                   washout_model = WASHOUT_NORMATIVE,
                    release_duration = SHORT_RELEASE_REFERENCE)
 
 Wet deposition per unit ground area in Bq/m² beneath a plume of a single
@@ -58,20 +59,29 @@ function wet_deposition(
     precipitation::PrecipitationType = PRECIPITATION_RAIN,
     rate::Real = first(PRECIPITATION_RATES),
     washout_duration::Real = 0.0,
+    washout_model::WashoutModel = WASHOUT_NORMATIVE,
     release_duration::Real = SHORT_RELEASE_REFERENCE,
 )
     activity ≥ 0 || throw(DomainError(activity, "released activity cannot be negative"))
     x, y = plume_frame(east, north, wind_bearing)
     x > 0 || return 0.0
 
-    Λ = washout_coefficients(precipitation, rate).high
+    Λ =
+        washout_coefficients(precipitation, rate, washout_model, nuclide.washout_species).high
     u = transport_wind_speed(site, class)
     u > 0 || return 0.0
     Σy = corrected_lateral_dispersion(x, site, class; release_duration)
 
     surviving = decay_factor(x, u, nuclide)
-    washout_duration > 0 &&
-        (surviving *= wet_depletion_factor(washout_duration, precipitation, rate))
+    washout_duration > 0 && (
+        surviving *= wet_depletion_factor(
+            washout_duration,
+            precipitation,
+            rate,
+            washout_model,
+            nuclide.washout_species,
+        )
+    )
 
     return Λ * activity * surviving * exp(-y^2 / (2Σy^2)) / (sqrt(2π) * Σy * u)
 end
@@ -80,7 +90,7 @@ end
     wet_deposition_sector(r, site, class, nuclide;
                           activity, precipitation = PRECIPITATION_RAIN,
                           rate = first(PRECIPITATION_RATES), washout_duration = 0,
-                          sectors = SectorGrid(16))
+                          washout_model = WASHOUT_NORMATIVE, sectors = SectorGrid(16))
 
 Wet deposition per unit ground area in Bq/m² at radial distance `r` metres,
 averaged over a sector,
@@ -98,18 +108,27 @@ function wet_deposition_sector(
     precipitation::PrecipitationType = PRECIPITATION_RAIN,
     rate::Real = first(PRECIPITATION_RATES),
     washout_duration::Real = 0.0,
+    washout_model::WashoutModel = WASHOUT_NORMATIVE,
     sectors::SectorGrid = SectorGrid(16),
 )
     activity ≥ 0 || throw(DomainError(activity, "released activity cannot be negative"))
     r > 0 || return 0.0
 
-    Λ = washout_coefficients(precipitation, rate).high
+    Λ =
+        washout_coefficients(precipitation, rate, washout_model, nuclide.washout_species).high
     u = transport_wind_speed(site, class)
     u > 0 || return 0.0
 
     surviving = decay_factor(r, u, nuclide)
-    washout_duration > 0 &&
-        (surviving *= wet_depletion_factor(washout_duration, precipitation, rate))
+    washout_duration > 0 && (
+        surviving *= wet_depletion_factor(
+            washout_duration,
+            precipitation,
+            rate,
+            washout_model,
+            nuclide.washout_species,
+        )
+    )
 
     return Λ * activity * surviving / (u * sector_width(sectors) * r)
 end

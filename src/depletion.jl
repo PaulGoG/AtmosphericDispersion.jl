@@ -100,7 +100,7 @@ function dry_depletion_factor(x::Real, site::Site, class::PasquillClass, nuclide
 end
 
 """
-    wet_depletion_factor(duration, precipitation, rate)
+    wet_depletion_factor(duration, precipitation, rate, model = WASHOUT_NORMATIVE, species = WASHOUT_TRITIUM_IODINE)
 
 Surviving airborne fraction after washout over a precipitation event of
 `duration` seconds, `exp(−Λ t)`.
@@ -115,13 +115,15 @@ function wet_depletion_factor(
     precipitation::PrecipitationType,
     rate::Real,
     model::WashoutModel = WASHOUT_NORMATIVE,
+    species::WashoutSpecies = WASHOUT_TRITIUM_IODINE,
 )
     duration ≥ 0 || throw(DomainError(duration, "washout duration cannot be negative"))
-    return exp(-washout_coefficients(precipitation, rate, model).low * duration)
+    return exp(-washout_coefficients(precipitation, rate, model, species).low * duration)
 end
 
 """
-    depletion_factor(x, site, class, nuclide; washout_duration = 0, precipitation, rate)
+    depletion_factor(x, site, class, nuclide; washout_duration = 0, precipitation, rate,
+                     washout_model = WASHOUT_NORMATIVE)
 
 Total surviving airborne fraction over `x` metres: the product of the decay,
 dry-deposition and washout factors.
@@ -146,7 +148,14 @@ function depletion_factor(
 )
     u = transport_wind_speed(site, class)
     f = decay_factor(x, u, nuclide) * dry_depletion_factor(x, site, class, nuclide)
-    washout_duration > 0 &&
-        (f *= wet_depletion_factor(washout_duration, precipitation, rate, washout_model))
+    washout_duration > 0 && (
+        f *= wet_depletion_factor(
+            washout_duration,
+            precipitation,
+            rate,
+            washout_model,
+            nuclide.washout_species,
+        )
+    )
     return f
 end

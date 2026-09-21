@@ -184,18 +184,8 @@ metres, using the transport wind of the given stability class.
 """
 function plume_rise(x::Real, site::Site, class::PasquillClass)
     u = transport_wind_speed(site, class)
-    F, Fₘ, S = site.buoyancy, site.momentum, site.stability
     w₀, D = site.source.exit_velocity, site.source.diameter
-
-    r = site.rise
-    buoyant = final_buoyant_rise(F, u, S, r)
-    momentum = final_momentum_rise(Fₘ, w₀, D, u, S, r)
-    total = buoyant + momentum
-    balanced =
-        iszero(total) || 2 * abs(buoyant - momentum) / total ≤ MECHANISM_BALANCE_TOLERANCE
-    balanced && return combined_rise(x, F, Fₘ, w₀, u, S, D, r)
-    momentum > buoyant && return momentum_rise(x, Fₘ, w₀, D, u, S, r)
-    return buoyant_rise(x, F, u, S, r)
+    return _plume_rise(x, site.buoyancy, site.momentum, site.stability, w₀, D, u, site.rise)
 end
 
 """
