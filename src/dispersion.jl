@@ -65,9 +65,9 @@ direction over the release.
 `release_duration` is in seconds.
 """
 function lateral_dispersion(
-    x::Real,
-    class::PasquillClass;
-    release_duration::Real = SHORT_RELEASE_REFERENCE,
+        x::Real,
+        class::PasquillClass;
+        release_duration::Real = SHORT_RELEASE_REFERENCE,
 )
     x ≥ 0 || throw(DomainError(x, "downwind distance cannot be negative"))
     release_duration > 0 ||
@@ -125,10 +125,10 @@ function vertical_dispersion(x::Real, class::PasquillClass, roughness::Roughness
     σz = vertical_shape(x, class) * roughness_correction(x, roughness)
     σz > 0 || throw(
         DomainError(
-            x,
-            "the vertical dispersion parameterisation gives σ_z = $σz m at this distance, " *
-            "which is outside its range of validity",
-        ),
+        x,
+        "the vertical dispersion parameterisation gives σ_z = $σz m at this distance, " *
+        "which is outside its range of validity",
+    ),
     )
     return σz
 end

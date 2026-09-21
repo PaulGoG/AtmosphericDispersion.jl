@@ -47,15 +47,15 @@ ratio of the two is exactly `√π`, so that expression understated wet depositi
 by a factor of 1.772.
 """
 function wet_deposition(
-    east::Real,
-    north::Real,
-    site::AbstractSite,
-    class::PasquillClass,
-    wind_bearing::Real,
-    nuclide::Nuclide;
-    activity::Real,
-    washout::WashoutEvent,
-    release_duration::Real = SHORT_RELEASE_REFERENCE,
+        east::Real,
+        north::Real,
+        site::AbstractSite,
+        class::PasquillClass,
+        wind_bearing::Real,
+        nuclide::Nuclide;
+        activity::Real,
+        washout::WashoutEvent,
+        release_duration::Real = SHORT_RELEASE_REFERENCE,
 )
     activity ≥ 0 || throw(DomainError(activity, "released activity cannot be negative"))
     x, y = plume_frame(east, north, wind_bearing)
@@ -66,8 +66,8 @@ function wet_deposition(
     u > 0 || return 0.0
     Σy = corrected_lateral_dispersion(x, site, class; release_duration)
 
-    surviving =
-        decay_factor(x, u, nuclide) * wet_depletion_factor(washout, nuclide.washout_species)
+    surviving = decay_factor(x, u, nuclide) *
+                wet_depletion_factor(washout, nuclide.washout_species)
 
     return Λ * activity * surviving * exp(-y^2 / (2Σy^2)) / (sqrt(2π) * Σy * u)
 end
@@ -84,13 +84,13 @@ averaged over a sector,
 the column activity spread over the arc the sector subtends at that distance.
 """
 function wet_deposition_sector(
-    r::Real,
-    site::AbstractSite,
-    class::PasquillClass,
-    nuclide::Nuclide;
-    activity::Real,
-    washout::WashoutEvent,
-    sectors::SectorGrid = SectorGrid(16),
+        r::Real,
+        site::AbstractSite,
+        class::PasquillClass,
+        nuclide::Nuclide;
+        activity::Real,
+        washout::WashoutEvent,
+        sectors::SectorGrid = SectorGrid(16),
 )
     activity ≥ 0 || throw(DomainError(activity, "released activity cannot be negative"))
     r > 0 || return 0.0
@@ -99,8 +99,8 @@ function wet_deposition_sector(
     u = transport_wind_speed(site, class)
     u > 0 || return 0.0
 
-    surviving =
-        decay_factor(r, u, nuclide) * wet_depletion_factor(washout, nuclide.washout_species)
+    surviving = decay_factor(r, u, nuclide) *
+                wet_depletion_factor(washout, nuclide.washout_species)
 
     return Λ * activity * surviving / (u * sector_width(sectors) * r)
 end
@@ -128,11 +128,11 @@ struct ResuspensionModel
     floor::Float64
 
     function ResuspensionModel(;
-        fast_amplitude::Real,
-        fast_rate::Real,
-        slow_amplitude::Real,
-        slow_rate::Real,
-        floor::Real = 0.0,
+            fast_amplitude::Real,
+            fast_rate::Real,
+            slow_amplitude::Real,
+            slow_rate::Real,
+            floor::Real = 0.0,
     )
         all(≥(0), (fast_amplitude, fast_rate, slow_amplitude, slow_rate, floor)) || throw(
             ArgumentError("resuspension amplitudes, rates and floor cannot be negative"),
@@ -184,8 +184,8 @@ Resuspension factor `K` in m⁻¹ at `elapsed_days` after deposition; see
 airborne concentration in Bq/m³.
 """
 function resuspension_factor(
-    elapsed_days::Real,
-    model::ResuspensionModel = RESUSPENSION_IAEA_SS57,
+        elapsed_days::Real,
+        model::ResuspensionModel = RESUSPENSION_IAEA_SS57,
 )
     elapsed_days ≥ 0 || throw(DomainError(elapsed_days, "elapsed time cannot be negative"))
     return model.fast_amplitude * exp(-model.fast_rate * elapsed_days) +
@@ -200,9 +200,9 @@ Airborne concentration in Bq/m³ resuspended from a surface deposition of
 `deposition` Bq/m², `elapsed_days` after it was laid down.
 """
 function resuspended_concentration(
-    deposition::Real,
-    elapsed_days::Real,
-    model::ResuspensionModel = RESUSPENSION_IAEA_SS57,
+        deposition::Real,
+        elapsed_days::Real,
+        model::ResuspensionModel = RESUSPENSION_IAEA_SS57,
 )
     deposition ≥ 0 || throw(DomainError(deposition, "deposition cannot be negative"))
     return deposition * resuspension_factor(elapsed_days, model)

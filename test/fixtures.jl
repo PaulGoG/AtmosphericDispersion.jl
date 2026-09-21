@@ -25,8 +25,7 @@ const REFERENCE_SITE = Site(; source = REFERENCE_STACK, atmosphere = REFERENCE_A
 
 # The same site with no mixing lid, for the statements that hold only for the
 # unbounded Gaussian.
-const UNBOUNDED_SITE =
-    Site(; source = REFERENCE_STACK, atmosphere = REFERENCE_AIR, mixing = MIXING_UNBOUNDED)
+const UNBOUNDED_SITE = Site(; source = REFERENCE_STACK, atmosphere = REFERENCE_AIR, mixing = MIXING_UNBOUNDED)
 
 # A species that neither decays nor deposits, so every depletion factor is one.
 const INERT = Nuclide(;

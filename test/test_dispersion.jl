@@ -2,6 +2,7 @@
     @testset "wind profile" begin
         u₁₀ = 4.0
         for s in WIND_PROFILE_SURFACES, k in PASQUILL_CLASSES
+
             @test wind_speed(u₁₀, 10, s, k) ≈ u₁₀       # the reference height
             @test wind_speed(u₁₀, 50, s, k) > u₁₀       # shear
             @test wind_speed(u₁₀, 5, s, k) < u₁₀
@@ -40,6 +41,7 @@
 
     @testset "vertical dispersion" begin
         for k in PASQUILL_CLASSES, r in ROUGHNESS_CLASSES
+
             for x in (10.0, 100.0, 1000.0, 10_000.0)
                 @test vertical_dispersion(x, k, r) > 0
             end

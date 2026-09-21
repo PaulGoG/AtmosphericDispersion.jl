@@ -33,8 +33,8 @@
     end
 
     @testset "stratification caps the rise" begin
-        neutral =
-            reference_atmosphere(; lapse_rate = -STANDARD_GRAVITY / DRY_AIR_SPECIFIC_HEAT)
+        neutral = reference_atmosphere(;
+            lapse_rate = -STANDARD_GRAVITY / DRY_AIR_SPECIFIC_HEAT)
         @test final_buoyant_rise(F, 4.0, stability_parameter(neutral)) ≥
               final_buoyant_rise(F, 4.0, S)
         # Unstable air has no stable ceiling, and must not raise a domain
@@ -74,7 +74,8 @@
             (x < 3.5 * original_X_0(F) && hbtranzitie <= hbfinal) ? hbtranzitie : hbfinal
         end
         original_hm_final = function (Fm, w_0, D, u, S)
-            min(1.5 * w_0 * D / u, 4 * (Fm / S)^(1 / 4), 1.5 * (Fm / u)^(1 / 3) * S^(-1 / 6))
+            min(1.5 * w_0 * D / u, 4 * (Fm / S)^(1 / 4), 1.5 * (Fm / u)^(1 / 3) *
+                                                         S^(-1 / 6))
         end
         original_hm = function (x, Fm, w_0, D, u, S)
             hmfinal = original_hm_final(Fm, w_0, D, u, S)
@@ -83,9 +84,9 @@
         end
         original_hmb = function (x, F, Fm, w_0, D, u, S)
             hmbfinal = original_hm_final(Fm, w_0, D, u, S) + original_hb_final(F, u, S)
-            hmbtranzitie =
-                3^(1 / 3) *
-                (Fm * x / ((1 / 3 + u / w_0)^2 * u^2) + F * x^2 / (0.5 * u^3))^(1 / 3)
+            hmbtranzitie = 3^(1 / 3) *
+                           (Fm * x / ((1 / 3 + u / w_0)^2 * u^2) + F * x^2 / (0.5 * u^3))^(1 /
+                                                                                           3)
             hmbtranzitie <= hmbfinal ? hmbtranzitie : hmbfinal
         end
         original_rise = function (x, F, Fm, w_0, D, u, S)
@@ -102,6 +103,7 @@
 
         w₀, D = 10.0, 2.33
         for u in (0.5, 1.0, 4.0, 7.3, 15.0), Sv in (1e-4, 8.63e-4, 1e-3, 5e-3)
+
             @test final_buoyant_rise(F, u, Sv, NSR23_RISE) == original_hb_final(F, u, Sv)
             @test final_momentum_rise(Fₘ, w₀, D, u, Sv, NSR23_RISE) ==
                   original_hm_final(Fₘ, w₀, D, u, Sv)

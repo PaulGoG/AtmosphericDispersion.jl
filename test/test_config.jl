@@ -39,7 +39,7 @@
             ("nuclide", "decay_constant"),
             ("release", "activity"),
             ("grid", "extent"),
-            ("wind_rose", "convention"),
+            ("wind_rose", "convention")
         )
             t = withkey(t -> delete!(t[table], key))
             err = try
@@ -69,7 +69,7 @@
             ("atmosphere", "surface", "agricultural"),
             ("atmosphere", "roughness", "pasture"),
             ("wind_rose", "convention", "blowing_from"),
-            ("precipitation", "type", "rain"),
+            ("precipitation", "type", "rain")
         )
             t = withkey(t -> (t[table][key] = "nonsense"))
             err = try
@@ -196,7 +196,7 @@
             withkey(t -> (t["wind_rose"]["convention"] = "blowing_toward")),
         )
         g = grid(from.rose)
-        for k = 1:16
+        for k in 1:16
             @test frequency_toward(from.rose, k) ==
                   frequency_toward(toward.rose, opposite(g, k))
         end
@@ -206,7 +206,8 @@
             c.site,
             c.rose,
         )
-        @test argmax([χ(from, k) for k = 1:16]) == opposite(g, argmax([χ(toward, k) for k = 1:16]))
+        @test argmax([χ(from, k) for k in 1:16]) ==
+              opposite(g, argmax([χ(toward, k) for k in 1:16]))
     end
 
     @testset "types are enforced" begin
@@ -239,16 +240,15 @@
             (t -> t["precipitation"]["kind"] = "rain", "precipitation.kind"),
             (t -> t["grid"]["extend"] = 1.0, "grid.extend"),
             (
-                t ->
-                    t["buildings"]["building"] = [
-                        Dict(
-                            "east" => 1.0,
-                            "north" => 0.0,
-                            "height" => 5.0,
-                            "frontal_area" => 10.0,
-                            "width" => 3.0,
-                        ),
-                    ],
+                t -> t["buildings"]["building"] = [
+                    Dict(
+                    "east" => 1.0,
+                    "north" => 0.0,
+                    "height" => 5.0,
+                    "frontal_area" => 10.0,
+                    "width" => 3.0,
+                ),
+                ],
                 "buildings.building[1].width",
             ),
         )

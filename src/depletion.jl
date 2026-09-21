@@ -63,8 +63,8 @@ integrand varies fastest — worst.
 function depletion_integral(x::Real, site::AbstractSite, class::PasquillClass)
     _has_prescribed_vertical(site) && throw(
         ArgumentError(
-            "the depletion integral needs σ_z along the whole path; a prescribed σ_z holds at one distance",
-        ),
+        "the depletion integral needs σ_z along the whole path; a prescribed σ_z holds at one distance",
+    ),
     )
     # Narrowed to a concrete type before the quadrature: `float` of an abstract
     # `Real` is uninferable, and the whole of QuadGK's generic machinery then
@@ -96,10 +96,10 @@ The *low* deposition velocity of the nuclide is used, which removes the least
 material and so is conservative for the airborne concentration.
 """
 function dry_depletion_factor(
-    x::Real,
-    site::AbstractSite,
-    class::PasquillClass,
-    nuclide::Nuclide,
+        x::Real,
+        site::AbstractSite,
+        class::PasquillClass,
+        nuclide::Nuclide,
 )
     v_d = nuclide.deposition_velocity.low
     iszero(v_d) && return 1.0
@@ -128,17 +128,17 @@ struct WashoutEvent
     model::WashoutModel
 
     function WashoutEvent(;
-        duration::Real,
-        precipitation::PrecipitationType = PRECIPITATION_RAIN,
-        rate::Real = first(PRECIPITATION_RATES),
-        model::WashoutModel = WASHOUT_NORMATIVE,
+            duration::Real,
+            precipitation::PrecipitationType = PRECIPITATION_RAIN,
+            rate::Real = first(PRECIPITATION_RATES),
+            model::WashoutModel = WASHOUT_NORMATIVE,
     )
         duration ≥ 0 ||
             throw(ArgumentError("washout duration cannot be negative, got $duration s"))
         float(rate) in PRECIPITATION_RATES || throw(
             ArgumentError(
-                "the washout table is defined at intensities $(PRECIPITATION_RATES) mm/h, got $rate",
-            ),
+            "the washout table is defined at intensities $(PRECIPITATION_RATES) mm/h, got $rate",
+        ),
         )
         return new(precipitation, Float64(rate), Float64(duration), model)
     end
@@ -185,11 +185,11 @@ dry factors and so returned two in that limit.
 travels in dry air.
 """
 function depletion_factor(
-    x::Real,
-    site::AbstractSite,
-    class::PasquillClass,
-    nuclide::Nuclide;
-    washout::Union{Nothing,WashoutEvent} = nothing,
+        x::Real,
+        site::AbstractSite,
+        class::PasquillClass,
+        nuclide::Nuclide;
+        washout::Union{Nothing,WashoutEvent} = nothing,
 )
     u = transport_wind_speed(site, class)
     f = decay_factor(x, u, nuclide) * dry_depletion_factor(x, site, class, nuclide)

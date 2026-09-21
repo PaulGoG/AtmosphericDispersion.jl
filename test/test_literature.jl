@@ -77,12 +77,12 @@
         for (n, published) in ((16, 2.032), (12, 1.5238))
             sectors = SectorGrid(n)
             for class in PASQUILL_CLASSES, r in distances
+
                 H = effective_height(r, site, class)
                 Σz = corrected_vertical_dispersion(r, site, class)
                 u = transport_wind_speed(site, class)
                 regulatory = published * exp(-H^2 / (2Σz^2)) / (Σz * u * r)
-                @test dilution_extended(0.0, -r, site, class, 0.0, sectors) ≈ regulatory rtol =
-                    2e-4
+                @test dilution_extended(0.0, -r, site, class, 0.0, sectors) ≈ regulatory rtol = 2e-4
             end
         end
     end
@@ -116,10 +116,9 @@
         for precipitation in (PRECIPITATION_RAIN, PRECIPITATION_SNOW),
             field in (:low, :high)
 
-            Λ = [
-                getfield(washout_coefficients(precipitation, j), field) for
-                j in PRECIPITATION_RATES
-            ]
+            Λ = [getfield(washout_coefficients(precipitation, j), field)
+                 for
+                 j in PRECIPITATION_RATES]
             x = log.(collect(PRECIPITATION_RATES))
             y = log.(Λ)
             x̄, ȳ = sum(x) / length(x), sum(y) / length(y)
@@ -147,11 +146,10 @@
         # The snow columns are the rain columns scaled down by a constant —
         # a particle-scavenging suppression, and not a measurement.
         for (field, factor) in ((:low, 100), (:high, 500))
-            ratios = [
-                getfield(washout_coefficients(PRECIPITATION_RAIN, j), field) /
-                getfield(washout_coefficients(PRECIPITATION_SNOW, j), field) for
-                j in PRECIPITATION_RATES
-            ]
+            ratios = [getfield(washout_coefficients(PRECIPITATION_RAIN, j), field) /
+                      getfield(washout_coefficients(PRECIPITATION_SNOW, j), field)
+                      for
+                      j in PRECIPITATION_RATES]
             @test all(r -> isapprox(r, factor; rtol = 0.2), ratios)
         end
     end
@@ -213,18 +211,16 @@
         # carry three significant figures and the exponentials are summed
         # from those.
         for (z, χ) in published
-            computed =
-                Q * dilution_instantaneous(0.0, -1000.0, Float64(z), site, PASQUILL_D, 0.0)
+            computed = Q * dilution_instantaneous(
+                0.0, -1000.0, Float64(z), site, PASQUILL_D, 0.0,)
             @test computed ≈ χ rtol = 0.025
         end
 
         # The profile peaks at plume height and is symmetric about it only
         # in the first term; the ground reflection is what lifts z = 0 above
         # the pure Gaussian and what makes the peak sit slightly below H.
-        χs = [
-            Q * dilution_instantaneous(0.0, -1000.0, Float64(z), site, PASQUILL_D, 0.0)
-            for (z, _) in published
-        ]
+        χs = [Q * dilution_instantaneous(0.0, -1000.0, Float64(z), site, PASQUILL_D, 0.0)
+              for (z, _) in published]
         @test argmax(χs) == 6                       # z = 150 m, the release height
         @test χs[1] > Q * exp(-0.5 * (H / σz)^2) / (2π * σy * σz * u)
     end
@@ -389,9 +385,8 @@
         for r in PRECIPITATION_RATES
             @test washout_coefficients(PRECIPITATION_RAIN, r, WASHOUT_HTO) ==
                   washout_coefficients(PRECIPITATION_RAIN, r, WASHOUT_NORMATIVE)
-            ratio =
-                washout_coefficients(PRECIPITATION_SNOW, r, WASHOUT_HTO).high /
-                washout_coefficients(PRECIPITATION_SNOW, r, WASHOUT_NORMATIVE).high
+            ratio = washout_coefficients(PRECIPITATION_SNOW, r, WASHOUT_HTO).high /
+                    washout_coefficients(PRECIPITATION_SNOW, r, WASHOUT_NORMATIVE).high
             @test 900 < ratio < 1500
         end
     end
@@ -413,9 +408,8 @@
             # The combined law is capped at the sum of the two final rises,
             # and the cap differs between the two coefficient sets, so only
             # assert where neither is binding.
-            cap(r) =
-                final_momentum_rise(1e-14, 10.0, 2.0, u, -1e-6, r) +
-                final_buoyant_rise(F, u, -1e-6, r)
+            cap(r) = final_momentum_rise(1e-14, 10.0, 2.0, u, -1e-6, r) +
+                     final_buoyant_rise(F, u, -1e-6, r)
             briggs = combined_rise(x, F, 1e-14, 10.0, u, -1e-6, 2.0, BRIGGS_RISE)
             thesis = combined_rise(x, F, 1e-14, 10.0, u, -1e-6, 2.0, NSR23_RISE)
             (briggs < 0.99cap(BRIGGS_RISE) && thesis < 0.99cap(NSR23_RISE)) || continue
@@ -460,8 +454,7 @@
         for (i, class) in enumerate(PASQUILL_CLASSES)
             @test lateral_coefficient(class) == briggs_a[i]
             for x in (10.0, 100.0, 1000.0, 10_000.0, 50_000.0)
-                @test lateral_dispersion(x, class) ≈ briggs_a[i] * x * (1 + 1e-4 * x)^(-0.5) rtol =
-                    1e-12
+                @test lateral_dispersion(x, class) ≈ briggs_a[i] * x * (1 + 1e-4 * x)^(-0.5) rtol = 1e-12
             end
         end
     end
@@ -484,9 +477,11 @@
     # rounds. The agreement is therefore exact up to that rounding.
     @testset "neutral final rise is the published Briggs form" begin
         for F in (5.0, 20.0, 54.0), u in (3.0, 8.0)
+
             @test final_buoyant_rise(F, u, -1e-6) ≈ 21.4 * F^0.75 / u rtol = 2e-3
         end
         for F in (56.0, 200.0, 1000.0), u in (3.0, 8.0)
+
             @test final_buoyant_rise(F, u, -1e-6) ≈ 38.7 * F^0.6 / u rtol = 2e-3
         end
     end
@@ -525,6 +520,7 @@
             PASQUILL_F => (x -> 0.016x * (1 + 0.0003x)^(-1)),
         )
         for class in PASQUILL_CLASSES, x in (100.0, 300.0, 1000.0, 3000.0, 10_000.0)
+
             ratio = vertical_dispersion(x, class, ROUGHNESS_PASTURE) / briggs_z[class](x)
             @test 0.4 < ratio < 1.6
         end

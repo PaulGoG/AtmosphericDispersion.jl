@@ -4,6 +4,7 @@
         @test equivalent_height(e) == 0
         @test equivalent_area(e) == 0
         for σ in (1.0, 50.0, 500.0), H in (0.0, 10.0, 100.0)
+
             @test wake_broadened(σ, H, e) == σ
         end
     end

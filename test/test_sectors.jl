@@ -24,13 +24,13 @@
     # its own sector, at that sector's centre.
     @testset "the sixteen cardinal directions" begin
         g = SectorGrid(16)
-        indices = [sector_of(g, deg2rad(22.5 * (i - 1))) for i = 1:16]
+        indices = [sector_of(g, deg2rad(22.5 * (i - 1))) for i in 1:16]
 
         @test indices == collect(1:16)
         @test length(unique(indices)) == 16
         @test [sector_name(g, k) for k in indices] == collect(CARDINAL_16)
 
-        for k = 1:16
+        for k in 1:16
             @test sector_bearing(g, k) ≈ deg2rad(22.5 * (k - 1))
             @test sector_of(g, sector_bearing(g, k)) == k
         end
@@ -54,7 +54,7 @@
     @testset "sector boundaries" begin
         g = SectorGrid(16)
         half = sector_width(g) / 2
-        for k = 1:16
+        for k in 1:16
             c = sector_bearing(g, k)
             lo, hi = sector_bounds(g, k)
             @test mod2pi(c - half) ≈ lo
@@ -73,7 +73,8 @@
     @testset "wrapping" begin
         g = SectorGrid(16)
         # Away from the boundaries the sector is invariant under whole turns.
-        for k = 1:16, offset in (-0.4, -0.1, 0.0, 0.1, 0.4)
+        for k in 1:16, offset in (-0.4, -0.1, 0.0, 0.1, 0.4)
+
             β = sector_bearing(g, k) + offset * sector_width(g)
             @test sector_of(g, β) == k
             @test sector_of(g, β + 2π) == k
@@ -91,7 +92,7 @@
         # Sample midway between boundaries so no sample sits on one.
         counts = zeros(Int, 16)
         m = 16 * 64
-        for j = 0:(m-1)
+        for j in 0:(m - 1)
             counts[sector_of(g, 2π * (j + 0.5) / m)] += 1
         end
         @test all(==(64), counts)
@@ -100,7 +101,7 @@
     @testset "opposite" begin
         for n in (4, 8, 16, 36)
             g = SectorGrid(n)
-            for k = 1:n
+            for k in 1:n
                 o = opposite(g, k)
                 @test 1 ≤ o ≤ n
                 @test opposite(g, o) == k

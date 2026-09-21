@@ -125,8 +125,8 @@ Exponent `m` of the power-law wind profile `u(z) = u₁₀ (z/10)^m` for the giv
 The exponent grows with both surface roughness and atmospheric stability: shear
 is strongest over rough ground under a stable stratification.
 """
-profile_exponent(surface::WindProfileSurface, class::PasquillClass) =
-    _PROFILE_EXPONENT[Int(surface)][classindex(class)]
+profile_exponent(surface::WindProfileSurface,
+    class::PasquillClass,) = _PROFILE_EXPONENT[Int(surface)][classindex(class)]
 
 """
     WashoutCoefficients
@@ -261,16 +261,16 @@ closely enough that interpolating between them would be defensible, but that is
 a modelling decision rather than a lookup, and it is not made here.
 """
 function washout_coefficients(
-    precipitation::PrecipitationType,
-    rate::Real,
-    model::WashoutModel = WASHOUT_NORMATIVE,
-    species::WashoutSpecies = WASHOUT_TRITIUM_IODINE,
+        precipitation::PrecipitationType,
+        rate::Real,
+        model::WashoutModel = WASHOUT_NORMATIVE,
+        species::WashoutSpecies = WASHOUT_TRITIUM_IODINE,
 )
     i = findfirst(==(float(rate)), PRECIPITATION_RATES)
     isnothing(i) && throw(
         ArgumentError(
-            "the washout table is defined at intensities $(PRECIPITATION_RATES) mm/h, got $rate",
-        ),
+        "the washout table is defined at intensities $(PRECIPITATION_RATES) mm/h, got $rate",
+    ),
     )
     tabulated = _WASHOUT[Int(species)][Int(precipitation)][i]
     if model == WASHOUT_HTO && precipitation == PRECIPITATION_SNOW

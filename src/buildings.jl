@@ -86,8 +86,8 @@ struct BuildingEnvelope
     wake_coefficient::Float64
 
     function BuildingEnvelope(
-        buildings::AbstractVector{Building} = Building[];
-        wake_coefficient::Real = DEFAULT_WAKE_COEFFICIENT,
+            buildings::AbstractVector{Building} = Building[];
+            wake_coefficient::Real = DEFAULT_WAKE_COEFFICIENT,
     )
         wake_coefficient ≥ 0 || throw(
             ArgumentError("the wake coefficient cannot be negative, got $wake_coefficient"),

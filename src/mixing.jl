@@ -71,8 +71,8 @@ struct MixingLayer
     function MixingLayer(depths; above_lid::LidRule = RISE_INHIBITED)
         length(depths) == 6 || throw(
             ArgumentError(
-                "one mixing depth per Pasquill class A to F is required, got $(length(depths))",
-            ),
+            "one mixing depth per Pasquill class A to F is required, got $(length(depths))",
+        ),
         )
         all(d -> d isa Real && d > 0, depths) || throw(
             ArgumentError("mixing depths must be positive, `Inf` for none, got $depths"),
@@ -81,8 +81,7 @@ struct MixingLayer
     end
 end
 
-MixingLayer(depth::Real; above_lid::LidRule = RISE_INHIBITED) =
-    MixingLayer(ntuple(_ -> depth, 6); above_lid)
+MixingLayer(depth::Real; above_lid::LidRule = RISE_INHIBITED) = MixingLayer(ntuple(_ -> depth, 6); above_lid)
 
 """
     MIXING_TABULATED
@@ -115,8 +114,7 @@ const RECOMMENDED_MIXING_DEPTH = 800.0
 Depth of the mixing layer in metres for the given Pasquill `class`, `Inf` where
 the class is unbounded.
 """
-mixing_depth(class::PasquillClass, layer::MixingLayer = MIXING_TABULATED) =
-    layer.depths[classindex(class)]
+mixing_depth(class::PasquillClass, layer::MixingLayer = MIXING_TABULATED) = layer.depths[classindex(class)]
 
 # Ratio Σ_z/A at which the evaluation changes representation; see `_lidded_profile`.
 const _REPRESENTATION_CROSSOVER = 0.7
@@ -138,13 +136,13 @@ const _REPRESENTATION_CROSSOVER = 0.7
 function _lidded_profile(z::Float64, H::Float64, Σz::Float64, A::Float64)
     if Σz < _REPRESENTATION_CROSSOVER * A
         total = 0.0
-        for s = -4:4
+        for s in -4:4
             total += exp(-(z - H - 2s * A)^2 / (2Σz^2)) + exp(-(z + H - 2s * A)^2 / (2Σz^2))
         end
         return total / (sqrt(2π) * Σz)
     end
     total = 1.0
-    for k = 1:4
+    for k in 1:4
         total += 2 * exp(-(k * π * Σz / A)^2 / 2) * cos(k * π * z / A) * cos(k * π * H / A)
     end
     return total / A
@@ -170,11 +168,11 @@ lid integrates to one at every `Σ_z`, and the factor is zero above the lid.
 A plume above the lid, `H > A`, is treated by `rule`; see [`LidRule`](@ref).
 """
 function vertical_factor(
-    z::Real,
-    H::Real,
-    Σz::Real,
-    A::Real,
-    rule::LidRule = RISE_INHIBITED,
+        z::Real,
+        H::Real,
+        Σz::Real,
+        A::Real,
+        rule::LidRule = RISE_INHIBITED,
 )
     Σz > 0 || throw(DomainError(Σz, "the vertical dispersion parameter must be positive"))
     A > 0 || throw(DomainError(A, "the mixing depth must be positive"))
@@ -191,8 +189,9 @@ function vertical_factor(
     return _lidded_profile(Float64(z), Float64(H), Float64(Σz), Float64(A))
 end
 
-vertical_factor(z::Real, H::Real, Σz::Real, layer::MixingLayer, class::PasquillClass) =
-    vertical_factor(z, H, Σz, mixing_depth(class, layer), layer.above_lid)
+vertical_factor(
+    z::Real, H::Real, Σz::Real, layer::MixingLayer, class::PasquillClass,) = vertical_factor(
+    z, H, Σz, mixing_depth(class, layer), layer.above_lid,)
 
 """
     crosswind_integrated_factor(H, Σz, A, rule = RISE_INHIBITED)
@@ -203,8 +202,8 @@ The vertical part of the crosswind-integrated plume, in m⁻¹:
 coincide and it is exactly the `√(2/π) exp(−H²/2Σ_z²)/Σ_z` of the
 sector-averaged form; under a lid the plume has filled it tends to `1/A`.
 """
-crosswind_integrated_factor(H::Real, Σz::Real, A::Real, rule::LidRule = RISE_INHIBITED) =
-    vertical_factor(0.0, H, Σz, A, rule)
+crosswind_integrated_factor(H::Real, Σz::Real, A::Real, rule::LidRule = RISE_INHIBITED) = vertical_factor(
+    0.0, H, Σz, A, rule,)
 
-crosswind_integrated_factor(H::Real, Σz::Real, layer::MixingLayer, class::PasquillClass) =
-    vertical_factor(0.0, H, Σz, layer, class)
+crosswind_integrated_factor(H::Real, Σz::Real, layer::MixingLayer, class::PasquillClass) = vertical_factor(
+    0.0, H, Σz, layer, class,)

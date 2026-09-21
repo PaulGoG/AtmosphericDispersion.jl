@@ -48,10 +48,9 @@
             @test issorted(I)
             @test all(≥(0), I)
             # A surviving fraction, so in (0, 1] and falling with distance.
-            f = [
-                dry_depletion_factor(x, site, class, TRITIATED_WATER) for
-                x in (10.0, 1e3, 1e4, 1e5)
-            ]
+            f = [dry_depletion_factor(x, site, class, TRITIATED_WATER)
+                 for
+                 x in (10.0, 1e3, 1e4, 1e5)]
             @test all(v -> 0 < v ≤ 1, f)
             @test issorted(f; rev = true)
             # No deposition velocity, no depletion.
@@ -81,7 +80,6 @@
         for p in PRECIPITATION_TYPES,
             r in PRECIPITATION_RATES,
             m in (WASHOUT_NORMATIVE, WASHOUT_HTO)
-
             e = WashoutEvent(; duration = 600.0, precipitation = p, rate = r, model = m)
             for species in (WASHOUT_TRITIUM_IODINE, WASHOUT_OTHER_NUCLIDES)
                 @test washout_coefficients(e, species) ==
@@ -92,10 +90,10 @@
     end
 
     @testset "wet depletion" begin
-        wet(t, p, r) =
-            wet_depletion_factor(WashoutEvent(; duration = t, precipitation = p, rate = r))
+        wet(t, p, r) = wet_depletion_factor(WashoutEvent(; duration = t, precipitation = p, rate = r))
         @test wet(0.0, PRECIPITATION_RAIN, 1.0) == 1
         for p in PRECIPITATION_TYPES, r in PRECIPITATION_RATES
+
             f = [wet(t, p, r) for t in (0.0, 600.0, 3600.0, 86400.0)]
             @test all(v -> 0 < v ≤ 1, f)
             @test issorted(f; rev = true)
@@ -111,6 +109,7 @@
     @testset "the no-depletion limit is one" begin
         no_rain = WashoutEvent(; duration = 0.0)
         for class in PASQUILL_CLASSES, x in (10.0, 1e3, 1e5)
+
             @test depletion_factor(x, site, class, inert) == 1
             # Rain that lasts no time removes nothing either.
             @test depletion_factor(x, site, class, inert; washout = no_rain) == 1
@@ -120,13 +119,11 @@
     @testset "composition" begin
         for class in PASQUILL_CLASSES
             x, t = 1e4, 3600.0
-            rain =
-                WashoutEvent(; duration = t, precipitation = PRECIPITATION_RAIN, rate = 1.0)
+            rain = WashoutEvent(; duration = t, precipitation = PRECIPITATION_RAIN, rate = 1.0)
             u = transport_wind_speed(site, class)
-            expected =
-                decay_factor(x, u, TRITIATED_WATER) *
-                dry_depletion_factor(x, site, class, TRITIATED_WATER) *
-                wet_depletion_factor(rain)
+            expected = decay_factor(x, u, TRITIATED_WATER) *
+                       dry_depletion_factor(x, site, class, TRITIATED_WATER) *
+                       wet_depletion_factor(rain)
             @test depletion_factor(x, site, class, TRITIATED_WATER; washout = rain) ≈
                   expected
             @test 0 < expected ≤ 1

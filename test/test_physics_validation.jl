@@ -30,6 +30,7 @@
     # This tests the 2πΣ_yΣ_z normalisation and the ground reflection at once.
     @testset "crosswind integral" begin
         for class in PASQUILL_CLASSES, r in distances
+
             f(y) = dilution_instantaneous(y, -r, 0.0, site, class, 0.0)
             numeric, _ = quadgk(f, -3e4, 3e4; rtol = 1e-10)
             H = effective_height(r, site, class)
@@ -44,6 +45,7 @@
     # downwind plane, carried at the transport speed, is the whole release.
     @testset "mass conservation" begin
         for class in PASQUILL_CLASSES, r in distances
+
             u = transport_wind_speed(site, class)
             inner(z) = quadgk(
                 y -> dilution_instantaneous(y, -r, z, site, class, 0.0),
@@ -63,6 +65,7 @@
         for sectors in (SectorGrid(8), SectorGrid(16), SectorGrid(36))
             θ_L = sector_width(sectors)
             for class in PASQUILL_CLASSES, r in distances
+
                 extended = dilution_extended(0.0, -r, site, class, 0.0, sectors)
                 H = effective_height(r, site, class)
                 Σz = corrected_vertical_dispersion(r, site, class)
@@ -80,6 +83,7 @@
     # not an error.
     @testset "ground-level maximum" begin
         for H in (50.0, 100.0, 200.0), u in (2.0, 5.0)
+
             f(σz) = exp(-H^2 / (2σz^2)) / (π * (2σz) * σz * u)
             σzs = range(1.0, 5H, length = 200_000)
             @test σzs[argmax(f.(σzs))] ≈ H / sqrt(2) rtol = 1e-4
@@ -87,9 +91,8 @@
         xs = 10 .^ range(1.5, 5, length = 4000)
         χ = [dilution_instantaneous(0.0, -x, 0.0, site, PASQUILL_D, 0.0) for x in xs]
         xm = xs[argmax(χ)]
-        ratio =
-            corrected_vertical_dispersion(xm, site, PASQUILL_D) /
-            (effective_height(xm, site, PASQUILL_D) / sqrt(2))
+        ratio = corrected_vertical_dispersion(xm, site, PASQUILL_D) /
+                (effective_height(xm, site, PASQUILL_D) / sqrt(2))
         @test 0.9 < ratio < 1.1
     end
 end

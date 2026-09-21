@@ -19,8 +19,8 @@ using Printf
 
 include(joinpath(@__DIR__, "theme_common.jl"))
 
-const OUT =
-    isempty(ARGS) ? joinpath(@__DIR__, "..", "figures", "validation") : abspath(first(ARGS))
+const OUT = isempty(ARGS) ? joinpath(@__DIR__, "..", "figures", "validation") :
+            abspath(first(ARGS))
 
 # --- published parameterisations, transcribed from the sources named -------
 
@@ -80,8 +80,7 @@ function figure_dispersion_parameters()
     )
     local h_pkg, h_pub
     for (i, class) in enumerate(PASQUILL_CLASSES)
-        h_pkg =
-            lines!(ax1, x, [lateral_dispersion(xi, class) for xi in x], color = colours[i])
+        h_pkg = lines!(ax1, x, [lateral_dispersion(xi, class) for xi in x], color = colours[i])
         h_pub = lines!(
             ax1,
             x,
@@ -127,6 +126,7 @@ function figure_dispersion_parameters()
     # the widest σ_z departure from Briggs over the band, for the annotation
     worst = 0.0
     for (i, class) in enumerate(PASQUILL_CLASSES), xi in x
+
         r = vertical_dispersion(xi, class, ROUGHNESS_PASTURE) / briggs_σz(xi, i)
         worst = max(worst, max(r, 1 / r))
     end
@@ -210,10 +210,9 @@ function figure_roughness()
     z = [roughness_length(r) for r in ROUGHNESS_CLASSES]
     local h_pkg, h_law
     for (d, c) in ((100.0, PALETTE.blue), (1000.0, PALETTE.green), (10_000.0, PALETTE.red))
-        ratio = [
-            roughness_correction(d, r) / roughness_correction(d, ROUGHNESS_PASTURE) for
-            r in ROUGHNESS_CLASSES
-        ]
+        ratio = [roughness_correction(d, r) / roughness_correction(d, ROUGHNESS_PASTURE)
+                 for
+                 r in ROUGHNESS_CLASSES]
         h_pkg = scatterlines!(ax2, z, ratio, color = c)
         text!(
             ax2,
@@ -554,7 +553,7 @@ function main()
         figure_washout(),
         figure_resuspension(),
         figure_plume_rise(),
-        figure_ground_level(config),
+        figure_ground_level(config)
     )
         println("wrote ", p)
     end

@@ -106,6 +106,7 @@ end
         only_wind = PrescribedPlume(site; wind = u)
         only_height = PrescribedPlume(site; height = H)
         for class in PASQUILL_CLASSES, x in distances
+
             @test effective_height(x, only_wind, class) == effective_height(x, site, class)
             @test transport_wind_speed(only_height, class) ==
                   transport_wind_speed(site, class)
@@ -151,6 +152,7 @@ end
         inside = PrescribedPlume(built; height = h / 2)
         roughness = REFERENCE_AIR.roughness
         for class in PASQUILL_CLASSES, x in (100.0, 500.0)
+
             σy = lateral_dispersion(x, class)
             σz = vertical_dispersion(x, class, roughness)
             # The site's own plume is still within reach of the wake here.

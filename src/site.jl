@@ -54,9 +54,9 @@ drive the entrainment. Between those the release height is reduced by
 `1.5 H_b − 0.6 H₁`.
 """
 function wake_height(
-    source::StackSource,
-    atmosphere::Atmosphere,
-    envelope::BuildingEnvelope,
+        source::StackSource,
+        atmosphere::Atmosphere,
+        envelope::BuildingEnvelope,
 )
     H₁ = downwash_height(source, atmosphere)
     h = equivalent_height(envelope)
@@ -102,11 +102,11 @@ struct Site <: AbstractSite
     stability::Float64
 
     function Site(;
-        source::StackSource,
-        atmosphere::Atmosphere,
-        buildings::BuildingEnvelope = BuildingEnvelope(),
-        rise::RiseCoefficients = BRIGGS_RISE,
-        mixing::MixingLayer = MIXING_TABULATED,
+            source::StackSource,
+            atmosphere::Atmosphere,
+            buildings::BuildingEnvelope = BuildingEnvelope(),
+            rise::RiseCoefficients = BRIGGS_RISE,
+            mixing::MixingLayer = MIXING_TABULATED,
     )
         return new(
             source,
@@ -166,8 +166,8 @@ Effective release height in metres at downwind distance `x` metres: the release
 height after downwash and building wake, plus the plume rise attained by that
 distance.
 """
-effective_height(x::Real, site::Site, class::PasquillClass) =
-    release_height(site) + plume_rise(x, site, class)
+effective_height(x::Real, site::Site, class::PasquillClass) = release_height(site) +
+                                                              plume_rise(x, site, class)
 
 """
     corrected_lateral_dispersion(x, site, class; release_duration = SHORT_RELEASE_REFERENCE)
@@ -175,10 +175,10 @@ effective_height(x::Real, site::Site, class::PasquillClass) =
 Lateral dispersion parameter in metres, broadened by the building wake.
 """
 function corrected_lateral_dispersion(
-    x::Real,
-    site::Site,
-    class::PasquillClass;
-    release_duration::Real = SHORT_RELEASE_REFERENCE,
+        x::Real,
+        site::Site,
+        class::PasquillClass;
+        release_duration::Real = SHORT_RELEASE_REFERENCE,
 )
     σy = lateral_dispersion(x, class; release_duration)
     return wake_broadened(σy, effective_height(x, site, class), site.buildings)
@@ -228,11 +228,11 @@ struct PrescribedPlume <: AbstractSite
     vertical::Union{Nothing,Float64}
 
     function PrescribedPlume(
-        site::Site;
-        height::Union{Nothing,Real} = nothing,
-        wind::Union{Nothing,Real} = nothing,
-        lateral::Union{Nothing,Real} = nothing,
-        vertical::Union{Nothing,Real} = nothing,
+            site::Site;
+            height::Union{Nothing,Real} = nothing,
+            wind::Union{Nothing,Real} = nothing,
+            lateral::Union{Nothing,Real} = nothing,
+            vertical::Union{Nothing,Real} = nothing,
     )
         height === nothing ||
             height ≥ 0 ||
@@ -249,8 +249,8 @@ struct PrescribedPlume <: AbstractSite
             vertical > 0 ||
             throw(
                 ArgumentError(
-                    "a prescribed vertical dispersion parameter must be positive",
-                ),
+                "a prescribed vertical dispersion parameter must be positive",
+            ),
             )
         _float(v) = v === nothing ? nothing : Float64(v)
         return new(site, _float(height), _float(wind), _float(lateral), _float(vertical))
@@ -275,10 +275,10 @@ function effective_height(x::Real, plume::PrescribedPlume, class::PasquillClass)
 end
 
 function corrected_lateral_dispersion(
-    x::Real,
-    plume::PrescribedPlume,
-    class::PasquillClass;
-    release_duration::Real = SHORT_RELEASE_REFERENCE,
+        x::Real,
+        plume::PrescribedPlume,
+        class::PasquillClass;
+        release_duration::Real = SHORT_RELEASE_REFERENCE,
 )
     lateral = plume.lateral
     lateral === nothing || return lateral
@@ -288,9 +288,9 @@ function corrected_lateral_dispersion(
 end
 
 function corrected_vertical_dispersion(
-    x::Real,
-    plume::PrescribedPlume,
-    class::PasquillClass,
+        x::Real,
+        plume::PrescribedPlume,
+        class::PasquillClass,
 )
     vertical = plume.vertical
     vertical === nothing || return vertical

@@ -13,42 +13,42 @@ using CairoMakie, MathTeXEngine, LaTeXStrings
 # sizes below.
 set_theme!(
     Theme(
-        fonts = (;
-            regular = texfont(:text),
-            bold = texfont(:bold),
-            italic = texfont(:italic),
-        ),
-        fontsize = 26,
-        figure_padding = 10,
-        linewidth = 3,
-        markersize = 14,
-        rowgap = 10,
-        colgap = 12,
-        Axis = (
-            spinewidth = 1.5,
-            xticklabelsize = 22,
-            yticklabelsize = 22,
-            xlabelpadding = 8,
-            ylabelpadding = 8,
-            xgridstyle = :dash,
-            ygridstyle = :dash,
-            xgridcolor = (:grey, 0.12),
-            ygridcolor = (:grey, 0.12),
-            xminorticksvisible = false,
-            yminorticksvisible = false,
-            xtickalign = 1,
-            ytickalign = 1,
-        ),
-        Scatter = (strokewidth = 1.5,),
-        Legend = (
-            framevisible = false,
-            orientation = :horizontal,
-            titlefont = :bold,
-            labelsize = 22,
-            padding = (0, 0, 0, 0),
-        ),
-        Colorbar = (ticklabelsize = 22, spinewidth = 1.5),
+    fonts = (;
+        regular = texfont(:text),
+        bold = texfont(:bold),
+        italic = texfont(:italic),
     ),
+    fontsize = 26,
+    figure_padding = 10,
+    linewidth = 3,
+    markersize = 14,
+    rowgap = 10,
+    colgap = 12,
+    Axis = (
+        spinewidth = 1.5,
+        xticklabelsize = 22,
+        yticklabelsize = 22,
+        xlabelpadding = 8,
+        ylabelpadding = 8,
+        xgridstyle = :dash,
+        ygridstyle = :dash,
+        xgridcolor = (:grey, 0.12),
+        ygridcolor = (:grey, 0.12),
+        xminorticksvisible = false,
+        yminorticksvisible = false,
+        xtickalign = 1,
+        ytickalign = 1,
+    ),
+    Scatter = (strokewidth = 1.5,),
+    Legend = (
+        framevisible = false,
+        orientation = :horizontal,
+        titlefont = :bold,
+        labelsize = 22,
+        padding = (0, 0, 0, 0),
+    ),
+    Colorbar = (ticklabelsize = 22, spinewidth = 1.5),
+),
 )
 
 "Size of in-axis annotations, 0.8 of the base size. Nothing in a figure is set smaller."
@@ -87,8 +87,8 @@ journal column width.
 """
 const MARKERSIZE = (cloud = 6, dense = 10, data = 14, emphasis = 20, key = 16)
 
-_decimal_label(e::Integer) =
-    e >= 0 ? latexstring(string(10^e)) : latexstring("0." * "0"^(-e - 1) * "1")
+_decimal_label(e::Integer) = e >= 0 ? latexstring(string(10^e)) :
+                             latexstring("0." * "0"^(-e - 1) * "1")
 
 # The unit decade and the first are written as the numbers they are: `10^0` and
 # `10^1` are never the readable form, on an axis of powers no more than on one
@@ -148,7 +148,7 @@ mathematical.
 """
 it(s) = rich(s, font = :italic)
 
-_trim(v::Real) = (s = string(v); endswith(s, ".0") ? s[1:(end-2)] : s)
+_trim(v::Real) = (s = string(v); endswith(s, ".0") ? s[1:(end - 2)] : s)
 
 """
     sci(x; digits = 2)

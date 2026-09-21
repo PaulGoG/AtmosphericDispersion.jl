@@ -26,8 +26,8 @@ struct ConfigurationError <: Exception
     message::String
 end
 
-Base.showerror(io::IO, e::ConfigurationError) =
-    print(io, "ConfigurationError at `", e.path, "`: ", e.message)
+Base.showerror(io::IO, e::ConfigurationError) = print(
+    io, "ConfigurationError at `", e.path, "`: ", e.message,)
 
 _fail(path, message) = throw(ConfigurationError(path, message))
 
@@ -42,11 +42,11 @@ end
 _join(path, key) = isempty(path) ? String(key) : string(path, ".", key)
 
 function _value(
-    parent::AbstractDict,
-    key::AbstractString,
-    ::Type{T},
-    path::AbstractString;
-    default = nothing,
+        parent::AbstractDict,
+        key::AbstractString,
+        ::Type{T},
+        path::AbstractString;
+        default = nothing,
 ) where {T}
     if !haskey(parent, key)
         default === nothing && _fail(_join(path, key), "required key is missing")
@@ -95,8 +95,8 @@ const _ROOT_KEYS = (
     "precipitation",
     "grid",
 )
-const _SOURCE_KEYS =
-    ("height", "diameter", "exit_velocity", "exit_density", "exit_temperature")
+const _SOURCE_KEYS = (
+    "height", "diameter", "exit_velocity", "exit_density", "exit_temperature",)
 const _ATMOSPHERE_KEYS = (
     "reference_speed",
     "temperature",
@@ -122,18 +122,18 @@ const _RELEASE_KEYS = ("activity", "duration")
 const _PRECIPITATION_KEYS = ("type", "rate", "washout_duration")
 const _GRID_KEYS = ("extent", "spacing")
 
-const _RISE_CHOICES =
-    Dict("briggs" => BRIGGS_RISE, "xoqdoq" => XOQDOQ_RISE, "nsr23" => NSR23_RISE)
+const _RISE_CHOICES = Dict("briggs" => BRIGGS_RISE, "xoqdoq" => XOQDOQ_RISE, "nsr23" =>
+    NSR23_RISE)
 
 const _MIXING_SCHEMES = ("tabulated", "uniform", "custom", "unbounded")
 
-const _LID_CHOICES =
-    Dict("rise_inhibited" => RISE_INHIBITED, "full_penetration" => FULL_PENETRATION)
+const _LID_CHOICES = Dict("rise_inhibited" => RISE_INHIBITED, "full_penetration" =>
+    FULL_PENETRATION)
 
 const _WASHOUT_CHOICES = Dict("normative" => WASHOUT_NORMATIVE, "hto" => WASHOUT_HTO)
 
-const _SPECIES_CHOICES =
-    Dict("tritium_iodine" => WASHOUT_TRITIUM_IODINE, "other" => WASHOUT_OTHER_NUCLIDES)
+const _SPECIES_CHOICES = Dict("tritium_iodine" => WASHOUT_TRITIUM_IODINE, "other" =>
+    WASHOUT_OTHER_NUCLIDES)
 
 const _RESUSPENSION_CHOICES = Dict(
     "iaea_ss57" => RESUSPENSION_IAEA_SS57,
@@ -155,11 +155,11 @@ const _ROUGHNESS_CHOICES = Dict(
     "metropolis" => ROUGHNESS_METROPOLIS,
 )
 
-const _PRECIPITATION_CHOICES =
-    Dict("rain" => PRECIPITATION_RAIN, "snow" => PRECIPITATION_SNOW)
+const _PRECIPITATION_CHOICES = Dict("rain" => PRECIPITATION_RAIN, "snow" =>
+    PRECIPITATION_SNOW)
 
-const _CONVENTION_CHOICES =
-    Dict("blowing_from" => BlowingFrom(), "blowing_toward" => BlowingToward())
+const _CONVENTION_CHOICES = Dict("blowing_from" => BlowingFrom(), "blowing_toward" =>
+    BlowingToward())
 
 """
     RunConfiguration
@@ -246,10 +246,8 @@ function configuration_from(root::AbstractDict)
 
     release = _table(root, "release", "")
     _reject_unknown(release, _RELEASE_KEYS, "release")
-    activity =
-        _nonnegative(_value(release, "activity", Float64, "release"), "release.activity")
-    release_duration =
-        _positive(_value(release, "duration", Float64, "release"), "release.duration")
+    activity = _nonnegative(_value(release, "activity", Float64, "release"), "release.activity")
+    release_duration = _positive(_value(release, "duration", Float64, "release"), "release.duration")
 
     precip = get(root, "precipitation", Dict{String,Any}())
     precip isa AbstractDict ||

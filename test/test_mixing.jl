@@ -4,11 +4,11 @@
 @testset "Mixing layer" begin
     # Eq. (3.4) summed by brute force far past convergence. At Σ_z = 5A, the
     # widest case below, the first neglected image is down by exp(−288).
-    image_sum(z, H, Σz, A) =
-        sum(
-            exp(-(z - H - 2s * A)^2 / (2Σz^2)) + exp(-(z + H - 2s * A)^2 / (2Σz^2)) for
-            s = -60:60
-        ) / (sqrt(2π) * Σz)
+    image_sum(z, H, Σz, A) = sum(
+        exp(-(z - H - 2s * A)^2 / (2Σz^2)) + exp(-(z + H - 2s * A)^2 / (2Σz^2))
+    for
+    s in -60:60
+    ) / (sqrt(2π) * Σz)
     # Σ_z/A on both sides of the change of representation at 0.7, and hard
     # against it.
     ratios = (0.05, 0.3, 0.69, 0.6999999, 0.7, 0.71, 1.0, 2.0, 5.0)
@@ -71,8 +71,7 @@
         # The cosine series at Σ_z = A, source and receptor on the ground: every
         # harmonic enters with weight one, and the third is below round-off.
         for A in (100.0, 800.0)
-            @test A * vertical_factor(0.0, 0.0, A, A) ≈ 1 + 2exp(-π^2 / 2) + 2exp(-2π^2) rtol =
-                1e-12
+            @test A * vertical_factor(0.0, 0.0, A, A) ≈ 1 + 2exp(-π^2 / 2) + 2exp(-2π^2) rtol = 1e-12
         end
         # Eq. (3.5): a plume that has filled the layer is uniform over it.
         for A in (100.0, 800.0), H in (0.0, A / 10, A / 2, A), z in (0.0, A / 3, A)
@@ -80,13 +79,14 @@
         end
         # Without a lid the factor is the ordinary ground-reflected Gaussian.
         for H in (20.0, 100.0), Σz in (10.0, 60.0, 400.0), z in (0.0, 50.0)
-            plain =
-                (exp(-(z - H)^2 / (2Σz^2)) + exp(-(z + H)^2 / (2Σz^2))) / (sqrt(2π) * Σz)
+            plain = (exp(-(z - H)^2 / (2Σz^2)) + exp(-(z + H)^2 / (2Σz^2))) /
+                    (sqrt(2π) * Σz)
             @test vertical_factor(z, H, Σz, Inf) == plain
             @test vertical_factor(z, H, Σz, Inf, FULL_PENETRATION) == plain
         end
         # Nothing crosses the lid.
         for A in (100.0, 800.0), Σz in (30.0, 3A)
+
             @test vertical_factor(A + 1, 50.0, Σz, A) == 0
             @test vertical_factor(nextfloat(A), 50.0, Σz, A) == 0
         end
@@ -94,6 +94,7 @@
 
     @testset "the crosswind-integrated factor without a lid" begin
         for H in (20.0, 100.0), Σz in (10.0, 60.0, 400.0)
+
             @test crosswind_integrated_factor(H, Σz, Inf) ≈
                   sqrt(2 / π) * exp(-H^2 / (2Σz^2)) / Σz rtol = 1e-14
         end
@@ -113,6 +114,7 @@
     @testset "a plume above the lid, rise inhibited" begin
         A = 800.0
         for Σz in (80.0, 240.0, 800.0, 2400.0), z in (0.0, 123.0, A)
+
             at_lid = vertical_factor(z, A, Σz, A)
             @test at_lid > 0
             for H in (nextfloat(A), A + 0.1, 1.5A, 10A)
@@ -132,6 +134,7 @@
     @testset "a plume above the lid, full penetration" begin
         A = 800.0
         for Σz in (80.0, 240.0, 800.0, 2400.0), z in (0.0, 123.0, A)
+
             for H in (nextfloat(A), A + 0.1, 1.5A, 10A)
                 @test vertical_factor(z, H, Σz, A, FULL_PENETRATION) == 0
             end
@@ -148,7 +151,9 @@
     @testset "an ISC3-style layer" begin
         isc3 = MixingLayer((1500, 1200, 1000, 900, Inf, Inf); above_lid = FULL_PENETRATION)
         for Σz in (50.0, 400.0), z in (0.0, 60.0)
+
             for class in (PASQUILL_E, PASQUILL_F), H in (100.0, 2000.0)
+
                 @test vertical_factor(z, H, Σz, isc3, class) ==
                       vertical_factor(z, H, Σz, Inf)
                 @test crosswind_integrated_factor(H, Σz, isc3, class) ==

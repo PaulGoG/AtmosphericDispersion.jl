@@ -43,24 +43,24 @@ struct RiseCoefficients
     stable_final::Float64
 
     function RiseCoefficients(;
-        combined_buoyancy::Real = 0.72,
-        neutral_momentum::Real = 3.0,
-        stable_final::Real = 2.6,
+            combined_buoyancy::Real = 0.72,
+            neutral_momentum::Real = 3.0,
+            stable_final::Real = 2.6,
     )
         combined_buoyancy > 0 || throw(
             ArgumentError(
-                "the combined-law buoyancy denominator must be positive, got $combined_buoyancy",
-            ),
+            "the combined-law buoyancy denominator must be positive, got $combined_buoyancy",
+        ),
         )
         neutral_momentum ≥ 0 || throw(
             ArgumentError(
-                "the neutral momentum coefficient cannot be negative, got $neutral_momentum",
-            ),
+            "the neutral momentum coefficient cannot be negative, got $neutral_momentum",
+        ),
         )
         stable_final ≥ 0 || throw(
             ArgumentError(
-                "the stable rise coefficient cannot be negative, got $stable_final",
-            ),
+            "the stable rise coefficient cannot be negative, got $stable_final",
+        ),
         )
         return new(combined_buoyancy, neutral_momentum, stable_final)
     end
@@ -143,11 +143,11 @@ transitional law `1.6 F^(1/3) x^(2/3) / u` while the plume is still rising, and
 the final rise beyond.
 """
 function buoyant_rise(
-    x::Real,
-    F::Real,
-    u::Real,
-    S::Real,
-    rise::RiseCoefficients = BRIGGS_RISE,
+        x::Real,
+        F::Real,
+        u::Real,
+        S::Real,
+        rise::RiseCoefficients = BRIGGS_RISE,
 )
     x ≥ 0 || throw(DomainError(x, "downwind distance cannot be negative"))
     final = final_buoyant_rise(F, u, S, rise)
@@ -166,12 +166,12 @@ speed `u` in m/s and the stability parameter `S` in s⁻².
 As for buoyancy, the stratification-limited branches enter only where `S > 0`.
 """
 function final_momentum_rise(
-    Fₘ::Real,
-    w₀::Real,
-    D::Real,
-    u::Real,
-    S::Real,
-    rise::RiseCoefficients = BRIGGS_RISE,
+        Fₘ::Real,
+        w₀::Real,
+        D::Real,
+        u::Real,
+        S::Real,
+        rise::RiseCoefficients = BRIGGS_RISE,
 )
     Fₘ ≥ 0 || throw(DomainError(Fₘ, "momentum flux cannot be negative"))
     u > 0 || throw(DomainError(u, "wind speed at the release height must be positive"))
@@ -190,13 +190,13 @@ the transitional law `1.89 (w₀² D / (u(w₀ + 3u)))^(2/3) x^(1/3)` until it
 reaches the final rise.
 """
 function momentum_rise(
-    x::Real,
-    Fₘ::Real,
-    w₀::Real,
-    D::Real,
-    u::Real,
-    S::Real,
-    rise::RiseCoefficients = BRIGGS_RISE,
+        x::Real,
+        Fₘ::Real,
+        w₀::Real,
+        D::Real,
+        u::Real,
+        S::Real,
+        rise::RiseCoefficients = BRIGGS_RISE,
 )
     x ≥ 0 || throw(DomainError(x, "downwind distance cannot be negative"))
     final = final_momentum_rise(Fₘ, w₀, D, u, S, rise)
@@ -219,24 +219,24 @@ reduces, as `Fₘ → 0`, to the two-thirds law `1.6 F^(1/3) x^(2/3) / u` that
 [`buoyant_rise`](@ref) uses; with the 2021 value 0.5 it overshoots it by 13.6 %.
 """
 function combined_rise(
-    x::Real,
-    F::Real,
-    Fₘ::Real,
-    w₀::Real,
-    u::Real,
-    S::Real,
-    D::Real,
-    rise::RiseCoefficients = BRIGGS_RISE,
+        x::Real,
+        F::Real,
+        Fₘ::Real,
+        w₀::Real,
+        u::Real,
+        S::Real,
+        D::Real,
+        rise::RiseCoefficients = BRIGGS_RISE,
 )
     x ≥ 0 || throw(DomainError(x, "downwind distance cannot be negative"))
     u > 0 || throw(DomainError(u, "wind speed at the release height must be positive"))
     w₀ > 0 || throw(DomainError(w₀, "exit velocity must be positive for the combined law"))
     final = final_momentum_rise(Fₘ, w₀, D, u, S, rise) + final_buoyant_rise(F, u, S, rise)
-    transitional =
-        3^(1 / 3) *
-        (Fₘ * x / ((1 / 3 + u / w₀)^2 * u^2) + F * x^2 / (rise.combined_buoyancy * u^3))^(
-            1 / 3
-        )
+    transitional = 3^(1 / 3) *
+                   (Fₘ * x / ((1 / 3 + u / w₀)^2 * u^2) +
+                    F * x^2 / (rise.combined_buoyancy * u^3))^(
+        1 / 3
+    )
     return min(transitional, final)
 end
 
@@ -250,20 +250,20 @@ const MECHANISM_BALANCE_TOLERANCE = 0.1
 
 # The mechanism selection, shared by both public methods of plume_rise.
 function _plume_rise(
-    x::Real,
-    F::Real,
-    Fₘ::Real,
-    S::Real,
-    w₀::Real,
-    D::Real,
-    u::Real,
-    rise::RiseCoefficients,
+        x::Real,
+        F::Real,
+        Fₘ::Real,
+        S::Real,
+        w₀::Real,
+        D::Real,
+        u::Real,
+        rise::RiseCoefficients,
 )
     buoyant = final_buoyant_rise(F, u, S, rise)
     momentum = final_momentum_rise(Fₘ, w₀, D, u, S, rise)
     total = buoyant + momentum
-    balanced =
-        iszero(total) || 2 * abs(buoyant - momentum) / total ≤ MECHANISM_BALANCE_TOLERANCE
+    balanced = iszero(total) ||
+               2 * abs(buoyant - momentum) / total ≤ MECHANISM_BALANCE_TOLERANCE
     balanced && return combined_rise(x, F, Fₘ, w₀, u, S, D, rise)
     momentum > buoyant && return momentum_rise(x, Fₘ, w₀, D, u, S, rise)
     return buoyant_rise(x, F, u, S, rise)
@@ -282,11 +282,11 @@ the plume and its law is used alone. `rise` selects the
 [`RiseCoefficients`](@ref).
 """
 function plume_rise(
-    x::Real,
-    source::StackSource,
-    atmosphere::Atmosphere,
-    u::Real,
-    rise::RiseCoefficients = BRIGGS_RISE,
+        x::Real,
+        source::StackSource,
+        atmosphere::Atmosphere,
+        u::Real,
+        rise::RiseCoefficients = BRIGGS_RISE,
 )
     F = buoyancy_flux(source, atmosphere)
     Fₘ = momentum_flux(source, atmosphere)

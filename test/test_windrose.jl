@@ -19,7 +19,7 @@
         @test frequency_from(toward, 9) == 1.0
 
         # The two readings of one table are exactly opposite everywhere.
-        for k = 1:16
+        for k in 1:16
             @test frequency_toward(from, k) == frequency_toward(toward, opposite(g, k))
             @test frequency_from(from, k) == frequency_toward(from, opposite(g, k))
         end
@@ -36,9 +36,8 @@
         f = fill(1 / 16, 16)
         s = collect(STABILITY_2021)
         rose = WindRose(g, f, BlowingFrom(); stability = s)
-        for k = 1:16
-            @test sum(stability_fraction(rose, k, c) for c in PASQUILL_CLASSES) ≈ 1 atol =
-                1e-3
+        for k in 1:16
+            @test sum(stability_fraction(rose, k, c) for c in PASQUILL_CLASSES) ≈ 1 atol = 1e-3
             @test stability_fraction(rose, k, PASQUILL_D) == 0.488
         end
 

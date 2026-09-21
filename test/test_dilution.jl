@@ -11,6 +11,7 @@
         @test x ≈ 1000 && abs(y) < 1e-9
         # The frame is orthonormal: it preserves distance.
         for β in range(0, 2π; length = 17), (e, n) in ((300.0, 400.0), (-120.0, 50.0))
+
             x, y = plume_frame(e, n, β)
             @test hypot(x, y) ≈ hypot(e, n)
         end
@@ -29,10 +30,9 @@
             @test left < onaxis
         end
         # Falls off downwind, far from the source.
-        far = [
-            dilution_instantaneous(0.0, -r, 0.0, site, PASQUILL_D, 0.0) for
-            r in (2_000.0, 5_000.0, 20_000.0)
-        ]
+        far = [dilution_instantaneous(0.0, -r, 0.0, site, PASQUILL_D, 0.0)
+               for
+               r in (2_000.0, 5_000.0, 20_000.0)]
         @test issorted(far; rev = true)
         # Equivariant under a common rotation of receptor and wind.
         for β in range(0, 2π; length = 13)
@@ -74,14 +74,12 @@
 
         # A uniform rose gives a rotationally symmetric field.
         uniform = WindRose(g, fill(1 / 16, 16), BlowingToward(); stability = stab)
-        values = [
-            dilution_long_term(
-                1000sin(sector_bearing(g, k)),
-                1000cos(sector_bearing(g, k)),
-                site,
-                uniform,
-            ) for k = 1:16
-        ]
+        values = [dilution_long_term(
+                      1000sin(sector_bearing(g, k)),
+                      1000cos(sector_bearing(g, k)),
+                      site,
+                      uniform,
+                  ) for k in 1:16]
         @test all(v -> v ≈ first(values), values)
         @test first(values) > 0
 
@@ -114,15 +112,16 @@
             site,
             rose,
         )
-        for k = 1:16
+        for k in 1:16
             @test χ(from, k) ≈ χ(toward, opposite(g, k))
         end
         # And they disagree substantially where the rose is asymmetric.
-        ratios = [χ(toward, k) / χ(from, k) for k = 1:16]
+        ratios = [χ(toward, k) / χ(from, k) for k in 1:16]
         @test maximum(ratios) > 1.4
         @test minimum(ratios) < 0.7
         # The most exposed sector is exactly opposite between the two.
-        @test argmax([χ(toward, k) for k = 1:16]) == opposite(g, argmax([χ(from, k) for k = 1:16]))
+        @test argmax([χ(toward, k) for k in 1:16]) ==
+              opposite(g, argmax([χ(from, k) for k in 1:16]))
 
         @test dilution_long_term(0.0, 0.0, site, toward) == 0
         # A sector the wind never blows towards receives nothing.
@@ -159,9 +158,8 @@
         # 1300 m depth within 20 km, and not class D within the same range.
         only_A = WindRose(g, F_k, BlowingFrom(); stability = [1.0, 0, 0, 0, 0, 0])
         only_D = WindRose(g, F_k, BlowingFrom(); stability = [0, 0, 0, 1.0, 0, 0])
-        ratio(rose, r) =
-            dilution_long_term(0.0, -r, site, rose) /
-            dilution_long_term(0.0, -r, lid_off, rose)
+        ratio(rose, r) = dilution_long_term(0.0, -r, site, rose) /
+                         dilution_long_term(0.0, -r, lid_off, rose)
         @test ratio(only_A, 2e4) ≈ 1.44 atol = 0.01
         @test ratio(only_A, 5e4) ≈ 2.23 atol = 0.01
         @test ratio(only_D, 2e4) ≈ 1 atol = 1e-3

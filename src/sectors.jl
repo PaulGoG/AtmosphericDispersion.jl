@@ -36,8 +36,8 @@ struct SectorGrid
         n ≥ 4 || throw(ArgumentError("a wind rose needs at least 4 sectors, got $n"))
         iseven(n) || throw(
             ArgumentError(
-                "the number of sectors must be even so that every sector has an opposite, got $n",
-            ),
+            "the number of sectors must be even so that every sector has an opposite, got $n",
+        ),
         )
         return new(Int(n))
     end

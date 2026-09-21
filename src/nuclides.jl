@@ -16,8 +16,8 @@ struct DepositionVelocity
     function DepositionVelocity(low::Real, high::Real)
         0 ≤ low ≤ high || throw(
             ArgumentError(
-                "deposition velocities must satisfy 0 ≤ low ≤ high, got low = $low, high = $high m/s",
-            ),
+            "deposition velocities must satisfy 0 ≤ low ≤ high, got low = $low, high = $high m/s",
+        ),
         )
         return new(low, high)
     end
@@ -43,10 +43,10 @@ struct Nuclide
     washout_species::WashoutSpecies
 
     function Nuclide(;
-        name::AbstractString,
-        decay_constant::Real,
-        deposition_velocity::DepositionVelocity,
-        washout_species::WashoutSpecies = WASHOUT_TRITIUM_IODINE,
+            name::AbstractString,
+            decay_constant::Real,
+            deposition_velocity::DepositionVelocity,
+            washout_species::WashoutSpecies = WASHOUT_TRITIUM_IODINE,
     )
         decay_constant ≥ 0 || throw(
             ArgumentError("decay constant cannot be negative, got $decay_constant s⁻¹"),

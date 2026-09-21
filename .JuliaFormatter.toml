@@ -1,1 +1,34 @@
-# See https://domluna.github.io/JuliaFormatter.jl/stable/ for a list of options
+# SciMLStyle rather than the default: the default splits any call wider than the
+# margin to one argument per line, which turns a `text!(ax, 0.5, 0.9; ...)` of the
+# figure scripts into six lines and a test call into ten. SciMLStyle is built for
+# hand-written scientific Julia and keeps such calls together.
+#
+#   julia -e 'using JuliaFormatter; format(".")'
+
+style = "sciml"
+indent = 4
+margin = 92
+
+# `f(x; color = :blue)` and `x[i + 1]`.
+whitespace_in_kwargs = true
+whitespace_ops_in_indices = true
+
+# `for i in 1:n`, never `for i = 1:n`.
+always_for_in = true
+
+# Keep the comma on the last entry of a multi-line call or tuple, so that adding
+# an entry later touches one line rather than two.
+trailing_comma = true
+
+# Left alone deliberately: the docstrings are written to be read as prose and
+# reflowing them to the margin breaks the equations and tables inside them;
+# `x::Int` keeps its tight colons; and one-line definitions such as
+# `rain(rate) = WashoutEvent(; duration = 0.0, rate)` stay one-liners.
+format_docstrings = false
+whitespace_typedefs = false
+short_to_long_function_def = false
+
+# `using X` versus `import X` is left as written, and a bare `return` is not
+# always wanted.
+import_to_using = false
+always_use_return = false

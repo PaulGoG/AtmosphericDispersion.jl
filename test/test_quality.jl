@@ -31,8 +31,8 @@ end
 # type of anything the kernels call.
 @testset "Inference of the site interface" begin
     site = REFERENCE_SITE
-    prescribed =
-        PrescribedPlume(site; height = 80.0, wind = 5.0, lateral = 120.0, vertical = 60.0)
+    prescribed = PrescribedPlume(
+        site; height = 80.0, wind = 5.0, lateral = 120.0, vertical = 60.0,)
     for s in (site, PrescribedPlume(site), prescribed)
         @test @inferred(effective_height(1000.0, s, PASQUILL_D)) isa Float64
         @test @inferred(transport_wind_speed(s, PASQUILL_D)) isa Float64

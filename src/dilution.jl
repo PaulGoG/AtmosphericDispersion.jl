@@ -34,15 +34,15 @@ receptor into the plume frame. Upwind of the source the factor is zero: this
 model carries no upwind diffusion.
 """
 function dilution_instantaneous(
-    east::Real,
-    north::Real,
-    z::Real,
-    site::AbstractSite,
-    class::PasquillClass,
-    wind_bearing::Real;
-    release_duration::Real = SHORT_RELEASE_REFERENCE,
-    nuclide::Union{Nothing,Nuclide} = nothing,
-    washout::Union{Nothing,WashoutEvent} = nothing,
+        east::Real,
+        north::Real,
+        z::Real,
+        site::AbstractSite,
+        class::PasquillClass,
+        wind_bearing::Real;
+        release_duration::Real = SHORT_RELEASE_REFERENCE,
+        nuclide::Union{Nothing,Nuclide} = nothing,
+        washout::Union{Nothing,WashoutEvent} = nothing,
 )
     z ≥ 0 || throw(DomainError(z, "receptor height cannot be below ground"))
     x, y = plume_frame(east, north, wind_bearing)
@@ -98,14 +98,14 @@ north. `sectors` sets the sector width and defaults to the sixteen cardinal
 sectors.
 """
 function dilution_extended(
-    east::Real,
-    north::Real,
-    site::AbstractSite,
-    class::PasquillClass,
-    wind_bearing::Real,
-    sectors::SectorGrid = SectorGrid(16);
-    nuclide::Union{Nothing,Nuclide} = nothing,
-    washout::Union{Nothing,WashoutEvent} = nothing,
+        east::Real,
+        north::Real,
+        site::AbstractSite,
+        class::PasquillClass,
+        wind_bearing::Real,
+        sectors::SectorGrid = SectorGrid(16);
+        nuclide::Union{Nothing,Nuclide} = nothing,
+        washout::Union{Nothing,WashoutEvent} = nothing,
 )
     x, y = plume_frame(east, north, wind_bearing)
     x > 0 || return 0.0
@@ -160,12 +160,12 @@ which shortens the distance by up to `1 − cos(θ_L/2)`, about 1.9 % for sixtee
 sectors, and correspondingly inflates the dilution factor.
 """
 function dilution_long_term(
-    east::Real,
-    north::Real,
-    site::AbstractSite,
-    rose::WindRose;
-    nuclide::Union{Nothing,Nuclide} = nothing,
-    washout::Union{Nothing,WashoutEvent} = nothing,
+        east::Real,
+        north::Real,
+        site::AbstractSite,
+        rose::WindRose;
+        nuclide::Union{Nothing,Nuclide} = nothing,
+        washout::Union{Nothing,WashoutEvent} = nothing,
 )
     r = hypot(east, north)
     r > 0 || return 0.0

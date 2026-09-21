@@ -17,8 +17,8 @@
     @testset "stability parameter" begin
         @test stability_parameter(air) > 0                     # inversion
         # Zero exactly at the dry adiabatic lapse rate.
-        adiabatic =
-            reference_atmosphere(; lapse_rate = -STANDARD_GRAVITY / DRY_AIR_SPECIFIC_HEAT)
+        adiabatic = reference_atmosphere(;
+            lapse_rate = -STANDARD_GRAVITY / DRY_AIR_SPECIFIC_HEAT)
         @test stability_parameter(adiabatic) ≈ 0 atol = 1e-12
         # Negative in superadiabatic, genuinely unstable air.
         unstable = reference_atmosphere(; lapse_rate = -0.02)

@@ -99,6 +99,7 @@ function dispersion_field(config; half_width = 15_000.0, n = 221)
     xs = range(-half_width, half_width, length = n)
     χ = Matrix{Float64}(undef, n, n)
     for (i, east) in enumerate(xs), (j, north) in enumerate(xs)
+
         χ[i, j] = dilution_long_term(
             east,
             north,
@@ -121,10 +122,10 @@ function figure_field(config)
     # plume has not reached the ground and the factor collapses through thirty
     # decades, which would take the whole colour scale and leave the sector
     # structure — the thing worth seeing — as one flat tone.
-    far = [
-        field[i, j] for (i, e) in enumerate(xs), (j, n) in enumerate(xs) if
-        hypot(e, n) > 1000 && field[i, j] > 0
-    ]
+    far = [field[i, j]
+           for (i, e) in enumerate(xs), (j, n) in enumerate(xs)
+           if
+           hypot(e, n) > 1000 && field[i, j] > 0]
     lo, hi = quantile(far, 0.02), maximum(far)
 
     fig = Figure(size = (900, 760))
@@ -166,7 +167,7 @@ function figure_field(config)
     resize_to_layout!(fig)
 
     g = grid(config.rose)
-    k = argmax([frequency_toward(config.rose, i) for i = 1:nsectors(g)])
+    k = argmax([frequency_toward(config.rose, i) for i in 1:nsectors(g)])
     text!(
         ax,
         0.03,
@@ -353,16 +354,16 @@ is the point: the comparison is quantitative, not a set of separately normalised
 pictures.
 """
 function panel_sweep(
-    path,
-    panels;
-    half_width = 20_000.0,
-    n = 101,
-    frames = 48,
-    columns = 3,
-    lo = 1e-9,
-    hi = 3e-6,
-    width = 1400,
-    height = 940,
+        path,
+        panels;
+        half_width = 20_000.0,
+        n = 101,
+        frames = 48,
+        columns = 3,
+        lo = 1e-9,
+        hi = 3e-6,
+        width = 1400,
+        height = 940,
 )
     xs = range(-half_width, half_width, length = n)
     bearings = range(0, 2π, length = frames + 1)[1:frames]
@@ -438,13 +439,13 @@ function panel_sweep(
     end
 
     # One label per direction for the whole grid rather than one per panel.
-    Label(grid_layout[rows+1, 1:columns], AXIS_LABEL)
+    Label(grid_layout[rows + 1, 1:columns], AXIS_LABEL)
     Label(grid_layout[1:rows, 0], AXIS_LABEL, rotation = π / 2)
 
     # Inside the grid and against the panel rows only, so the bar is as tall as
     # the panels rather than as the panels and their labels.
     Colorbar(
-        grid_layout[1:rows, columns+1],
+        grid_layout[1:rows, columns + 1],
         hm,
         label = CHI_Q_LABEL,
         ticks = logticks(-9, -6),
@@ -454,7 +455,7 @@ function panel_sweep(
     rowgap!(grid_layout, 16)
     # Square panels: each row as tall as a column is wide, and the canvas trimmed
     # to what that leaves.
-    for row = 1:rows
+    for row in 1:rows
         rowsize!(grid_layout, row, Aspect(1, 1.0))
     end
     trim_even!(fig)
@@ -475,12 +476,10 @@ const SWEEP_LABEL = Ref{Function}(β -> "")
 
 function set_sweep_label!(rose)
     g = grid(rose)
-    SWEEP_LABEL[] =
-        β ->
-            "Wind from " *
-            sector_name(g, sector_of(g, β)) *
-            "  →  plume to " *
-            sector_name(g, opposite(g, sector_of(g, β)))
+    SWEEP_LABEL[] = β -> "Wind from " *
+                         sector_name(g, sector_of(g, β)) *
+                         "  →  plume to " *
+                         sector_name(g, opposite(g, sector_of(g, β)))
     return nothing
 end
 
@@ -496,18 +495,18 @@ difference is drawn explicitly on a diverging scale centred on 1, where anything
 away from white is a real change and the colour bar reads as a factor.
 """
 function comparison_sweep(
-    path,
-    base,
-    variant;
-    half_width = 12_000.0,
-    n = 111,
-    frames = 48,
-    lo = 1e-9,
-    hi = 3e-6,
-    ratio_span = 10.0,
-    ratio_ticks = [0.1, 0.3, 1.0, 3.0, 10.0],
-    width = 1800,
-    height = 640,
+        path,
+        base,
+        variant;
+        half_width = 12_000.0,
+        n = 111,
+        frames = 48,
+        lo = 1e-9,
+        hi = 3e-6,
+        ratio_span = 10.0,
+        ratio_ticks = [0.1, 0.3, 1.0, 3.0, 10.0],
+        width = 1800,
+        height = 640,
 )
     xs = range(-half_width, half_width, length = n)
     bearings = range(0, 2π, length = frames + 1)[1:frames]
@@ -526,9 +525,8 @@ function comparison_sweep(
         # a vector. Build in place to keep the shape.
         rv = similar(a)
         for i in eachindex(a, b)
-            rv[i] =
-                (a[i] > lo && b[i] > lo) ?
-                clamp(b[i] / a[i], 1 / ratio_span, ratio_span) : 1.0
+            rv[i] = (a[i] > lo && b[i] > lo) ?
+                    clamp(b[i] / a[i], 1 / ratio_span, ratio_span) : 1.0
         end
         ratio[] = rv
     end
@@ -631,10 +629,9 @@ The same release under all six Pasquill classes, on one colour scale.
 """
 function figure_classes(config)
     site = config.site
-    panels = [
-        ("$(letter(c))", (e, nn, β) -> dilution_instantaneous(e, nn, 0.0, site, c, β))
-        for c in PASQUILL_CLASSES
-    ]
+    panels = [("$(letter(c))",
+                  (e, nn, β) -> dilution_instantaneous(e, nn, 0.0, site, c, β),)
+              for c in PASQUILL_CLASSES]
     return panel_sweep(
         joinpath(FIGURES, "stability_classes.gif"),
         panels;
@@ -663,11 +660,9 @@ function figure_buildings(config)
     east, north, h = 25.0, 0.0, 60.0
     building = Building(; east, north, height = h, frontal_area = 3600.0)
     waked = Site(; source, atmosphere = air, buildings = BuildingEnvelope([building]))
-    @printf(
-        "  building wake: release height %.1f m bare, %.1f m waked\n",
+    @printf("  building wake: release height %.1f m bare, %.1f m waked\n",
         release_height(bare),
-        release_height(waked)
-    )
+        release_height(waked))
     return comparison_sweep(
         joinpath(FIGURES, "building_wake.gif"),
         (
@@ -699,12 +694,10 @@ function figure_heights(config)
         )
         Site(; source, atmosphere = air)
     end
-    panels = [
-        (
-            "$(Int(round(h))) m",
-            (e, nn, β) -> dilution_instantaneous(e, nn, 0.0, st, PASQUILL_D, β),
-        ) for (h, st) in zip((30.0, 50.3, 120.0), sites)
-    ]
+    panels = [(
+                  "$(Int(round(h))) m",
+                  (e, nn, β) -> dilution_instantaneous(e, nn, 0.0, st, PASQUILL_D, β),
+              ) for (h, st) in zip((30.0, 50.3, 120.0), sites)]
     return panel_sweep(
         joinpath(FIGURES, "release_height.gif"),
         panels;
@@ -732,8 +725,8 @@ function figure_depletion(config)
         rate = config.washout.rate,
         model = config.washout.model,
     )
-    depleted(e, nn, β) =
-        dilution_instantaneous(e, nn, 0.0, site, PASQUILL_D, β; nuclide, washout = event)
+    depleted(e, nn, β) = dilution_instantaneous(
+        e, nn, 0.0, site, PASQUILL_D, β; nuclide, washout = event,)
     return comparison_sweep(
         joinpath(FIGURES, "depletion.gif"),
         (
