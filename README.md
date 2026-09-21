@@ -127,9 +127,8 @@ wake criterion is a threshold, not a gradient: a stack clearing two and a half
 building heights escapes untouched, one leaving *below* the building top is
 entrained into the aerodynamic cavity and released at ground level. This
 building is on the far side of it, so the effective release height goes from
-**50.3 m to zero**. The building is marked on the map, and the third panel is
-the ratio of the two fields — up to ten times more at ground level near the
-source, converging to one far downwind.
+**50.3 m to zero**. The third panel is the ratio of the two fields — up to ten
+times more at ground level near the source, converging to one far downwind.
 
 ![Release height](figures/release_height.gif)
 

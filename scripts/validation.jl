@@ -3,7 +3,9 @@
 # Validation figures: every parameterisation this package implements, drawn
 # against the published form it is supposed to be.
 #
-#     julia scripts/validation.jl
+#     julia scripts/validation.jl [output_dir]
+#
+# The default output directory is `figures/validation/` at the repository root.
 #
 # These are for inspection. Where the package asserts an identity in the test
 # suite the curves must lie on top of one another, and where it only claims a
@@ -17,7 +19,8 @@ using Printf
 
 include(joinpath(@__DIR__, "theme_common.jl"))
 
-const OUT = joinpath(@__DIR__, "..", "figures", "validation")
+const OUT =
+    isempty(ARGS) ? joinpath(@__DIR__, "..", "figures", "validation") : abspath(first(ARGS))
 
 # --- published parameterisations, transcribed from the sources named -------
 
@@ -46,23 +49,25 @@ maxwell_anspaugh(t) = 1e-5 * exp(-0.07t) + 7e-9 * exp(-0.002t) + 1e-9
 "σ_y and σ_z against Briggs, all six classes."
 function figure_dispersion_parameters()
     x = 10 .^ range(2, 4, length = 300)          # the stated Briggs validity band
-    fig = Figure(size = (1100, 470))
+    fig = Figure(size = (1500, 640))
 
     ax1 = Axis(
         fig[2, 1],
         xlabel = "Downwind distance [m]",
-        ylabel = L"$\sigma_y$ [m]",
+        ylabel = rich(it("σ"), subscript(it("y")), " [m]"),
         xscale = log10,
         yscale = log10,
-        xticks = ([100, 1000, 10_000], ["100", "1000", "10000"]),
+        xticks = logticks(2, 4),
+        yticks = logticks(0, 3),
     )
     ax2 = Axis(
         fig[2, 2],
         xlabel = "Downwind distance [m]",
-        ylabel = L"$\sigma_z$ [m]",
+        ylabel = rich(it("σ"), subscript(it("z")), " [m]"),
         xscale = log10,
         yscale = log10,
-        xticks = ([100, 1000, 10_000], ["100", "1000", "10000"]),
+        xticks = logticks(2, 4),
+        yticks = logticks(0, 3),
     )
 
     colours = (
@@ -75,19 +80,13 @@ function figure_dispersion_parameters()
     )
     local h_pkg, h_pub
     for (i, class) in enumerate(PASQUILL_CLASSES)
-        h_pkg = lines!(
-            ax1,
-            x,
-            [lateral_dispersion(xi, class) for xi in x],
-            color = colours[i],
-            linewidth = 2,
-        )
+        h_pkg =
+            lines!(ax1, x, [lateral_dispersion(xi, class) for xi in x], color = colours[i])
         h_pub = lines!(
             ax1,
             x,
             [briggs_σy(xi, i) for xi in x],
             color = (:black, 0.55),
-            linewidth = 1,
             linestyle = :dash,
         )
         lines!(
@@ -95,32 +94,30 @@ function figure_dispersion_parameters()
             x,
             [vertical_dispersion(xi, class, ROUGHNESS_PASTURE) for xi in x],
             color = colours[i],
-            linewidth = 2,
         )
         lines!(
             ax2,
             x,
             [briggs_σz(xi, i) for xi in x],
             color = (:black, 0.55),
-            linewidth = 1,
             linestyle = :dash,
         )
         text!(
             ax1,
             1.1e4,
-            briggs_σy(1e4, i);
+            lateral_dispersion(1e4, class);
             text = string(letter(class)),
             align = (:left, :center),
-            fontsize = 14,
+            fontsize = ANNOTATION_SIZE,
             color = colours[i],
         )
         text!(
             ax2,
             1.1e4,
-            briggs_σz(1e4, i);
+            vertical_dispersion(1e4, class, ROUGHNESS_PASTURE);
             text = string(letter(class)),
             align = (:left, :center),
-            fontsize = 14,
+            fontsize = ANNOTATION_SIZE,
             color = colours[i],
         )
     end
@@ -139,9 +136,9 @@ function figure_dispersion_parameters()
         0.95;
         space = :relative,
         align = (:left, :top),
-        fontsize = 14,
+        fontsize = ANNOTATION_SIZE,
         color = PALETTE.blue,
-        text = @sprintf("Hosker vs Briggs: within a factor %.2f", worst)
+        text = @sprintf("Hosker vs Briggs: within a factor %.2f", worst),
     )
     text!(
         ax1,
@@ -149,40 +146,36 @@ function figure_dispersion_parameters()
         0.95;
         space = :relative,
         align = (:left, :top),
-        fontsize = 14,
+        fontsize = ANNOTATION_SIZE,
         color = PALETTE.blue,
-        text = "identical to Briggs",
+        text = "Identical to Briggs",
     )
 
     Legend(
         fig[1, 1:2],
         [h_pkg, h_pub],
         ["This package", "Briggs (1973), DOE/TIC-11223 Table 4.5"],
-        orientation = :horizontal,
-        framevisible = false,
-        labelsize = 15,
     )
-    rowgap!(fig.layout, 1, 6)
-    return save_validation(fig, "dispersion_parameters")
+    return savefigure(fig, OUT, "dispersion_parameters")
 end
 
 "The roughness correction against the published 0.2 power law."
 function figure_roughness()
     x = 10 .^ range(2, 4.3, length = 300)
-    fig = Figure(size = (1100, 470))
+    fig = Figure(size = (1500, 640))
     ax1 = Axis(
         fig[2, 1],
         xlabel = "Downwind distance [m]",
         ylabel = L"$F(z_0, x)$",
         xscale = log10,
-        xticks = ([100, 1000, 10_000], ["100", "1000", "10000"]),
+        xticks = logticks(2, 4),
     )
     ax2 = Axis(
         fig[2, 2],
-        xlabel = L"Roughness length $z_0$ [m]",
+        xlabel = rich("Roughness length ", it("z"), subscript("0"), " [m]"),
         ylabel = L"$F(z_0, x) / F(0.1\,\mathrm{m}, x)$",
         xscale = log10,
-        xticks = ([0.01, 0.1, 1.0, 4.0], ["0.01", "0.1", "1", "4"]),
+        xticks = logticks(-2, 0),
     )
 
     colours = (
@@ -200,15 +193,15 @@ function figure_roughness()
             x,
             [roughness_correction(xi, roughness) for xi in x],
             color = colours[i],
-            linewidth = 2,
         )
         text!(
             ax1,
             2.0e4,
             roughness_correction(2.0e4, roughness);
-            text = @sprintf("%.2f m", z₀),
+            text = @sprintf("%g m", z₀),
             align = (:left, :center),
-            fontsize = 13,
+            offset = (8, 0),
+            fontsize = ANNOTATION_SIZE,
             color = colours[i],
         )
     end
@@ -221,78 +214,77 @@ function figure_roughness()
             roughness_correction(d, r) / roughness_correction(d, ROUGHNESS_PASTURE) for
             r in ROUGHNESS_CLASSES
         ]
-        h_pkg = scatterlines!(ax2, z, ratio, color = c, linewidth = 2, markersize = 9)
+        h_pkg = scatterlines!(ax2, z, ratio, color = c)
         text!(
             ax2,
             z[end],
             ratio[end];
-            text = @sprintf(" %g km", d / 1000),
+            text = @sprintf("%g km", d / 1000),
             align = (:left, :center),
-            fontsize = 13,
+            offset = (10, 0),
+            fontsize = ANNOTATION_SIZE,
             color = c,
         )
     end
-    h_law = lines!(
-        ax2,
-        z,
-        (z ./ 0.1) .^ 0.2,
-        color = :black,
-        linestyle = :dash,
-        linewidth = 1.5,
-    )
-    xlims!(ax2, 0.008, 8.0)
+    h_law = lines!(ax2, z, (z ./ 0.1) .^ 0.2, color = :black, linestyle = :dash)
+    # Room on the right for the end-of-line labels.
+    xlims!(ax2, 0.008, 14.0)
 
     Legend(
         fig[1, 1:2],
         [h_pkg, h_law],
         [
             "This package, by downwind distance",
-            L"Published scaling $(z_0/0.1)^{0.2}$, Hanna, Briggs and Hosker",
+            rich(
+                "Published scaling (",
+                it("z"),
+                subscript("0"),
+                "/0.1)",
+                superscript("0.2"),
+                ", Hanna, Briggs and Hosker",
+            ),
         ],
-        orientation = :horizontal,
-        framevisible = false,
-        labelsize = 15,
     )
-    rowgap!(fig.layout, 1, 6)
-    return save_validation(fig, "roughness_correction")
+    return savefigure(fig, OUT, "roughness_correction")
 end
 
 "Washout against the published amplitudes and the J^0.75 law."
 function figure_washout()
     J = 10 .^ range(log10(0.3), log10(8.0), length = 200)
-    fig = Figure(size = (760, 520))
+    fig = Figure(size = (900, 600))
     ax = Axis(
         fig[2, 1],
         xlabel = "Rainfall intensity [mm h⁻¹]",
-        ylabel = L"Washout coefficient $\Lambda$ [s$^{-1}$]",
+        ylabel = rich("Washout coefficient ", it("Λ"), " [s", superscript("−1"), "]"),
         xscale = log10,
         yscale = log10,
         xticks = ([0.5, 1.0, 3.0, 5.0], ["0.5", "1", "3", "5"]),
+        yticks = logticks(-6, -3),
     )
 
     lo = [washout_coefficients(PRECIPITATION_RAIN, j).low for j in PRECIPITATION_RATES]
     hi = [washout_coefficients(PRECIPITATION_RAIN, j).high for j in PRECIPITATION_RATES]
     band!(ax, collect(PRECIPITATION_RATES), lo, hi, color = (PALETTE.blue, 0.15))
-    h_band = scatterlines!(
-        ax,
-        collect(PRECIPITATION_RATES),
-        lo,
-        color = PALETTE.blue,
-        linewidth = 2,
-        markersize = 10,
-    )
-    scatterlines!(
-        ax,
-        collect(PRECIPITATION_RATES),
-        hi,
-        color = PALETTE.blue,
-        linewidth = 2,
-        markersize = 10,
-    )
+    h_band = scatterlines!(ax, collect(PRECIPITATION_RATES), lo, color = PALETTE.blue)
+    scatterlines!(ax, collect(PRECIPITATION_RATES), hi, color = PALETTE.blue)
 
-    h_law =
-        lines!(ax, J, 1e-5 .* J .^ 0.75, color = :black, linestyle = :dash, linewidth = 1.5)
-    lines!(ax, J, 2e-4 .* J .^ 0.75, color = :black, linestyle = :dash, linewidth = 1.5)
+    # the J^0.75 envelope the published amplitudes are meant to lie between
+    h_law = lines!(
+        ax,
+        J,
+        1e-5 .* J .^ 0.75,
+        color = :black,
+        linestyle = :dash,
+        linewidth = GUIDE_WIDTH,
+    )
+    lines!(
+        ax,
+        J,
+        2e-4 .* J .^ 0.75,
+        color = :black,
+        linestyle = :dash,
+        linewidth = GUIDE_WIDTH,
+    )
 
     published = (
         (1.0, 4.0e-5, "NRPB-R322 best estimate", PALETTE.green),
@@ -300,12 +292,9 @@ function figure_washout()
         (1.0, 7.0e-5, "AVV aerosols, elemental I", PALETTE.red),
         (1.0, 3.5e-5, "AVV tritiated water", PALETTE.purple),
     )
-    handles, labels = Any[], String[]
+    handles, labels = Any[], Any[]
     for (j, Λ, name, c) in published
-        push!(
-            handles,
-            scatter!(ax, [j], [Λ], color = c, markersize = 14, marker = :diamond),
-        )
+        push!(handles, scatter!(ax, [j], [Λ], color = c, marker = :diamond))
         push!(labels, name)
     end
 
@@ -315,66 +304,51 @@ function figure_washout()
         0.97;
         space = :relative,
         align = (:left, :top),
-        fontsize = 14,
+        fontsize = ANNOTATION_SIZE,
         color = PALETTE.blue,
-        text = L"Fitted exponent 0.753, against the published $J^{0.75}$",
+        text = rich(
+            "Fitted exponent 0.753, against the published ",
+            it("J"),
+            superscript("0.75"),
+        ),
     )
 
     Legend(
         fig[1, 1],
         [h_band, h_law, handles...],
-        ["This package, low to high", L"$\Lambda \propto J^{0.75}$", labels...],
-        orientation = :horizontal,
-        framevisible = false,
-        labelsize = 13,
+        ["This package, low to high", L"$\Lambda \propto J^{0.75}$", labels...];
         nbanks = 3,
     )
-    rowgap!(fig.layout, 1, 6)
-    return save_validation(fig, "washout")
+    return savefigure(fig, OUT, "washout")
 end
 
 "Resuspension against Safety Series 57 and its 2011 successor."
 function figure_resuspension()
     t = 10 .^ range(-1, 4.2, length = 400)
-    fig = Figure(size = (760, 520))
+    fig = Figure(size = (900, 600))
     ax = Axis(
         fig[2, 1],
         xlabel = "Time since deposition [d]",
-        ylabel = L"Resuspension factor $K$ [m$^{-1}$]",
+        ylabel = rich("Resuspension factor ", it("K"), " [m", superscript("−1"), "]"),
         xscale = log10,
         yscale = log10,
-        xticks = (
-            [0.1, 1, 10, 100, 1000, 10_000],
-            ["0.1", "1", "10", "100", "1000", "10000"],
-        ),
+        xticks = logticks(-1, 4),
+        yticks = logticks(-9, -5),
     )
 
-    h_pkg = lines!(
-        ax,
-        t,
-        [resuspension_factor(ti) for ti in t],
-        color = PALETTE.blue,
-        linewidth = 2,
-    )
-    h_ma = lines!(
-        ax,
-        t,
-        maxwell_anspaugh.(t),
-        color = PALETTE.red,
-        linewidth = 2,
-        linestyle = :dash,
-    )
+    h_pkg = lines!(ax, t, [resuspension_factor(ti) for ti in t], color = PALETTE.blue)
+    h_ma = lines!(ax, t, maxwell_anspaugh.(t), color = PALETTE.red, linestyle = :dash)
 
     for (day, c) in ((10.0, PALETTE.green), (30.0, PALETTE.orange))
         r = resuspension_factor(day) / maxwell_anspaugh(day)
-        vlines!(ax, [day], color = (c, 0.4), linestyle = :dot)
+        vlines!(ax, [day], color = (c, 0.4), linewidth = GUIDE_WIDTH, linestyle = :dash)
         text!(
             ax,
             day,
             resuspension_factor(day);
             text = @sprintf("  %.1f×", r),
             align = (:left, :bottom),
-            fontsize = 14,
+            fontsize = ANNOTATION_SIZE,
             color = c,
         )
     end
@@ -385,7 +359,7 @@ function figure_resuspension()
         0.06;
         space = :relative,
         align = (:left, :bottom),
-        fontsize = 13,
+        fontsize = ANNOTATION_SIZE,
         color = PALETTE.blue,
         text = "A, B, λ₁, λ₂ match Safety Series 57 Eq. (3.14A) exactly",
     )
@@ -396,133 +370,144 @@ function figure_resuspension()
         [
             "This package — IAEA Safety Series 57 (1982)",
             "Maxwell and Anspaugh (2011), NUREG/CR-7270",
-        ],
-        orientation = :horizontal,
-        framevisible = false,
-        labelsize = 14,
+        ];
         nbanks = 2,
     )
-    rowgap!(fig.layout, 1, 6)
-    return save_validation(fig, "resuspension")
+    return savefigure(fig, OUT, "resuspension")
 end
 
 "Plume rise against the published Briggs final-rise forms."
 function figure_plume_rise()
     F = 10 .^ range(0, 3.5, length = 300)
-    fig = Figure(size = (1100, 470))
+    fig = Figure(size = (1500, 640))
     ax1 = Axis(
         fig[2, 1],
-        xlabel = L"Buoyancy flux $F$ [m$^4$ s$^{-3}$]",
+        xlabel = rich(
+            "Buoyancy flux ",
+            it("F"),
+            " [m",
+            superscript("4"),
+            " s",
+            superscript("−3"),
+            "]",
+        ),
         ylabel = "Final buoyant rise [m]",
         xscale = log10,
         yscale = log10,
-        xticks = ([1, 10, 100, 1000], ["1", "10", "100", "1000"]),
+        xticks = logticks(0, 3),
+        yticks = logticks(0, 3),
     )
     ax2 = Axis(
         fig[2, 2],
         xlabel = "Downwind distance [m]",
         ylabel = "Rise [m]",
         xscale = log10,
-        xticks = ([10, 100, 1000], ["10", "100", "1000"]),
+        xticks = logticks(1, 3),
     )
 
     local h_pkg, h_pub
     for (u, c) in ((3.0, PALETTE.blue), (8.0, PALETTE.red))
-        h_pkg = lines!(
-            ax1,
-            F,
-            [final_buoyant_rise(Fi, u, -1e-6) for Fi in F],
-            color = c,
-            linewidth = 2,
-        )
+        h_pkg = lines!(ax1, F, [final_buoyant_rise(Fi, u, -1e-6) for Fi in F], color = c)
         published = [Fi < 55 ? 21.4Fi^0.75 / u : 38.7Fi^0.6 / u for Fi in F]
-        h_pub = lines!(
-            ax1,
-            F,
-            published,
-            color = (:black, 0.6),
-            linestyle = :dash,
-            linewidth = 1.5,
-        )
+        h_pub = lines!(ax1, F, published, color = (:black, 0.6), linestyle = :dash)
+        # Above and to the left of the upper line, below and to the right of the
+        # lower one: the two run half a decade apart, and a label between them is
+        # struck through by one or the other.
+        upper = u < 5
+        Fa = upper ? 20.0 : 5.0
         text!(
             ax1,
-            1.6,
-            final_buoyant_rise(1.6, u, -1e-6);
-            text = @sprintf(" u = %g m/s", u),
-            align = (:left, :top),
-            fontsize = 13,
+            Fa,
+            final_buoyant_rise(Fa, u, -1e-6);
+            text = rich(it("u"), @sprintf(" = %g m s", u), superscript("−1")),
+            align = upper ? (:right, :bottom) : (:left, :top),
+            offset = upper ? (-8, 4) : (8, -4),
+            fontsize = ANNOTATION_SIZE,
             color = c,
         )
     end
     xlims!(ax1, 0.8, 4e3)
-    vlines!(ax1, [55.0], color = (:grey, 0.5), linestyle = :dot)
+    vlines!(ax1, [55.0], color = (:grey, 0.5), linewidth = GUIDE_WIDTH, linestyle = :dash)
     text!(
         ax1,
         55.0,
         3.0;
-        text = "  F = 55, branch change",
+        text = rich("  ", it("F"), " = 55, branch change"),
         align = (:left, :bottom),
-        fontsize = 12,
+        fontsize = ANNOTATION_SIZE,
         color = :grey,
     )
 
     x = 10 .^ range(1, 3.6, length = 300)
     for (Fb, c) in ((20.0, PALETTE.green), (200.0, PALETTE.purple))
-        lines!(
-            ax2,
-            x,
-            [buoyant_rise(xi, Fb, 5.0, -1e-6) for xi in x],
-            color = c,
-            linewidth = 2,
-        )
+        lines!(ax2, x, [buoyant_rise(xi, Fb, 5.0, -1e-6) for xi in x], color = c)
         lines!(
             ax2,
             x,
             1.6 .* Fb^(1 / 3) .* x .^ (2 / 3) ./ 5.0,
             color = (:black, 0.6),
             linestyle = :dash,
-            linewidth = 1.5,
         )
-        xa = Fb < 100 ? 600.0 : 300.0
+        # At the right margin, level with the final rise: the two-thirds law of
+        # either curve sweeps through every free spot beside the curves themselves.
         text!(
             ax2,
-            xa,
-            buoyant_rise(xa, Fb, 5.0, -1e-6);
-            text = @sprintf(" F = %g", Fb),
-            align = (:left, :top),
-            fontsize = 13,
+            x[end],
+            buoyant_rise(x[end], Fb, 5.0, -1e-6);
+            text = rich(it("F"), @sprintf(" = %g", Fb)),
+            align = (:left, :center),
+            offset = (10, 0),
+            fontsize = ANNOTATION_SIZE,
             color = c,
         )
     end
     ylims!(ax2, 0, nothing)
+    # Room on the right for the end-of-line labels.
+    xlims!(ax2, 8, 1.6e4)
 
     Legend(
         fig[1, 1:2],
         [h_pkg, h_pub],
         [
             "This package",
-            L"Briggs: $21.4F^{3/4}/u$, $38.7F^{3/5}/u$, and the two-thirds law",
+            rich(
+                "Briggs: 21.4",
+                it("F"),
+                superscript("3/4"),
+                "/",
+                it("u"),
+                ", 38.7",
+                it("F"),
+                superscript("3/5"),
+                "/",
+                it("u"),
+                ", and the two-thirds law",
+            ),
         ],
-        orientation = :horizontal,
-        framevisible = false,
-        labelsize = 15,
     )
-    rowgap!(fig.layout, 1, 6)
-    return save_validation(fig, "plume_rise")
+    return savefigure(fig, OUT, "plume_rise")
 end
 
 "Ground-level χ/Q along the plume axis for every class, with the maxima marked."
 function figure_ground_level(config)
     site = config.site
     x = 10 .^ range(2, log10(4e4), length = 500)
-    fig = Figure(size = (760, 560))
+    fig = Figure(size = (900, 600))
     ax = Axis(
         fig[2, 1],
         xlabel = "Downwind distance [km]",
-        ylabel = L"$\chi/Q$ at ground level [s m$^{-3}$]",
+        ylabel = rich(
+            it("χ"),
+            "/",
+            it("Q"),
+            " at ground level [s m",
+            superscript("−3"),
+            "]",
+        ),
         xscale = log10,
         yscale = log10,
-        xticks = ([0.1, 1.0, 10.0], ["0.1", "1", "10"]),
+        xticks = logticks(-1, 1),
+        yticks = logticks(-12, -5),
     )
 
     colours = (
@@ -536,48 +521,29 @@ function figure_ground_level(config)
     handles, labels = Any[], Any[]
     for (i, class) in enumerate(PASQUILL_CLASSES)
         v = [dilution_instantaneous(0.0, -xi, 0.0, site, class, 0.0) for xi in x]
-        push!(handles, lines!(ax, x ./ 1000, v, color = colours[i], linewidth = 2))
+        push!(handles, lines!(ax, x ./ 1000, v, color = colours[i]))
         k = argmax(v)
         scatter!(
             ax,
             [x[k] / 1000],
             [v[k]],
             color = colours[i],
-            markersize = 11,
+            markersize = MARKERSIZE.emphasis,
             strokecolor = :white,
-            strokewidth = 1,
         )
-        e = floor(Int, log10(v[k]))
-        mant = round(v[k] / 10.0^e, digits = 1)
         push!(
             labels,
             rich(
-                string(letter(class), " — max ", mant, "×10"),
-                superscript(string(e)),
-                string(" at ", round(x[k] / 1000, digits = 2), " km"),
+                string(letter(class), " — max "),
+                rsci(v[k]; digits = 1),
+                string(" at ", round(x[k] / 1000, sigdigits = 3), " km"),
             ),
         )
     end
     ylims!(ax, 1e-12, 1e-5)
 
-    Legend(
-        fig[1, 1],
-        handles,
-        labels,
-        orientation = :horizontal,
-        framevisible = false,
-        labelsize = 12,
-        nbanks = 3,
-    )
-    rowgap!(fig.layout, 1, 6)
-    return save_validation(fig, "ground_level_maximum")
-end
-
-function save_validation(fig, name)
-    mkpath(OUT)
-    path = joinpath(OUT, name * ".png")
-    save(path, fig; px_per_unit = 3)
-    return path
+    Legend(fig[1, 1], handles, labels; nbanks = 3)
+    return savefigure(fig, OUT, "ground_level_maximum")
 end
 
 function main()
