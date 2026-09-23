@@ -22,8 +22,8 @@ end
 The six Pasquill classes in order, `PASQUILL_A` through `PASQUILL_F`. Sums over
 stability classes iterate this tuple.
 """
-const PASQUILL_CLASSES =
-    (PASQUILL_A, PASQUILL_B, PASQUILL_C, PASQUILL_D, PASQUILL_E, PASQUILL_F)
+const PASQUILL_CLASSES = (
+    PASQUILL_A, PASQUILL_B, PASQUILL_C, PASQUILL_D, PASQUILL_E, PASQUILL_F,)
 
 """
     pasquill(c)

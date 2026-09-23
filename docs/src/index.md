@@ -73,6 +73,6 @@ AtmosphericDispersion
 ## Pages
 
 ```@contents
-Pages = ["api/geometry.md", "api/parameters.md", "api/fields.md", "api/configuration.md"]
+Pages = ["conventions.md", "validation.md", "thesis.md", "api/geometry.md", "api/parameters.md", "api/fields.md", "api/configuration.md", "references.md"]
 Depth = 2
 ```

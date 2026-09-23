@@ -39,11 +39,11 @@ struct StackSource
     exit_temperature::Float64
 
     function StackSource(;
-        height::Real,
-        diameter::Real,
-        exit_velocity::Real,
-        exit_density::Real,
-        exit_temperature::Real,
+            height::Real,
+            diameter::Real,
+            exit_velocity::Real,
+            exit_density::Real,
+            exit_temperature::Real,
     )
         height > 0 || throw(ArgumentError("stack height must be positive, got $height m"))
         diameter > 0 ||
@@ -92,18 +92,18 @@ struct Atmosphere
     roughness::RoughnessClass
 
     function Atmosphere(;
-        reference_speed::Real,
-        temperature::Real,
-        density::Real,
-        lapse_rate::Real,
-        surface::WindProfileSurface,
-        roughness::RoughnessClass,
-        specific_heat::Real = DRY_AIR_SPECIFIC_HEAT,
+            reference_speed::Real,
+            temperature::Real,
+            density::Real,
+            lapse_rate::Real,
+            surface::WindProfileSurface,
+            roughness::RoughnessClass,
+            specific_heat::Real = DRY_AIR_SPECIFIC_HEAT,
     )
         reference_speed ≥ 0 || throw(
             ArgumentError(
-                "reference wind speed cannot be negative, got $reference_speed m/s",
-            ),
+            "reference wind speed cannot be negative, got $reference_speed m/s",
+        ),
         )
         temperature > 0 ||
             throw(ArgumentError("ambient temperature must be positive, got $temperature K"))

@@ -30,17 +30,16 @@ end
 
 """
     wet_deposition(east, north, site, class, wind_bearing, nuclide;
-                   activity, precipitation = PRECIPITATION_RAIN,
-                   rate = first(PRECIPITATION_RATES), washout_duration = 0,
-                   release_duration = SHORT_RELEASE_REFERENCE)
+                   activity, washout, release_duration = SHORT_RELEASE_REFERENCE)
 
 Wet deposition per unit ground area in Bq/m² beneath a plume of a single
 direction,
 
     ω_w = Λ A D exp(−y²/2Σ_y²) / (√(2π) Σ_y u)
 
-where `Λ` is the high washout coefficient, `A` the released activity in Bq and
-`D` the surviving fraction after decay and washout.
+where `Λ` is the high washout coefficient of the [`WashoutEvent`](@ref)
+`washout` for the nuclide's species, `A` the released activity in Bq and `D`
+the surviving fraction after decay and washout.
 
 The denominator is `√(2π) Σ_y u`, which is what integrating the Gaussian plume
 over the whole vertical column leaves. The 2021 code wrote `√2 π Σ_y u`; the
@@ -48,39 +47,34 @@ ratio of the two is exactly `√π`, so that expression understated wet depositi
 by a factor of 1.772.
 """
 function wet_deposition(
-    east::Real,
-    north::Real,
-    site::Site,
-    class::PasquillClass,
-    wind_bearing::Real,
-    nuclide::Nuclide;
-    activity::Real,
-    precipitation::PrecipitationType = PRECIPITATION_RAIN,
-    rate::Real = first(PRECIPITATION_RATES),
-    washout_duration::Real = 0.0,
-    release_duration::Real = SHORT_RELEASE_REFERENCE,
+        east::Real,
+        north::Real,
+        site::AbstractSite,
+        class::PasquillClass,
+        wind_bearing::Real,
+        nuclide::Nuclide;
+        activity::Real,
+        washout::WashoutEvent,
+        release_duration::Real = SHORT_RELEASE_REFERENCE,
 )
     activity ≥ 0 || throw(DomainError(activity, "released activity cannot be negative"))
     x, y = plume_frame(east, north, wind_bearing)
     x > 0 || return 0.0
 
-    Λ = washout_coefficients(precipitation, rate).high
+    Λ = washout_coefficients(washout, nuclide.washout_species).high
     u = transport_wind_speed(site, class)
     u > 0 || return 0.0
     Σy = corrected_lateral_dispersion(x, site, class; release_duration)
 
-    surviving = decay_factor(x, u, nuclide)
-    washout_duration > 0 &&
-        (surviving *= wet_depletion_factor(washout_duration, precipitation, rate))
+    surviving = decay_factor(x, u, nuclide) *
+                wet_depletion_factor(washout, nuclide.washout_species)
 
     return Λ * activity * surviving * exp(-y^2 / (2Σy^2)) / (sqrt(2π) * Σy * u)
 end
 
 """
     wet_deposition_sector(r, site, class, nuclide;
-                          activity, precipitation = PRECIPITATION_RAIN,
-                          rate = first(PRECIPITATION_RATES), washout_duration = 0,
-                          sectors = SectorGrid(16))
+                          activity, washout, sectors = SectorGrid(16))
 
 Wet deposition per unit ground area in Bq/m² at radial distance `r` metres,
 averaged over a sector,
@@ -90,96 +84,125 @@ averaged over a sector,
 the column activity spread over the arc the sector subtends at that distance.
 """
 function wet_deposition_sector(
-    r::Real,
-    site::Site,
-    class::PasquillClass,
-    nuclide::Nuclide;
-    activity::Real,
-    precipitation::PrecipitationType = PRECIPITATION_RAIN,
-    rate::Real = first(PRECIPITATION_RATES),
-    washout_duration::Real = 0.0,
-    sectors::SectorGrid = SectorGrid(16),
+        r::Real,
+        site::AbstractSite,
+        class::PasquillClass,
+        nuclide::Nuclide;
+        activity::Real,
+        washout::WashoutEvent,
+        sectors::SectorGrid = SectorGrid(16),
 )
     activity ≥ 0 || throw(DomainError(activity, "released activity cannot be negative"))
     r > 0 || return 0.0
 
-    Λ = washout_coefficients(precipitation, rate).high
+    Λ = washout_coefficients(washout, nuclide.washout_species).high
     u = transport_wind_speed(site, class)
     u > 0 || return 0.0
 
-    surviving = decay_factor(r, u, nuclide)
-    washout_duration > 0 &&
-        (surviving *= wet_depletion_factor(washout_duration, precipitation, rate))
+    surviving = decay_factor(r, u, nuclide) *
+                wet_depletion_factor(washout, nuclide.washout_species)
 
     return Λ * activity * surviving / (u * sector_width(sectors) * r)
 end
 
 """
-    RESUSPENSION_COEFFICIENTS
+    ResuspensionModel(; fast_amplitude, fast_rate, slow_amplitude, slow_rate, floor = 0)
 
-The two amplitudes `(A, B)` in m⁻¹ of the resuspension factor, and the two
-decay constants `(λ₁, λ₂)` in day⁻¹ that go with them.
+A resuspension factor of the form
 
-The fast term describes material still loose on the surface, the slow term
-material progressively fixed into it.
+    K(t) = A exp(−λ₁ t) + B exp(−λ₂ t) + C
+
+in m⁻¹, with `t` in days since deposition: amplitudes `A` and `B` in m⁻¹, rates
+`λ₁` and `λ₂` in day⁻¹, and a long-term `floor` `C` in m⁻¹. The fast term
+describes material still loose on the surface, the slow term material
+progressively fixed into it.
+
+See [`RESUSPENSION_IAEA_SS57`](@ref) and [`RESUSPENSION_MAXWELL_ANSPAUGH`](@ref)
+for the two published parameter sets carried; any other is a call away.
 """
-const RESUSPENSION_COEFFICIENTS = (A = 1e-5, B = 1e-9, λ₁ = 1e-2, λ₂ = 2e-5)
+struct ResuspensionModel
+    fast_amplitude::Float64
+    fast_rate::Float64
+    slow_amplitude::Float64
+    slow_rate::Float64
+    floor::Float64
 
-"""
-    ResuspensionModel
-
-Which published resuspension correlation to use.
-
-  - `RESUSPENSION_IAEA_SS57` — IAEA Safety Series No. 57 (1982), §3.6,
-    Eq. (3.14A), the two-term form above. The default, and the one whose
-    constants this package carries exactly. Safety Series 57 reached this
-    package by way of reference [3] of CNCAN NSR-23; it has since been
-    superseded, and every page of it carries a "no longer valid" stamp, but no
-    successor restates these constants.
-  - `RESUSPENSION_MAXWELL_ANSPAUGH` — Maxwell and Anspaugh, *Health Physics*
-    **101** (2011), Eqs. 15/16, also adopted by NRC NUREG/CR-7270:
-    `10⁻⁵e^(−0.07t) + 7×10⁻⁹e^(−0.002t) + 10⁻⁹`. It keeps the amplitudes and
-    weathers seven times faster, so it falls well below Safety Series 57 from
-    about a week onwards.
-"""
-@enum ResuspensionModel begin
-    RESUSPENSION_IAEA_SS57 = 1
-    RESUSPENSION_MAXWELL_ANSPAUGH = 2
+    function ResuspensionModel(;
+            fast_amplitude::Real,
+            fast_rate::Real,
+            slow_amplitude::Real,
+            slow_rate::Real,
+            floor::Real = 0.0,
+    )
+        all(≥(0), (fast_amplitude, fast_rate, slow_amplitude, slow_rate, floor)) || throw(
+            ArgumentError("resuspension amplitudes, rates and floor cannot be negative"),
+        )
+        return new(fast_amplitude, fast_rate, slow_amplitude, slow_rate, floor)
+    end
 end
 
 """
-    resuspension_factor(elapsed_days)
+    RESUSPENSION_IAEA_SS57
 
-Resuspension factor `K` in m⁻¹ at `elapsed_days` after deposition,
+IAEA Safety Series No. 57 [IAEA1982](@cite), §3.6, Eq. (3.14A):
+`10⁻⁵ exp(−10⁻² t) + 10⁻⁹ exp(−2×10⁻⁵ t)`. The default. Safety Series 57 reached
+this package by way of reference [3] of CNCAN NSR-23; it has since been
+superseded, and every page of it carries a "no longer valid" stamp, but no
+successor restates these constants. It falls by a factor of about 38 over the
+first year and by four orders of magnitude over ten.
+"""
+const RESUSPENSION_IAEA_SS57 = ResuspensionModel(;
+    fast_amplitude = 1e-5,
+    fast_rate = 1e-2,
+    slow_amplitude = 1e-9,
+    slow_rate = 2e-5,
+)
 
-    K = A exp(−λ₁ t) + B exp(−λ₂ t)
+"""
+    RESUSPENSION_MAXWELL_ANSPAUGH
 
-It converts a surface deposition in Bq/m² into an airborne concentration in
-Bq/m³. It falls by a factor of about 38 over the first year and by four orders
-of magnitude over ten, as the deposited material weathers into the surface.
+[MaxwellAnspaugh2011](@citet), Eqs. 15/16, also adopted by NRC NUREG/CR-7270
+[Bixler2022](@cite): `10⁻⁵ exp(−0.07 t) + 7×10⁻⁹ exp(−0.002 t) + 10⁻⁹`. It keeps
+the fast amplitude and weathers seven times faster, so it lies below Safety
+Series 57 from the first days, by a factor of 60 after a year. Its floor takes
+over at about two and a half years, and from there on it is the higher of the
+two, by 8 % after ten years.
+"""
+const RESUSPENSION_MAXWELL_ANSPAUGH = ResuspensionModel(;
+    fast_amplitude = 1e-5,
+    fast_rate = 0.07,
+    slow_amplitude = 7e-9,
+    slow_rate = 0.002,
+    floor = 1e-9,
+)
+
+"""
+    resuspension_factor(elapsed_days, model = RESUSPENSION_IAEA_SS57)
+
+Resuspension factor `K` in m⁻¹ at `elapsed_days` after deposition; see
+[`ResuspensionModel`](@ref). It converts a surface deposition in Bq/m² into an
+airborne concentration in Bq/m³.
 """
 function resuspension_factor(
-    elapsed_days::Real,
-    model::ResuspensionModel = RESUSPENSION_IAEA_SS57,
+        elapsed_days::Real,
+        model::ResuspensionModel = RESUSPENSION_IAEA_SS57,
 )
     elapsed_days ≥ 0 || throw(DomainError(elapsed_days, "elapsed time cannot be negative"))
-    if model == RESUSPENSION_MAXWELL_ANSPAUGH
-        return 1e-5 * exp(-0.07 * elapsed_days) + 7e-9 * exp(-0.002 * elapsed_days) + 1e-9
-    end
-    c = RESUSPENSION_COEFFICIENTS
-    return c.A * exp(-c.λ₁ * elapsed_days) + c.B * exp(-c.λ₂ * elapsed_days)
+    return model.fast_amplitude * exp(-model.fast_rate * elapsed_days) +
+           model.slow_amplitude * exp(-model.slow_rate * elapsed_days) +
+           model.floor
 end
 
 """
-    resuspended_concentration(deposition, elapsed_days)
+    resuspended_concentration(deposition, elapsed_days, model = RESUSPENSION_IAEA_SS57)
 
 Airborne concentration in Bq/m³ resuspended from a surface deposition of
 `deposition` Bq/m², `elapsed_days` after it was laid down.
 """
 function resuspended_concentration(
-    deposition::Real,
-    elapsed_days::Real,
-    model::ResuspensionModel = RESUSPENSION_IAEA_SS57,
+        deposition::Real,
+        elapsed_days::Real,
+        model::ResuspensionModel = RESUSPENSION_IAEA_SS57,
 )
     deposition ≥ 0 || throw(DomainError(deposition, "deposition cannot be negative"))
     return deposition * resuspension_factor(elapsed_days, model)

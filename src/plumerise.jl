@@ -23,16 +23,20 @@ choice is made in the configuration rather than buried in the source.
 
   - `combined_buoyancy` — the denominator of the buoyancy term in the combined
     law. Briggs writes `3F x²/(2β²u³)` with an entrainment parameter `β = 0.6`,
-    giving **0.72**; the 2021 thesis code had **0.5**, which does not reduce to
-    the two-thirds law as the momentum flux vanishes.
+    giving **0.72**; NSR-23 has **0.5**, which does not reduce to the two-thirds
+    law as the momentum flux vanishes.
   - `neutral_momentum` — the coefficient of the neutral final momentum rise,
-    `c w₀D/u`. Briggs (1969) Eq. 5.2, as implemented by EPA ISC3 Eq. (1-16),
-    gives **3**; the 2021 code had **1.5**, for which no source was found.
+    `c w₀D/u`. [Briggs1969](@citet) Eq. 5.2, as implemented by EPA ISC3
+    [EPA1995](@cite) Eq. (1-16),
+    gives **3**. CNCAN NSR-23 has **1.5**, which is the momentum term of
+    Holland's formula, `Δh = (w₀D/u)[1.5 + 2.68×10⁻³ p (T_s − T_a)D/T_s]` with
+    `p` in mbar ([Holland1953](@cite); [Turner1970](@citet) Eq. 4.1), taken
+    without its buoyancy term.
   - `stable_final` — the coefficient of the stable final buoyant rise,
-    `c [F/(uS)]^(1/3)`. Briggs and the Handbook on Atmospheric Diffusion give
-    **2.6**; NRC XOQDOQ writes **2.4**.
+    `c [F/(uS)]^(1/3)`. Briggs and the Handbook on Atmospheric Diffusion
+    [Hanna1982](@cite) give **2.6**; NRC XOQDOQ writes **2.4**.
 
-See [`BRIGGS_RISE`](@ref), [`XOQDOQ_RISE`](@ref) and [`THESIS_RISE`](@ref).
+See [`BRIGGS_RISE`](@ref), [`XOQDOQ_RISE`](@ref) and [`NSR23_RISE`](@ref).
 """
 struct RiseCoefficients
     combined_buoyancy::Float64
@@ -40,24 +44,24 @@ struct RiseCoefficients
     stable_final::Float64
 
     function RiseCoefficients(;
-        combined_buoyancy::Real = 0.72,
-        neutral_momentum::Real = 3.0,
-        stable_final::Real = 2.6,
+            combined_buoyancy::Real = 0.72,
+            neutral_momentum::Real = 3.0,
+            stable_final::Real = 2.6,
     )
         combined_buoyancy > 0 || throw(
             ArgumentError(
-                "the combined-law buoyancy denominator must be positive, got $combined_buoyancy",
-            ),
+            "the combined-law buoyancy denominator must be positive, got $combined_buoyancy",
+        ),
         )
         neutral_momentum ≥ 0 || throw(
             ArgumentError(
-                "the neutral momentum coefficient cannot be negative, got $neutral_momentum",
-            ),
+            "the neutral momentum coefficient cannot be negative, got $neutral_momentum",
+        ),
         )
         stable_final ≥ 0 || throw(
             ArgumentError(
-                "the stable rise coefficient cannot be negative, got $stable_final",
-            ),
+            "the stable rise coefficient cannot be negative, got $stable_final",
+        ),
         )
         return new(combined_buoyancy, neutral_momentum, stable_final)
     end
@@ -73,17 +77,18 @@ const BRIGGS_RISE = RiseCoefficients()
 """
     XOQDOQ_RISE
 
-Briggs, with the stable coefficient NRC XOQDOQ (NUREG/CR-2919) writes as 2.4.
+Briggs, with the stable coefficient NRC XOQDOQ [Sagendorf1982](@cite) writes as 2.4.
 """
 const XOQDOQ_RISE = RiseCoefficients(stable_final = 2.4)
 
 """
-    THESIS_RISE
+    NSR23_RISE
 
-The constants as the 2021 thesis code had them. Kept so its results can be
-reproduced; `combined_buoyancy` here does not reduce to the two-thirds law.
+The constants of CNCAN NSR-23 [CNCAN2004](@cite), the Romanian normative, which the 2021 thesis
+code followed: 0.5 in the combined law and Holland's 1.5 for the momentum rise.
+`combined_buoyancy` here does not reduce to the two-thirds law.
 """
-const THESIS_RISE = RiseCoefficients(combined_buoyancy = 0.5, neutral_momentum = 1.5)
+const NSR23_RISE = RiseCoefficients(combined_buoyancy = 0.5, neutral_momentum = 1.5)
 
 """
     buoyancy_transition_distance(F)
@@ -109,7 +114,7 @@ correlation.
 const BUOYANCY_FLUX_BREAKPOINT = 55.0
 
 """
-    final_buoyant_rise(F, u, S)
+    final_buoyant_rise(F, u, S, rise = BRIGGS_RISE)
 
 Final rise in metres of a buoyant plume, from the buoyancy flux `F` in m⁴/s³,
 the wind speed `u` in m/s at the release height, and the stability parameter
@@ -132,18 +137,18 @@ function final_buoyant_rise(F::Real, u::Real, S::Real, rise::RiseCoefficients = 
 end
 
 """
-    buoyant_rise(x, F, u, S)
+    buoyant_rise(x, F, u, S, rise = BRIGGS_RISE)
 
 Rise in metres of a buoyant plume at downwind distance `x` metres: the
 transitional law `1.6 F^(1/3) x^(2/3) / u` while the plume is still rising, and
 the final rise beyond.
 """
 function buoyant_rise(
-    x::Real,
-    F::Real,
-    u::Real,
-    S::Real,
-    rise::RiseCoefficients = BRIGGS_RISE,
+        x::Real,
+        F::Real,
+        u::Real,
+        S::Real,
+        rise::RiseCoefficients = BRIGGS_RISE,
 )
     x ≥ 0 || throw(DomainError(x, "downwind distance cannot be negative"))
     final = final_buoyant_rise(F, u, S, rise)
@@ -153,7 +158,7 @@ function buoyant_rise(
 end
 
 """
-    final_momentum_rise(Fₘ, w₀, D, u, S)
+    final_momentum_rise(Fₘ, w₀, D, u, S, rise = BRIGGS_RISE)
 
 Final rise in metres driven by the exit momentum, from the momentum flux `Fₘ`
 in m⁴/s², the exit velocity `w₀` in m/s, the stack diameter `D` in m, the wind
@@ -162,12 +167,12 @@ speed `u` in m/s and the stability parameter `S` in s⁻².
 As for buoyancy, the stratification-limited branches enter only where `S > 0`.
 """
 function final_momentum_rise(
-    Fₘ::Real,
-    w₀::Real,
-    D::Real,
-    u::Real,
-    S::Real,
-    rise::RiseCoefficients = BRIGGS_RISE,
+        Fₘ::Real,
+        w₀::Real,
+        D::Real,
+        u::Real,
+        S::Real,
+        rise::RiseCoefficients = BRIGGS_RISE,
 )
     Fₘ ≥ 0 || throw(DomainError(Fₘ, "momentum flux cannot be negative"))
     u > 0 || throw(DomainError(u, "wind speed at the release height must be positive"))
@@ -179,20 +184,20 @@ function final_momentum_rise(
 end
 
 """
-    momentum_rise(x, Fₘ, w₀, D, u, S)
+    momentum_rise(x, Fₘ, w₀, D, u, S, rise = BRIGGS_RISE)
 
 Rise in metres driven by exit momentum at downwind distance `x` metres, taking
 the transitional law `1.89 (w₀² D / (u(w₀ + 3u)))^(2/3) x^(1/3)` until it
 reaches the final rise.
 """
 function momentum_rise(
-    x::Real,
-    Fₘ::Real,
-    w₀::Real,
-    D::Real,
-    u::Real,
-    S::Real,
-    rise::RiseCoefficients = BRIGGS_RISE,
+        x::Real,
+        Fₘ::Real,
+        w₀::Real,
+        D::Real,
+        u::Real,
+        S::Real,
+        rise::RiseCoefficients = BRIGGS_RISE,
 )
     x ≥ 0 || throw(DomainError(x, "downwind distance cannot be negative"))
     final = final_momentum_rise(Fₘ, w₀, D, u, S, rise)
@@ -201,7 +206,7 @@ function momentum_rise(
 end
 
 """
-    combined_rise(x, F, Fₘ, w₀, u, S)
+    combined_rise(x, F, Fₘ, w₀, u, S, D, rise = BRIGGS_RISE)
 
 Rise in metres from the semi-empirical law combining momentum and buoyancy,
 
@@ -215,24 +220,24 @@ reduces, as `Fₘ → 0`, to the two-thirds law `1.6 F^(1/3) x^(2/3) / u` that
 [`buoyant_rise`](@ref) uses; with the 2021 value 0.5 it overshoots it by 13.6 %.
 """
 function combined_rise(
-    x::Real,
-    F::Real,
-    Fₘ::Real,
-    w₀::Real,
-    u::Real,
-    S::Real,
-    D::Real,
-    rise::RiseCoefficients = BRIGGS_RISE,
+        x::Real,
+        F::Real,
+        Fₘ::Real,
+        w₀::Real,
+        u::Real,
+        S::Real,
+        D::Real,
+        rise::RiseCoefficients = BRIGGS_RISE,
 )
     x ≥ 0 || throw(DomainError(x, "downwind distance cannot be negative"))
     u > 0 || throw(DomainError(u, "wind speed at the release height must be positive"))
     w₀ > 0 || throw(DomainError(w₀, "exit velocity must be positive for the combined law"))
     final = final_momentum_rise(Fₘ, w₀, D, u, S, rise) + final_buoyant_rise(F, u, S, rise)
-    transitional =
-        3^(1 / 3) *
-        (Fₘ * x / ((1 / 3 + u / w₀)^2 * u^2) + F * x^2 / (rise.combined_buoyancy * u^3))^(
-            1 / 3
-        )
+    transitional = 3^(1 / 3) *
+                   (Fₘ * x / ((1 / 3 + u / w₀)^2 * u^2) +
+                    F * x^2 / (rise.combined_buoyancy * u^3))^(
+        1 / 3
+    )
     return min(transitional, final)
 end
 
@@ -244,8 +249,29 @@ is taken to dominate and the combined law is used instead.
 """
 const MECHANISM_BALANCE_TOLERANCE = 0.1
 
+# The mechanism selection, shared by both public methods of plume_rise.
+function _plume_rise(
+        x::Real,
+        F::Real,
+        Fₘ::Real,
+        S::Real,
+        w₀::Real,
+        D::Real,
+        u::Real,
+        rise::RiseCoefficients,
+)
+    buoyant = final_buoyant_rise(F, u, S, rise)
+    momentum = final_momentum_rise(Fₘ, w₀, D, u, S, rise)
+    total = buoyant + momentum
+    balanced = iszero(total) ||
+               2 * abs(buoyant - momentum) / total ≤ MECHANISM_BALANCE_TOLERANCE
+    balanced && return combined_rise(x, F, Fₘ, w₀, u, S, D, rise)
+    momentum > buoyant && return momentum_rise(x, Fₘ, w₀, D, u, S, rise)
+    return buoyant_rise(x, F, u, S, rise)
+end
+
 """
-    plume_rise(x, source, atmosphere, u)
+    plume_rise(x, source, atmosphere, u, rise = BRIGGS_RISE)
 
 Rise of the plume above the release height, in metres, at downwind distance `x`
 metres, with `u` the wind speed at the release height in m/s.
@@ -253,22 +279,18 @@ metres, with `u` the wind speed at the release height in m/s.
 The dominant mechanism is chosen by comparing the two final rises: where they
 agree to within [`MECHANISM_BALANCE_TOLERANCE`](@ref) in relative terms neither
 dominates and the combined law applies, otherwise the larger mechanism carries
-the plume and its law is used alone.
+the plume and its law is used alone. `rise` selects the
+[`RiseCoefficients`](@ref).
 """
-function plume_rise(x::Real, source::StackSource, atmosphere::Atmosphere, u::Real)
+function plume_rise(
+        x::Real,
+        source::StackSource,
+        atmosphere::Atmosphere,
+        u::Real,
+        rise::RiseCoefficients = BRIGGS_RISE,
+)
     F = buoyancy_flux(source, atmosphere)
     Fₘ = momentum_flux(source, atmosphere)
     S = stability_parameter(atmosphere)
-    w₀ = source.exit_velocity
-    D = source.diameter
-
-    buoyant = final_buoyant_rise(F, u, S)
-    momentum = final_momentum_rise(Fₘ, w₀, D, u, S)
-
-    total = buoyant + momentum
-    balanced =
-        iszero(total) || 2 * abs(buoyant - momentum) / total ≤ MECHANISM_BALANCE_TOLERANCE
-    balanced && return combined_rise(x, F, Fₘ, w₀, u, S, D)
-    momentum > buoyant && return momentum_rise(x, Fₘ, w₀, D, u, S)
-    return buoyant_rise(x, F, u, S)
+    return _plume_rise(x, F, Fₘ, S, source.exit_velocity, source.diameter, u, rise)
 end

@@ -2,35 +2,43 @@
 #
 # Representative figures for the README, from the reference configuration.
 #
-#     julia --project=scripts scripts/figures.jl
+#     julia scripts/figures.jl [output_dir]
+#
+# The default output directory is `figures/` at the repository root.
 #
 # Plotting lives in its own environment so that the package itself does not
 # depend on Makie: a library that computes dispersion factors should not oblige
 # every user of it to build a plotting stack.
+
+include(joinpath(@__DIR__, "activate.jl"))
 
 using AtmosphericDispersion
 using Printf, Statistics
 
 include(joinpath(@__DIR__, "theme_common.jl"))
 
-const FIGURES = joinpath(@__DIR__, "..", "figures")
+const FIGURES = isempty(ARGS) ? joinpath(@__DIR__, "..", "figures") : abspath(first(ARGS))
 
-# Both map axes carry the same title. Naming a direction in an axis title puts
+# Both map axes carry the same label. Naming a direction in an axis label puts
 # the word on the edge it sits against — "north" down the left-hand spine — and
 # the compass marks state the orientation anyway.
 const AXIS_LABEL = "Distance from the stack [km]"
+
+# Prose and mathematics in one label: a `rich` run, since MathTeXEngine sets
+# everything in an `L"…"` as mathematics.
+const CHI_Q_LABEL = rich(it("χ"), "/", it("Q"), " [s m", superscript("−3"), "]")
 
 """
     compass!(ax; color = :white)
 
 Mark the four cardinal directions on the edges of a map-frame axis.
 
-An axis title naming a direction is read as marking the edge it sits on, which
+An axis label naming a direction is read as marking the edge it sits on, which
 puts north on the left and east along the bottom. The coordinate names go in the
-axis titles and the directions go here, against the edge each one actually
+axis labels and the directions go here, against the edge each one actually
 points at.
 """
-function compass!(ax; color = :white, fontsize = 19)
+function compass!(ax; color = :white)
     marks = (
         ("N", 0.5, 0.985, (:center, :top)),
         ("S", 0.5, 0.015, (:center, :bottom)),
@@ -45,7 +53,7 @@ function compass!(ax; color = :white, fontsize = 19)
             text = t,
             space = :relative,
             align = align,
-            fontsize = fontsize,
+            fontsize = ANNOTATION_SIZE,
             font = :bold,
             color = color,
             # The marks sit over whatever the field happens to be doing at the
@@ -56,6 +64,20 @@ function compass!(ax; color = :white, fontsize = 19)
         )
     end
     return ax
+end
+
+"""
+    trim_even!(fig)
+
+Trim an animated canvas to its layout and round both dimensions up to even
+numbers. The video encoder pads an odd dimension itself, with a row of pixels
+that belong to no frame.
+"""
+function trim_even!(fig)
+    resize_to_layout!(fig)
+    w, h = size(fig.scene)
+    resize!(fig, w + isodd(w), h + isodd(h))
+    return fig
 end
 
 function reference_case()
@@ -77,12 +99,14 @@ function dispersion_field(config; half_width = 15_000.0, n = 221)
     xs = range(-half_width, half_width, length = n)
     χ = Matrix{Float64}(undef, n, n)
     for (i, east) in enumerate(xs), (j, north) in enumerate(xs)
+
         χ[i, j] = dilution_long_term(
             east,
             north,
             config.site,
             config.rose;
             nuclide = config.nuclide,
+            washout = config.washout,
         )
     end
     return xs, χ
@@ -98,13 +122,13 @@ function figure_field(config)
     # plume has not reached the ground and the factor collapses through thirty
     # decades, which would take the whole colour scale and leave the sector
     # structure — the thing worth seeing — as one flat tone.
-    far = [
-        field[i, j] for (i, e) in enumerate(xs), (j, n) in enumerate(xs) if
-        hypot(e, n) > 1000 && field[i, j] > 0
-    ]
+    far = [field[i, j]
+           for (i, e) in enumerate(xs), (j, n) in enumerate(xs)
+           if
+           hypot(e, n) > 1000 && field[i, j] > 0]
     lo, hi = quantile(far, 0.02), maximum(far)
 
-    fig = Figure(size = (900, 720))
+    fig = Figure(size = (900, 760))
     ax = Axis(fig[1, 1], xlabel = AXIS_LABEL, ylabel = AXIS_LABEL, aspect = DataAspect())
     hm = heatmap!(
         ax,
@@ -121,10 +145,9 @@ function figure_field(config)
         [0.0],
         color = :white,
         strokecolor = :black,
-        strokewidth = 1.5,
-        markersize = 13,
+        markersize = MARKERSIZE.emphasis,
     )
-    text!(ax, 0.4, 0.4; text = "Stack", fontsize = 15, color = :white)
+    text!(ax, 0.4, 0.4; text = "Stack", fontsize = ANNOTATION_SIZE, color = :white)
     compass!(ax)
     # Explicit ticks: the range spans about 1.2 decades, so automatic log ticks
     # land on fractional exponents like 10^6.75, which are not a thing anyone
@@ -132,15 +155,19 @@ function figure_field(config)
     Colorbar(
         fig[1, 2],
         hm,
-        label = L"Time-integrated concentration [Bq s m$^{-3}$]",
+        label = rich("Time-integrated concentration [Bq s m", superscript("−3"), "]"),
         ticks = (
             [2e6, 5e6, 1e7, 2e7],
             [L"2\times10^{6}", L"5\times10^{6}", L"10^{7}", L"2\times10^{7}"],
         ),
     )
+    # A square map: the column as wide as the row is tall, so the colour bar is
+    # the height of the axis, and the canvas trimmed to fit.
+    colsize!(fig.layout, 1, Aspect(1, 1.0))
+    resize_to_layout!(fig)
 
     g = grid(config.rose)
-    k = argmax([frequency_toward(config.rose, i) for i = 1:nsectors(g)])
+    k = argmax([frequency_toward(config.rose, i) for i in 1:nsectors(g)])
     text!(
         ax,
         0.03,
@@ -148,14 +175,11 @@ function figure_field(config)
         text = "Most exposed: " * sector_name(g, k),
         space = :relative,
         align = (:left, :bottom),
-        fontsize = 16,
+        fontsize = ANNOTATION_SIZE,
         color = :white,
     )
 
-    path = joinpath(FIGURES, "dispersion_field.png")
-    mkpath(FIGURES)
-    save(path, fig; px_per_unit = 3)
-    return path, sector_name(g, k)
+    return savefigure(fig, FIGURES, "dispersion_field"), sector_name(g, k)
 end
 
 function figure_regimes(config)
@@ -169,19 +193,20 @@ function figure_regimes(config)
     ext = [dilution_extended(0.0, -x, site, class, 0.0) for x in r]
     lt = [dilution_long_term(0.0, -x, site, rose) for x in r]
 
-    fig = Figure(size = (1150, 470))
+    fig = Figure(size = (1500, 640))
 
     ax1 = Axis(
         fig[2, 1],
         xlabel = "Downwind distance [km]",
-        ylabel = L"$\chi/Q$ [s m$^{-3}$]",
+        ylabel = CHI_Q_LABEL,
         xscale = log10,
         yscale = log10,
-        xticks = ([0.1, 1.0, 10.0], ["0.1", "1", "10"]),
+        xticks = logticks(-1, 1),
+        yticks = logticks(-12, -6; step = 2),
     )
-    l1 = lines!(ax1, r ./ 1000, inst, color = PALETTE.blue, linewidth = 2)
-    l2 = lines!(ax1, r ./ 1000, ext, color = PALETTE.orange, linewidth = 2)
-    l3 = lines!(ax1, r ./ 1000, lt, color = PALETTE.green, linewidth = 2)
+    l1 = lines!(ax1, r ./ 1000, inst, color = PALETTE.blue)
+    l2 = lines!(ax1, r ./ 1000, ext, color = PALETTE.orange)
+    l3 = lines!(ax1, r ./ 1000, lt, color = PALETTE.green)
     # Clipped at the bottom only. Below about 300 m the elevated plume has not
     # reached the ground and the factor falls through thirty decades, which is
     # physical and not worth thirty decades of axis. The top must contain the
@@ -194,7 +219,7 @@ function figure_regimes(config)
         xlabel = "Downwind distance [km]",
         ylabel = "Effective release height [m]",
         xscale = log10,
-        xticks = ([0.1, 1.0, 10.0], ["0.1", "1", "10"]),
+        xticks = logticks(-1, 1),
     )
     handles = []
     colours = (
@@ -208,13 +233,7 @@ function figure_regimes(config)
     for (c, col) in zip(PASQUILL_CLASSES, colours)
         push!(
             handles,
-            lines!(
-                ax2,
-                r ./ 1000,
-                [effective_height(x, site, c) for x in r],
-                color = col,
-                linewidth = 1.8,
-            ),
+            lines!(ax2, r ./ 1000, [effective_height(x, site, c) for x in r], color = col),
         )
     end
     hlines!(
@@ -222,45 +241,29 @@ function figure_regimes(config)
         [site.source.height],
         color = PALETTE.black,
         linestyle = :dash,
-        linewidth = 1.2,
+        linewidth = GUIDE_WIDTH,
     )
     text!(
         ax2,
         0.11,
         site.source.height + 1.5;
         text = "Stack height",
-        fontsize = 14,
+        fontsize = ANNOTATION_SIZE,
         align = (:left, :bottom),
     )
     # Headroom below, so the stack-height line is not drawn on the frame.
     ylims!(ax2, site.source.height - 12, nothing)
 
-    Legend(
-        fig[1, 1],
-        [l1, l2, l3],
-        ["Instantaneous, 3-D", "Extended, sector-averaged", "Long term, rose-weighted"],
-        orientation = :horizontal,
-        framevisible = false,
-        labelsize = 14,
-        nbanks = 2,
-    )
+    Legend(fig[1, 1], [l1, l2, l3], ["Instantaneous", "Extended", "Long term"])
     Legend(
         fig[1, 2],
         handles,
         ["A", "B", "C", "D", "E", "F"],
-        orientation = :horizontal,
-        framevisible = false,
-        labelsize = 14,
-        nbanks = 1,
-        colgap = 10,
+        "Class";
+        titleposition = :left,
     )
-    rowgap!(fig.layout, 1, 6)
-    colgap!(fig.layout, 1, 30)
 
-    path = joinpath(FIGURES, "regimes.png")
-    mkpath(FIGURES)
-    save(path, fig; px_per_unit = 3)
-    return path
+    return savefigure(fig, FIGURES, "regimes")
 end
 
 """
@@ -286,8 +289,17 @@ function figure_animation(config; half_width = 20_000.0, n = 141, frames = 72)
         field[] = f
     end
 
-    fig = Figure(size = (780, 640))
-    ax = Axis(fig[1, 1], xlabel = AXIS_LABEL, ylabel = AXIS_LABEL, aspect = DataAspect())
+    fig = Figure(size = (900, 800))
+    # Ticks stop short of the frame: labelled at ±20 the two axes meet in the corner.
+    ticks = ([-10.0, 0.0, 10.0], ["−10", "0", "10"])
+    ax = Axis(
+        fig[1, 1],
+        xlabel = AXIS_LABEL,
+        ylabel = AXIS_LABEL,
+        aspect = DataAspect(),
+        xticks = ticks,
+        yticks = ticks,
+    )
     compute!(0.0)
     lo, hi = 1e-9, 3e-6
     hm = heatmap!(
@@ -305,26 +317,21 @@ function figure_animation(config; half_width = 20_000.0, n = 141, frames = 72)
         [0.0],
         color = :white,
         strokecolor = :black,
-        strokewidth = 1.5,
-        markersize = 12,
+        markersize = MARKERSIZE.emphasis,
     )
     compass!(ax)
     # Under the axes rather than over the field: the compass marks now occupy
     # the edges, and a white overlay at the top left ran into the N.
-    Label(fig[2, 1], label, fontsize = 18, tellwidth = false)
-    Colorbar(
-        fig[1, 2],
-        hm,
-        label = L"$\chi/Q$ [s m$^{-3}$]",
-        ticks = (
-            [1e-9, 1e-8, 1e-7, 1e-6],
-            [L"10^{-9}", L"10^{-8}", L"10^{-7}", L"10^{-6}"],
-        ),
-    )
+    Label(fig[2, 1], label, fontsize = ANNOTATION_SIZE, tellwidth = false)
+    Colorbar(fig[1, 2], hm, label = CHI_Q_LABEL, ticks = logticks(-9, -6))
+    colsize!(fig.layout, 1, Aspect(1, 1.0))
+    trim_even!(fig)
 
     path = joinpath(FIGURES, "plume_sweep.gif")
-    mkpath(FIGURES)
-    record(fig, path, bearings; framerate = 12) do β
+    mkpath(dirname(path))
+    # Animations are screen media and are rendered at 1 px per unit, already wider
+    # than the page they are shown on: at 2 the five of them come to 21 MB.
+    record(fig, path, bearings; framerate = 12, px_per_unit = 1) do β
         compute!(β)
         # Both halves, deliberately. "Wind from N" alone is correct and reads
         # backwards at a glance — the plume is on the opposite side to the
@@ -337,27 +344,26 @@ function figure_animation(config; half_width = 20_000.0, n = 141, frames = 72)
 end
 
 """
-    panel_sweep(path, panels; half_width, n, frames, columns, lo, hi, caption)
+    panel_sweep(path, panels; half_width, n, frames, columns, lo, hi, width, height)
 
 Record a multi-panel sweep of the compass, one panel per entry of `panels`.
 
-Each panel is a `(title, f)` pair where `f(east, north, bearing)` returns the
+Each panel is a `(name, f)` pair where `f(east, north, bearing)` returns the
 ground-level dilution factor in s/m³. Every panel shares one colour scale, which
 is the point: the comparison is quantitative, not a set of separately normalised
 pictures.
 """
 function panel_sweep(
-    path,
-    panels;
-    half_width = 20_000.0,
-    n = 101,
-    frames = 48,
-    columns = 3,
-    lo = 1e-9,
-    hi = 3e-6,
-    caption = "",
-    width = 1080,
-    height = 780,
+        path,
+        panels;
+        half_width = 20_000.0,
+        n = 101,
+        frames = 48,
+        columns = 3,
+        lo = 1e-9,
+        hi = 3e-6,
+        width = 1400,
+        height = 940,
 )
     xs = range(-half_width, half_width, length = n)
     bearings = range(0, 2π, length = frames + 1)[1:frames]
@@ -372,16 +378,13 @@ function panel_sweep(
     ticks = ([-10.0, 0.0, 10.0], ["−10", "0", "10"])
     axes = Axis[]
     local hm
-    for (i, (title, f)) in enumerate(panels)
+    for (i, (name, f)) in enumerate(panels)
         row, col = fldmod1(i, columns)
-        # The panel name goes above the frame. Inside it there is no corner
-        # free: the compass occupies the midpoint of all four edges, and any
-        # label long enough to be useful reaches one of them.
+        # The panel name goes inside the frame, top left: that corner is free,
+        # the compass holding the midpoints of the four edges.
         ax = Axis(
             grid_layout[row, col],
             aspect = DataAspect(),
-            title = title,
-            titlesize = 16,
             xticks = ticks,
             yticks = ticks,
             xticklabelsvisible = row == rows,
@@ -408,7 +411,7 @@ function panel_sweep(
             lift(v -> log10.(clamp.(v, lo, hi)), fields[i]),
             levels = collect(log10(lo):0.5:log10(hi)),
             color = (:white, 0.35),
-            linewidth = 0.7,
+            linewidth = GUIDE_WIDTH,
         )
         scatter!(
             ax,
@@ -416,36 +419,49 @@ function panel_sweep(
             [0.0],
             color = :white,
             strokecolor = :black,
-            strokewidth = 1.2,
-            markersize = 8,
+            markersize = MARKERSIZE.emphasis,
         )
-        compass!(ax; fontsize = 13)
-        # Top left, because the compass owns the top centre.
+        compass!(ax)
+        text!(
+            ax,
+            0.03,
+            0.97;
+            text = name,
+            space = :relative,
+            align = (:left, :top),
+            fontsize = ANNOTATION_SIZE,
+            font = :bold,
+            color = :white,
+            strokecolor = :black,
+            strokewidth = 0.6,
+        )
         push!(axes, ax)
     end
 
     # One label per direction for the whole grid rather than one per panel.
-    Label(grid_layout[rows+1, 1:columns], AXIS_LABEL, fontsize = 17)
-    Label(grid_layout[1:rows, 0], AXIS_LABEL, fontsize = 17, rotation = π / 2)
+    Label(grid_layout[rows + 1, 1:columns], AXIS_LABEL)
+    Label(grid_layout[1:rows, 0], AXIS_LABEL, rotation = π / 2)
 
+    # Inside the grid and against the panel rows only, so the bar is as tall as
+    # the panels rather than as the panels and their labels.
     Colorbar(
-        fig[1, 2],
+        grid_layout[1:rows, columns + 1],
         hm,
-        label = L"$\chi/Q$ [s m$^{-3}$]",
-        ticks = (
-            [1e-9, 1e-8, 1e-7, 1e-6],
-            [L"10^{-9}", L"10^{-8}", L"10^{-7}", L"10^{-6}"],
-        ),
+        label = CHI_Q_LABEL,
+        ticks = logticks(-9, -6),
     )
-    Label(fig[2, 1:2], label, fontsize = 17, tellwidth = false)
-    isempty(caption) || Label(fig[3, 1:2], caption, fontsize = 14, tellwidth = false)
-    colgap!(grid_layout, 12)
-    rowgap!(grid_layout, 12)
-    rowgap!(fig.layout, 1, 4)
-    length(fig.layout.content) > 3 && rowgap!(fig.layout, 2, 2)
+    Label(fig[2, 1], label, fontsize = ANNOTATION_SIZE, tellwidth = false)
+    colgap!(grid_layout, 16)
+    rowgap!(grid_layout, 16)
+    # Square panels: each row as tall as a column is wide, and the canvas trimmed
+    # to what that leaves.
+    for row in 1:rows
+        rowsize!(grid_layout, row, Aspect(1, 1.0))
+    end
+    trim_even!(fig)
 
-    mkpath(FIGURES)
-    record(fig, path, bearings; framerate = 12) do β
+    mkpath(dirname(path))
+    record(fig, path, bearings; framerate = 12, px_per_unit = 1) do β
         for (i, (_, f)) in enumerate(panels)
             fields[i][] = [f(e, nn, β) for e in xs, nn in xs]
         end
@@ -460,12 +476,10 @@ const SWEEP_LABEL = Ref{Function}(β -> "")
 
 function set_sweep_label!(rose)
     g = grid(rose)
-    SWEEP_LABEL[] =
-        β ->
-            "Wind from " *
-            sector_name(g, sector_of(g, β)) *
-            "  →  plume to " *
-            sector_name(g, opposite(g, sector_of(g, β)))
+    SWEEP_LABEL[] = β -> "Wind from " *
+                         sector_name(g, sector_of(g, β)) *
+                         "  →  plume to " *
+                         sector_name(g, opposite(g, sector_of(g, β)))
     return nothing
 end
 
@@ -481,18 +495,18 @@ difference is drawn explicitly on a diverging scale centred on 1, where anything
 away from white is a real change and the colour bar reads as a factor.
 """
 function comparison_sweep(
-    path,
-    base,
-    variant;
-    half_width = 12_000.0,
-    n = 111,
-    frames = 48,
-    lo = 1e-9,
-    hi = 3e-6,
-    ratio_span = 10.0,
-    caption = "",
-    width = 1400,
-    height = 500,
+        path,
+        base,
+        variant;
+        half_width = 12_000.0,
+        n = 111,
+        frames = 48,
+        lo = 1e-9,
+        hi = 3e-6,
+        ratio_span = 10.0,
+        ratio_ticks = [0.1, 0.3, 1.0, 3.0, 10.0],
+        width = 1800,
+        height = 640,
 )
     xs = range(-half_width, half_width, length = n)
     bearings = range(0, 2π, length = frames + 1)[1:frames]
@@ -511,9 +525,8 @@ function comparison_sweep(
         # a vector. Build in place to keep the shape.
         rv = similar(a)
         for i in eachindex(a, b)
-            rv[i] =
-                (a[i] > lo && b[i] > lo) ?
-                clamp(b[i] / a[i], 1 / ratio_span, ratio_span) : 1.0
+            rv[i] = (a[i] > lo && b[i] > lo) ?
+                    clamp(b[i] / a[i], 1 / ratio_span, ratio_span) : 1.0
         end
         ratio[] = rv
     end
@@ -523,13 +536,10 @@ function comparison_sweep(
     grid_layout = fig[1, 1] = GridLayout()
     ticks = ([-10.0, 0.0, 10.0], ["−10", "0", "10"])
     local hm, hr
-    for (i, (title, field)) in
-        enumerate(((base[1], fa), (variant[1], fb), ("Ratio, with ÷ without", ratio)))
+    for (i, (name, field)) in enumerate(((base[1], fa), (variant[1], fb), ("Ratio", ratio)))
         ax = Axis(
             grid_layout[1, i],
             aspect = DataAspect(),
-            title = title,
-            titlesize = 16,
             xticks = ticks,
             yticks = ticks,
             yticklabelsvisible = i == 1,
@@ -551,7 +561,7 @@ function comparison_sweep(
                 lift(v -> log10.(clamp.(v, lo, hi)), i == 1 ? fa : fb),
                 levels = collect(log10(lo):0.5:log10(hi)),
                 color = (:white, 0.35),
-                linewidth = 0.7,
+                linewidth = GUIDE_WIDTH,
             )
         else
             hr = heatmap!(
@@ -570,36 +580,42 @@ function comparison_sweep(
             [0.0],
             color = :white,
             strokecolor = :black,
-            strokewidth = 1.2,
-            markersize = 8,
+            markersize = MARKERSIZE.emphasis,
         )
-        compass!(ax; fontsize = 13, color = i == 3 ? :black : :white)
+        compass!(ax; color = i == 3 ? :black : :white)
+        # The panel name goes inside the frame, top left: that corner is free,
+        # the compass holding the midpoints of the four edges.
+        text!(
+            ax,
+            0.03,
+            0.97;
+            text = name,
+            space = :relative,
+            align = (:left, :top),
+            fontsize = ANNOTATION_SIZE,
+            font = :bold,
+            color = i == 3 ? :black : :white,
+            strokecolor = :black,
+            strokewidth = i == 3 ? 0 : 0.6,
+        )
     end
-    Label(grid_layout[2, 1:3], AXIS_LABEL, fontsize = 16)
-    Label(grid_layout[1, 0], AXIS_LABEL, fontsize = 16, rotation = π / 2)
+    Label(grid_layout[2, 1:3], AXIS_LABEL)
+    Label(grid_layout[1, 0], AXIS_LABEL, rotation = π / 2)
 
+    Colorbar(grid_layout[1, 4], hm, label = CHI_Q_LABEL, ticks = logticks(-9, -6))
     Colorbar(
-        fig[1, 2],
-        hm,
-        label = L"$\chi/Q$ [s m$^{-3}$]",
-        ticks = (
-            [1e-9, 1e-8, 1e-7, 1e-6],
-            [L"10^{-9}", L"10^{-8}", L"10^{-7}", L"10^{-6}"],
-        ),
-    )
-    Colorbar(
-        fig[1, 3],
+        grid_layout[1, 5],
         hr,
-        label = "Ratio, second ÷ first",
-        ticks = ([0.1, 0.3, 1.0, 3.0, 10.0], ["0.1", "0.3", "1", "3", "10"]),
+        label = "Ratio to the first panel",
+        ticks = (ratio_ticks, [@sprintf("%g", t) for t in ratio_ticks]),
     )
-    Label(fig[2, 1:3], label, fontsize = 16, tellwidth = false)
-    isempty(caption) || Label(fig[3, 1:3], caption, fontsize = 14, tellwidth = false)
-    colgap!(grid_layout, 10)
-    rowgap!(fig.layout, 1, 4)
+    Label(fig[2, 1], label, fontsize = ANNOTATION_SIZE, tellwidth = false)
+    colgap!(grid_layout, 16)
+    rowsize!(grid_layout, 1, Aspect(1, 1.0))
+    trim_even!(fig)
 
-    mkpath(FIGURES)
-    record(fig, path, bearings; framerate = 12) do β
+    mkpath(dirname(path))
+    record(fig, path, bearings; framerate = 12, px_per_unit = 1) do β
         compute!(β)
         label[] = SWEEP_LABEL[](β)
     end
@@ -613,17 +629,15 @@ The same release under all six Pasquill classes, on one colour scale.
 """
 function figure_classes(config)
     site = config.site
-    panels = [
-        ("$(letter(c))", (e, nn, β) -> dilution_instantaneous(e, nn, 0.0, site, c, β))
-        for c in PASQUILL_CLASSES
-    ]
+    panels = [("$(letter(c))",
+                  (e, nn, β) -> dilution_instantaneous(e, nn, 0.0, site, c, β),)
+              for c in PASQUILL_CLASSES]
     return panel_sweep(
         joinpath(FIGURES, "stability_classes.gif"),
         panels;
         columns = 3,
-        width = 1080,
-        height = 770,
-        caption = "Pasquill class A (very unstable) to F (very stable), one colour scale",
+        width = 1400,
+        height = 940,
     )
 end
 
@@ -646,11 +660,9 @@ function figure_buildings(config)
     east, north, h = 25.0, 0.0, 60.0
     building = Building(; east, north, height = h, frontal_area = 3600.0)
     waked = Site(; source, atmosphere = air, buildings = BuildingEnvelope([building]))
-    @printf(
-        "  building wake: release height %.1f m bare, %.1f m waked\n",
+    @printf("  building wake: release height %.1f m bare, %.1f m waked\n",
         release_height(bare),
-        release_height(waked)
-    )
+        release_height(waked))
     return comparison_sweep(
         joinpath(FIGURES, "building_wake.gif"),
         (
@@ -658,11 +670,10 @@ function figure_buildings(config)
             (e, nn, β) -> dilution_instantaneous(e, nn, 0.0, bare, PASQUILL_D, β),
         ),
         (
-            "With a 60 m building",
+            "60 m building",
             (e, nn, β) -> dilution_instantaneous(e, nn, 0.0, waked, PASQUILL_D, β),
         );
         half_width = 12_000.0,
-        caption = "Class D, 60 m building 25 m from a 50.3 m stack. The plume is entrained into the cavity and released at ground level: 50.3 m becomes 0 m",
     )
 end
 
@@ -683,19 +694,16 @@ function figure_heights(config)
         )
         Site(; source, atmosphere = air)
     end
-    panels = [
-        (
-            "$(Int(round(h))) m",
-            (e, nn, β) -> dilution_instantaneous(e, nn, 0.0, st, PASQUILL_D, β),
-        ) for (h, st) in zip((30.0, 50.3, 120.0), sites)
-    ]
+    panels = [(
+                  "$(Int(round(h))) m",
+                  (e, nn, β) -> dilution_instantaneous(e, nn, 0.0, st, PASQUILL_D, β),
+              ) for (h, st) in zip((30.0, 50.3, 120.0), sites)]
     return panel_sweep(
         joinpath(FIGURES, "release_height.gif"),
         panels;
         columns = 3,
-        width = 1080,
-        height = 450,
-        caption = "Stack height, class D. A higher release moves the ground-level maximum downwind",
+        width = 1400,
+        height = 520,
     )
 end
 
@@ -710,19 +718,15 @@ shows it.
 """
 function figure_depletion(config)
     site, nuclide = config.site, config.nuclide
-    washout = 3600.0
-    depleted(e, nn, β) = dilution_instantaneous(
-        e,
-        nn,
-        0.0,
-        site,
-        PASQUILL_D,
-        β;
-        nuclide,
-        washout_duration = washout,
-        precipitation = config.precipitation,
-        rate = config.precipitation_rate,
+    # One hour of rain, at the configured type, intensity and model.
+    event = WashoutEvent(;
+        duration = 3600.0,
+        precipitation = config.washout.precipitation,
+        rate = config.washout.rate,
+        model = config.washout.model,
     )
+    depleted(e, nn, β) = dilution_instantaneous(
+        e, nn, 0.0, site, PASQUILL_D, β; nuclide, washout = event,)
     return comparison_sweep(
         joinpath(FIGURES, "depletion.gif"),
         (
@@ -731,8 +735,9 @@ function figure_depletion(config)
         ),
         ("Depleted", depleted);
         half_width = 20_000.0,
-        ratio_span = 3.0,
-        caption = "Class D, $(nuclide.name), one hour of washout at the configured rate",
+        # Depletion over 20 km is a matter of per cent, not of factors.
+        ratio_span = 1.5,
+        ratio_ticks = [0.7, 0.8, 0.9, 1.0, 1.1, 1.25, 1.4],
     )
 end
 

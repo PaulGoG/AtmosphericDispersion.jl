@@ -23,9 +23,9 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          # Must not go below the [compat] floor in Project.toml: the docs
-          # environment uses [sources], which needs 1.11.
-          - '1.11'
+          # The [compat] floor in Project.toml, the current release, and the
+          # next one.
+          - 'lts'
           - '1'
           - 'pre'
         os:
@@ -66,8 +66,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
       - name: Run doctests
-        shell: julia --project=docs --color=yes {0}
+        shell: julia --color=yes {0}
         run: |
+          include("docs/activate.jl")
           using Documenter: DocMeta, doctest
           using AtmosphericDispersion
           DocMeta.setdocmeta!(AtmosphericDispersion, :DocTestSetup, :(using AtmosphericDispersion); recursive=true)

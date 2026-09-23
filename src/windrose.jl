@@ -67,16 +67,16 @@ struct WindRose{T<:AbstractFloat}
     stability::Matrix{T}
 
     function WindRose(
-        grid::SectorGrid,
-        frequencies::AbstractVector{<:Real},
-        convention::WindDirectionConvention;
-        stability::AbstractVecOrMat{<:Real},
+            grid::SectorGrid,
+            frequencies::AbstractVector{<:Real},
+            convention::WindDirectionConvention;
+            stability::AbstractVecOrMat{<:Real},
     )
         n = nsectors(grid)
         length(frequencies) == n || throw(
             DimensionMismatch(
-                "the rose has $(length(frequencies)) directional frequencies but the grid has $n sectors",
-            ),
+            "the rose has $(length(frequencies)) directional frequencies but the grid has $n sectors",
+        ),
         )
 
         T = float(promote_type(eltype(frequencies), eltype(stability)))
@@ -84,7 +84,7 @@ struct WindRose{T<:AbstractFloat}
         _checkdistribution(f, "directional frequencies")
 
         s = _stabilitymatrix(T, stability, n)
-        for k = 1:n
+        for k in 1:n
             _checkdistribution(view(s, k, :), "stability fractions of sector $k")
         end
 
@@ -94,14 +94,14 @@ end
 
 # Storage is always blowing-towards; a blowing-from rose is rotated by half a turn.
 _toward(::BlowingToward, ::SectorGrid, f::Vector) = f
-_toward(::BlowingFrom, grid::SectorGrid, f::Vector) =
-    [f[opposite(grid, k)] for k = 1:nsectors(grid)]
+_toward(::BlowingFrom, grid::SectorGrid, f::Vector) = [f[opposite(grid, k)]
+                                                       for k in 1:nsectors(grid)]
 
 function _stabilitymatrix(::Type{T}, stability::AbstractVector{<:Real}, n::Int) where {T}
     length(stability) == length(PASQUILL_CLASSES) || throw(
         DimensionMismatch(
-            "a sector-independent stability distribution needs $(length(PASQUILL_CLASSES)) entries, got $(length(stability))",
-        ),
+        "a sector-independent stability distribution needs $(length(PASQUILL_CLASSES)) entries, got $(length(stability))",
+    ),
     )
     return repeat(reshape(collect(T, stability), 1, :), n, 1)
 end
@@ -109,8 +109,8 @@ end
 function _stabilitymatrix(::Type{T}, stability::AbstractMatrix{<:Real}, n::Int) where {T}
     size(stability) == (n, length(PASQUILL_CLASSES)) || throw(
         DimensionMismatch(
-            "the stability matrix is $(size(stability)) but should be ($n, $(length(PASQUILL_CLASSES)))",
-        ),
+        "the stability matrix is $(size(stability)) but should be ($n, $(length(PASQUILL_CLASSES)))",
+    ),
     )
     return collect(T, stability)
 end
@@ -123,8 +123,8 @@ function _checkdistribution(p::AbstractArray{<:AbstractFloat}, what::AbstractStr
     total = sum(p)
     abs(total - 1) ≤ _DISTRIBUTION_ATOL || throw(
         ArgumentError(
-            "the $what sum to $total, not to 1; supply a normalised distribution rather than raw counts",
-        ),
+        "the $what sum to $total, not to 1; supply a normalised distribution rather than raw counts",
+    ),
     )
     return nothing
 end

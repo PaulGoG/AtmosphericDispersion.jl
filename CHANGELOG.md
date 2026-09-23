@@ -6,118 +6,123 @@ follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+These change results, and several of them change the interface. Of them only
+the mixing layer moves the reference case, by up to +23 % at 20 km: its stack is
+buoyancy-dominated, so the plume-rise constants that changed are never reached;
+it has no buildings; and its roughness class is not one of the two corrected.
+
 ### Added
 
+- **A mixing layer.** The vertical profile between the ground and a capping
+  inversion is HPA-RPD-058 §3.2.2.1 Eq. (3.4), summed to double precision —
+  the image series while `Σ_z < 0.7 A`, its cosine series above, whose leading
+  term is the uniform `1/A` of Eq. (3.5). Activity is conserved over
+  `0 ≤ z ≤ A` to within 4 × 10⁻¹⁶ at every σ_z. `MixingLayer` holds one depth
+  per stability class; the default is Table 3.5(a): A 1300, B 900, C 850,
+  D 800, E 400, F 100 m. In a configuration it is the `[mixing_layer]` table:
+  `scheme = "tabulated" | "uniform" | "custom" | "unbounded"`.
+  - It raises ground-level χ/Q, never lowers it: 1.45× in class A at 20 km and
+    2.23× at 50 km, 1.67× in class B at 50 km, and not at all in class D. The
+    unstable classes reach the lid first because σ_z grows fastest there.
+  - A plume above the lid is treated by a stated rule, `above_lid`.
+    `rise_inhibited`, the default, holds it at the lid after NRPB-R157 §B2.3;
+    it is continuous in the release height and is the case HPA-RPD-058
+    Table 3.7 tabulates. `full_penetration` is EPA ISC3 vol. II §1.1.6.1: the
+    plume leaves the layer and the ground sees nothing.
+  - In the reference case class F rises to 103.5 m under a 100 m lid and is held
+    there, which about doubles its ground-level value. The long-term χ/Q at
+    20 km in the most exposed sector is 5.2 × 10⁻⁹ s m⁻³ against 4.2 × 10⁻⁹
+    with no lid (undepleted).
+- **`PrescribedPlume`**, a `Site` with its effective height, transport wind
+  speed or dispersion parameters stated rather than derived. Published
+  benchmarks give these as inputs, and a σ read off a graph is an input to the
+  problem. The depletion integral refuses a prescribed σ_z, which holds at one
+  distance only.
 - **An end-to-end benchmark against HPA-RPD-058 Table 3.7** — 3 release heights
-  × 7 stability categories × 8 distances of published plume-depletion fractions.
+  × 6 stability categories × 8 distances of published plume-depletion fractions.
   143 of the 144 cells reproduce to within 0.028 against a printed precision of
   0.01, and every row is monotone. The exception is an error in the source:
   category F at 30 m reads 0.13 at 50 km and 0.19 at 100 km, a depletion factor
   that rises with distance; this package gives 0.0188, one decimal point from
-  the printed value. The test asserts both the defect and the computed value.
-- **The tritium deposition velocities are sourced.** The notes to NSR-23 Table 6
-  give HTO as 0.4–0.8 × 10⁻² m/s and HT as 0.04–0.05 × 10⁻², attributed to
-  Murphy, *Health Physics* **65**(6), 1993, on a tropopause taken at 12–15 km —
-  exactly the four values carried. They were the last uncited numbers in the
-  reference configuration. Asserted, along with the fact that AECL's 0.392 cm/s
-  sits 2 % *below* the norm's lower bound rather than inside it.
+  the printed value.
 - **A second end-to-end benchmark, Turner Table 7-4** — the concentration
   profile with height from the ground to 450 m at 1 km, the only published table
-  found that exercises both reflection terms at arbitrary receptor height, where
-  everything else evaluates at z = 0 and the two coincide. All 16 rows reproduce
-  to within 2.4 %, the residual being Turner's own three-significant-figure
-  rounding. His printed prefactor, 3.5 × 10⁻⁵ g/m³, is a typo: 151/(2π·157·110·4)
-  is 3.479 × 10⁻⁴, which is what his own table uses.
-- **`Site` takes `fixed_lateral` and `fixed_vertical`** as well, overriding the
-  two dispersion parameters. Turner's problems print σ read off his figures, and
-  a σ read off a graph is an input to the problem.
-- **`Site` takes `fixed_height` and `fixed_wind`**, overriding the effective
-  release height and transport wind speed. Published benchmarks state both as
-  inputs rather than deriving them, so reproducing one requires setting them.
-- **A mixing layer.** `MixingLayer`, selected by `[model] mixing_layer`,
-  implements HPA-RPD-058 §3.2.2.1 Eq. (3.4) — the image sum over virtual sources
-  at `2sA ± h_e`, truncated at `|s| = 1` — going over to Eq. (3.5), a uniform
-  `1/A` profile, once σ_z reaches the depth. Depths are Table 3.5(a): A 1300,
-  B 900, C 850, D 800, E 400, F 100 m, attributed there to Clarke (1979) and
-  Jones (1980). `unbounded` restores the previous behaviour and `uniform_800`
-  takes the single depth the report recommends for all conditions.
-  - It raises ground-level χ/Q, never lowers it: 1.44× in class A at 20 km and
-    2.23× at 50 km, 1.67× in class B at 50 km, and essentially not at all in
-    class D. The unstable classes reach the lid first because σ_z grows fastest
-    there, despite their deeper lids.
-  - Activity is confined to `0 ≤ z ≤ A` and conserved exactly over it.
-  - A release strictly above the lid is not trapped by it: class F's tabulated
-    depth is 100 m against a 103 m effective release, so the plume starts above
-    the inversion and is decoupled until it breaks — fumigation, which this
-    package does not model. A release exactly at the lid is still capped, which
-    Table 3.7 decided rather than taste.
+  found that exercises both reflection terms at arbitrary receptor height. All
+  16 rows reproduce to within 2.3 %, the residual being Turner's own
+  three-significant-figure rounding.
+- **Both species rows of the washout table.** NSR-23 Table 7 tabulates tritium
+  and iodine separately from all other radionuclides, and only the first was
+  carried. The row is a property of the species: `Nuclide.washout_species`,
+  `[nuclide] washout_species`.
+- **Snow washout for HTO**, `[model] washout = "hto"`, from Ogram (Ontario Hydro
+  85-233-K, 1985) Eq. (38). Snow scavenging of tritiated water is isotopic
+  exchange, not impaction. Ogram's values agree with NSR-23's own
+  other-nuclides snow lower limit to within 16 % at all four rates. Rain is
+  unaffected.
+- **`ResuspensionModel`**, the two-exponential factor with a floor, carrying
+  IAEA Safety Series 57 (the default) and Maxwell and Anspaugh (2011), selected
+  by `[model] resuspension`; any other parameter set can be constructed.
+- **Sources.** The tritium deposition velocities are those of the notes to
+  NSR-23 Table 6, attributed there to Murphy, *Health Physics* **65**(6), 1993.
+  The vertical dispersion scheme is Hosker's fit (IAEA-SM-181/19, 1974), printed
+  in HPA-RPD-058 Table 3.3 and NRPB-R91 Table 3, and both tables are asserted
+  entry by entry. The long-term sector constant is asserted against NRC
+  Regulatory Guide 1.111 (2.032, sixteen sectors) and IAEA SRS-19 (1.5238,
+  twelve). Safety Series 57's resuspension constants are asserted against the
+  primary document.
+- **A bibliography.** The sources the documentation and the docstrings cite
+  are entries of `docs/src/refs.bib`, cited by key through DocumenterCitations
+  and listed on a References page, with a DOI wherever one exists: Briggs
+  (1969), Hanna, Briggs and Hosker (1982), Sagendorf, Goll and Sandusky (1982),
+  Murphy (1993), Slinn (1977), Maxwell and Anspaugh (2011) and NUREG/CR-7270;
+  the regulatory documents and laboratory reports by report number.
 
 ### Changed
 
-- **The building-wake coefficient defaults to 1.0** rather than 1.5, which is
-  IAEA SRS-19 Eq. (6) and the German AVV Eqs. (4.31)/(4.32). The 1.5 came from
-  CNCAN NSR-23, the Romanian normative the thesis followed, and no source
-  outside it was found; `NORMATIVE_WAKE_COEFFICIENT` restores it.
-- **Both species rows of the washout table.** NSR-23 Table 7 tabulates tritium
-  and iodine separately from all other radionuclides, and only the first was
-  carried; `WashoutSpecies` selects between them. The other-nuclides snow values
-  run three to four orders of magnitude *above* their own rain values, opposite
-  to the tritium row's suppression.
-- **Snow washout for HTO is selectable**, `[model] washout = "hto"`, using Ogram
-  (Ontario Hydro 85-233-K, 1985) Eq. (38). Snow scavenging of tritiated water is
-  isotopic exchange, not impaction. Ogram's measurement agrees with NSR-23's own
-  other-nuclides snow lower limit to within 16 % at all four rates, which is the
-  evidence that the tritium row's snow column is the anomaly. Rain is unaffected.
-- **Plume-rise constants now default to Briggs, and the choice is
-  configurable.** `RiseCoefficients` carries the three constants published
-  schemes disagree on, selected by `[model] plume_rise`: `briggs` (the default),
-  `xoqdoq` (stable coefficient 2.4), or `thesis_2021` (the 2021 values).
-  - The combined-law buoyancy denominator moves from 0.5 to **2β² = 0.72**, so
-    the law reduces to the two-thirds law as the momentum flux vanishes. It
+- **Washout is one argument.** `WashoutEvent(; duration, precipitation, rate,
+  model)` replaces the separate keywords on the dilution, depletion and
+  deposition functions, and the matching fields of `RunConfiguration`. It is
+  optional on the dilution factors (none means dry air) and required by the
+  wet-deposition functions; passing one without a nuclide is an error.
+- **Plume-rise constants default to Briggs, and the choice is configurable.**
+  `RiseCoefficients` carries the three constants published schemes disagree on,
+  selected by `[model] plume_rise`: `briggs` (the default), `xoqdoq` (stable
+  coefficient 2.4), or `nsr23` (the 2021 values, `NSR23_RISE`).
+  - The combined-law buoyancy denominator moves from 0.5 to 2β² = 0.72, so the
+    law reduces to the two-thirds law as the momentum flux vanishes. It
     previously overshot by 13.6 %.
-  - The neutral momentum rise moves from `1.5 w₀D/u` to Briggs' **`3 w₀D/u`**,
-    per Briggs (1969) Eq. 5.2 and EPA ISC3 Eq. (1-16). No source was found for
-    1.5.
-  - These change results. `plume_rise = "thesis_2021"` reproduces the old ones,
-    and the fidelity tests use it.
-- `resuspension_factor` takes a `ResuspensionModel`, selected by
-  `[model] resuspension`: `iaea_ss57` (the default) or `maxwell_anspaugh`.
-- `Site` gains a `rise` field; `RunConfiguration` gains `resuspension`.
+  - The neutral momentum rise moves from `1.5 w₀D/u` to Briggs' `3 w₀D/u`,
+    Briggs (1969) Eq. 5.2 and EPA ISC3 Eq. (1-16). The 1.5 is the momentum term
+    of Holland's formula (1953), Eq. (4.1) of Turner's Workbook.
+- **The building-wake coefficient defaults to 1.0** rather than 1.5, which is
+  IAEA SRS-19 Eq. (6) and the German AVV Eqs. (4.31)/(4.32). The 1.5 is that of
+  CNCAN NSR-23, the Romanian normative the thesis followed;
+  `NSR23_WAKE_COEFFICIENT` restores it.
+- **Unknown configuration keys are an error** naming the key, where a misspelt
+  optional key used to take its default in silence.
+- `plume_rise(x, source, atmosphere, u, rise)` takes the rise coefficients and
+  shares one implementation with the `Site` method.
+- Julia 1.10, the LTS, is the floor. No `Manifest.toml` is tracked; every
+  environment resolves against `[compat]`.
+- The scripts and `docs/make.jl` activate their own environment, so
+  `julia scripts/run.jl config/reference.toml` runs as written, without
+  `--project`. The figure scripts take an optional output directory.
+- The comments of `config/reference.toml` state what each key is, its unit and
+  its bounds. What the choices mean is in the configuration page of the manual.
+- The narrative of the README moved into the manual: conventions, validation,
+  and what the rewrite changed relative to the 2021 code.
+- The σ_y citation named an NRC accession number that is not an NRC document.
+  Corrected to Hanna, Briggs and Hosker, *Handbook on Atmospheric Diffusion*,
+  DOE/TIC-11223 (1982), Table 4.5, which attributes ATDL Contribution No. 79.
 
 ### Fixed
 
 - **Two coefficients of the roughness correction.** `F(z₀,x)` carried 1.58 and
   2.08 for z₀ = 0.01 m and 0.04 m where Hosker publishes 1.56 and 2.02, making
   σ_z 1.9 % too large over grassland and water and 3.6 % too large over arable
-  land. These are the values **NSR-23 Table 2 itself prints** — the 2021 code
-  carried them faithfully, and the normative attributes its table to
-  CAN/CSA-N288.2-M91 and UNSCEAR 2000, so the corruption entered in that chain.
-  The remaining 22 coefficients, and all 24 of the shape function, were already
-  exact in both.
-
-### Added
-
-- Safety Series 57's resuspension constants and Table II washout constants, and
-  NSR-23's own tables, are now asserted against the primary documents rather
-  than against secondary reporting of them.
-- The vertical dispersion scheme is identified: it is Hosker's fit
-  (IAEA-SM-181/19, 1974) to F.B. Smith (1972) and Briggs (1973), printed in
-  HPA-RPD-058 Table 3.3 and NRPB-R91 Table 3. Both tables are now asserted entry
-  by entry against those printings rather than sampled.
-- The long-term sector constant is asserted against its published value in NRC
-  Regulatory Guide 1.111 (2.032, sixteen sectors) and IAEA SRS-19 (1.5238,
-  twelve), for every stability class and distance.
-- A test recording the one known deviation from Briggs: the combined
-  momentum-and-buoyancy rise overshoots the two-thirds law by 13.6 % as the
-  momentum flux vanishes, because its buoyancy denominator is 0.5 where Briggs
-  gives 2β² = 0.72. The constant is left as the thesis set it; the test pins the
-  size of the discrepancy so it cannot drift unnoticed.
-
-### Changed
-
-- The σ_y citation named an NRC accession number that is not an NRC document.
-  Corrected to Hanna, Briggs and Hosker, *Handbook on Atmospheric Diffusion*,
-  DOE/TIC-11223 (1982), Table 4.5, which attributes ATDL Contribution No. 79.
+  land. These are the values NSR-23 Table 2 itself prints; the 2021 code carried
+  them faithfully. The remaining 22 coefficients, and all 24 of the shape
+  function, were already exact in both.
 
 ## [0.1.0]
 
