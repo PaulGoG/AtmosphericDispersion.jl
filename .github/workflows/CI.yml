@@ -68,7 +68,7 @@ jobs:
       - name: Run doctests
         shell: julia --color=yes {0}
         run: |
-          include("docs/activate.jl")
+          include(joinpath(pwd(), "docs", "activate.jl"))
           using Documenter: DocMeta, doctest
           using AtmosphericDispersion
           DocMeta.setdocmeta!(AtmosphericDispersion, :DocTestSetup, :(using AtmosphericDispersion); recursive=true)
