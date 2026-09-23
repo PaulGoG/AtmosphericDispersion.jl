@@ -24,15 +24,16 @@ layer.
 
   - `RISE_INHIBITED` — the capping inversion arrests the rise, and the plume is
     dispersed from the top of the layer: the effective height is taken as
-    `min(H, A)`. NRPB-R157 §B2.3: "plume rise will be inhibited by a capping
+    `min(H, A)`. NRPB-R157 [Jones1983](@cite) §B2.3: "plume rise will be inhibited by a capping
     inversion to the mixing layer. If a plume rises into such an inversion the
     amount of material in the mixing layer, and hence ground-level
     concentration, will be reduced." Keeping all of it in the layer is therefore
     the conservative reading, it is continuous in `H`, and it is what
-    HPA-RPD-058 Table 3.7 tabulates for a 100 m release under a 100 m lid. The
+    HPA-RPD-058 [SmithSimmonds2009](@cite) Table 3.7 tabulates for a 100 m
+    release under a 100 m lid. The
     default. A source that stands physically above the lid is treated the same
     way.
-  - `FULL_PENETRATION` — EPA ISC3: "if the effective stack height exceeds the
+  - `FULL_PENETRATION` — EPA ISC3 [EPA1995](@cite): "if the effective stack height exceeds the
     mixing height, the plume is assumed to fully penetrate the elevated
     inversion and the ground-level concentration is set equal to zero." Nothing
     reaches the layer, so nothing deposits from it either.
@@ -86,9 +87,9 @@ MixingLayer(depth::Real; above_lid::LidRule = RISE_INHIBITED) = MixingLayer(ntup
 """
     MIXING_TABULATED
 
-HPA-RPD-058 Table 3.5(a), "Typical values of wind speed and depth of mixing
-layer for use when measured values are not available", attributed there to
-Clarke (1979) and Jones (1980): A 1300, B 900, C 850, D 800, E 400, F 100 m. The
+HPA-RPD-058 [SmithSimmonds2009](@cite) Table 3.5(a), "Typical values of wind
+speed and depth of mixing layer for use when measured values are not
+available", attributed there to [Clarke1979](@citet) and [Jones1980](@citet): A 1300, B 900, C 850, D 800, E 400, F 100 m. The
 default. The table's category G is not carried, this package having none.
 """
 const MIXING_TABULATED = MixingLayer((1300.0, 900.0, 850.0, 800.0, 400.0, 100.0))

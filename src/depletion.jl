@@ -53,7 +53,7 @@ from [`DEPLETION_INTEGRAL_FLOOR`](@ref) to `x`, in units of m⁻¹ × m, which s
 how much of the plume has met the ground by distance `x`.
 
 Under a mixing layer the integrand carries the lid's image terms as well, which
-is HPA-RPD-058 Eq. (3.17); it is [`crosswind_integrated_factor`](@ref) evaluated
+is HPA-RPD-058 [SmithSimmonds2009](@cite) Eq. (3.17); it is [`crosswind_integrated_factor`](@ref) evaluated
 along the plume axis.
 
 Evaluated by adaptive Gauss–Kronrod quadrature. The 2021 code used a fifty-point

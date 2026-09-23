@@ -144,7 +144,7 @@ end
 """
     RESUSPENSION_IAEA_SS57
 
-IAEA Safety Series No. 57 (1982), §3.6, Eq. (3.14A):
+IAEA Safety Series No. 57 [IAEA1982](@cite), §3.6, Eq. (3.14A):
 `10⁻⁵ exp(−10⁻² t) + 10⁻⁹ exp(−2×10⁻⁵ t)`. The default. Safety Series 57 reached
 this package by way of reference [3] of CNCAN NSR-23; it has since been
 superseded, and every page of it carries a "no longer valid" stamp, but no
@@ -161,8 +161,8 @@ const RESUSPENSION_IAEA_SS57 = ResuspensionModel(;
 """
     RESUSPENSION_MAXWELL_ANSPAUGH
 
-Maxwell and Anspaugh, *Health Physics* **101** (2011), Eqs. 15/16, also adopted
-by NRC NUREG/CR-7270: `10⁻⁵ exp(−0.07 t) + 7×10⁻⁹ exp(−0.002 t) + 10⁻⁹`. It keeps
+[MaxwellAnspaugh2011](@citet), Eqs. 15/16, also adopted by NRC NUREG/CR-7270
+[Bixler2022](@cite): `10⁻⁵ exp(−0.07 t) + 7×10⁻⁹ exp(−0.002 t) + 10⁻⁹`. It keeps
 the fast amplitude and weathers seven times faster, so it lies below Safety
 Series 57 from the first days, by a factor of 60 after a year. Its floor takes
 over at about two and a half years, and from there on it is the higher of the

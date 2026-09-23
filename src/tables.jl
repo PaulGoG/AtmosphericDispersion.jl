@@ -9,12 +9,10 @@ innermost loops of every field evaluation, where a keyed lookup into a data
 frame costs more than the dispersion calculation itself.
 
 The vertical dispersion tables are Hosker's, and the normative reproduces them:
-Hosker, R.P. Jr., "Estimates of dry deposition and plume depletion over forests
-and grassland", IAEA-SM-181/19, pp. 291-309 in Physical Behaviour of Radioactive
-Contaminants in the Atmosphere, IAEA, Vienna (1974) — an analytic fit to F.B.
-Smith (1972) and Briggs (1973). They are printed in Smith and Simmonds (eds.),
-HPA-RPD-058, Health Protection Agency (2009), Table 3.3, and in Clarke, R.H.,
-NRPB-R91 (1979), Table 3, and both printings are asserted in the test suite.
+[Hosker1974](@citet), IAEA-SM-181/19 — an analytic fit to the schemes of F.B.
+Smith [Smith1973](@cite) and Briggs [Briggs1973](@cite). They are printed in
+HPA-RPD-058 [SmithSimmonds2009](@cite) Table 3.3 and in NRPB-R91
+[Clarke1979](@cite) Table 3, and both printings are asserted in the test suite.
 
 Indexing is positional, through `classindex` and `Int(::enum)`, so every lookup
 is a tuple index with a concrete return type.
@@ -212,12 +210,11 @@ Which scavenging scheme to use.
   - `WASHOUT_NORMATIVE` — the tabulated scheme of the normative, and the
     default. Its snow columns are the rain columns divided by exactly 100 and
     500, a suppression appropriate to **particles and reactive gases**: IAEA
-    TECDOC-379 §3.5.4 gives 5 × 10⁻⁸ s⁻¹ for inorganic iodine in powder snow at
+    TECDOC-379 [IAEA1986](@cite) §3.5.4 gives 5 × 10⁻⁸ s⁻¹ for inorganic iodine in powder snow at
     0.2 mm/h against 1.7 × 10⁻⁵ for the same species in rain, a factor of some
     340 in the same direction.
-  - `WASHOUT_HTO` — the same rain columns, with snow from Ogram, *Precipitation
-    Scavenging of Tritiated Water Vapour (HTO)*, Ontario Hydro Research Division
-    85-233-K (1985), §6.0 Eq. (38):
+  - `WASHOUT_HTO` — the same rain columns, with snow from [Ogram1985](@citet),
+    §6.0 Eq. (38):
 
         Λ_s = 1.2×10⁻⁴ R^0.33 + 3.0×10⁻⁴ R^0.64   s⁻¹,  R in mm/h
 
@@ -238,7 +235,7 @@ end
     ogram_snow_washout(rate)
 
 Washout coefficient in s⁻¹ for tritiated water in snow at `rate` mm/h of water
-equivalent, from Ogram (1985) Eq. (38).
+equivalent, from [Ogram1985](@citet) Eq. (38).
 
 The report's own Table V reproduces this at 0.5, 1 and 2 mm/h but prints
 2.0 × 10⁻⁴ at 0.1 mm/h where the equation gives 1.25 × 10⁻⁴. That inconsistency

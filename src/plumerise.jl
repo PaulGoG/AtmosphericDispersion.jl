@@ -26,14 +26,15 @@ choice is made in the configuration rather than buried in the source.
     giving **0.72**; NSR-23 has **0.5**, which does not reduce to the two-thirds
     law as the momentum flux vanishes.
   - `neutral_momentum` — the coefficient of the neutral final momentum rise,
-    `c w₀D/u`. Briggs (1969) Eq. 5.2, as implemented by EPA ISC3 Eq. (1-16),
+    `c w₀D/u`. [Briggs1969](@citet) Eq. 5.2, as implemented by EPA ISC3
+    [EPA1995](@cite) Eq. (1-16),
     gives **3**. CNCAN NSR-23 has **1.5**, which is the momentum term of
     Holland's formula, `Δh = (w₀D/u)[1.5 + 2.68×10⁻³ p (T_s − T_a)D/T_s]` with
-    `p` in mbar (Holland 1953; Turner, *Workbook of Atmospheric Dispersion
-    Estimates*, 1970, Eq. 4.1), taken without its buoyancy term.
+    `p` in mbar ([Holland1953](@cite); [Turner1970](@citet) Eq. 4.1), taken
+    without its buoyancy term.
   - `stable_final` — the coefficient of the stable final buoyant rise,
-    `c [F/(uS)]^(1/3)`. Briggs and the Handbook on Atmospheric Diffusion give
-    **2.6**; NRC XOQDOQ writes **2.4**.
+    `c [F/(uS)]^(1/3)`. Briggs and the Handbook on Atmospheric Diffusion
+    [Hanna1982](@cite) give **2.6**; NRC XOQDOQ writes **2.4**.
 
 See [`BRIGGS_RISE`](@ref), [`XOQDOQ_RISE`](@ref) and [`NSR23_RISE`](@ref).
 """
@@ -76,14 +77,14 @@ const BRIGGS_RISE = RiseCoefficients()
 """
     XOQDOQ_RISE
 
-Briggs, with the stable coefficient NRC XOQDOQ (NUREG/CR-2919) writes as 2.4.
+Briggs, with the stable coefficient NRC XOQDOQ [Sagendorf1982](@cite) writes as 2.4.
 """
 const XOQDOQ_RISE = RiseCoefficients(stable_final = 2.4)
 
 """
     NSR23_RISE
 
-The constants of CNCAN NSR-23, the Romanian normative, which the 2021 thesis
+The constants of CNCAN NSR-23 [CNCAN2004](@cite), the Romanian normative, which the 2021 thesis
 code followed: 0.5 in the combined law and Holland's 1.5 for the momentum rise.
 `combined_buoyancy` here does not reduce to the two-thirds law.
 """

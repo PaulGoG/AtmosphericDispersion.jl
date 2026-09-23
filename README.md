@@ -180,6 +180,7 @@ The derivations and the evidence are in the documentation, under `docs/src/`:
 - [Validation](docs/src/validation.md): every parameterisation against its published source, the two end-to-end benchmarks, the mixing layer, and where published schemes disagree.
 - [The 2021 thesis code](docs/src/thesis.md): what the rewrite changed and how far the original results move.
 - API reference: `docs/src/api/`.
+- [References](docs/src/references.md): every source cited, by DOI where one exists; the list itself is rendered in the built documentation from `docs/src/refs.bib`.
 
 Build it locally with `julia docs/make.jl`.
 

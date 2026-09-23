@@ -70,6 +70,12 @@ it has no buildings; and its roughness class is not one of the two corrected.
   Regulatory Guide 1.111 (2.032, sixteen sectors) and IAEA SRS-19 (1.5238,
   twelve). Safety Series 57's resuspension constants are asserted against the
   primary document.
+- **A bibliography.** The sources the documentation and the docstrings cite
+  are entries of `docs/src/refs.bib`, cited by key through DocumenterCitations
+  and listed on a References page, with a DOI wherever one exists: Briggs
+  (1969), Hanna, Briggs and Hosker (1982), Sagendorf, Goll and Sandusky (1982),
+  Murphy (1993), Slinn (1977), Maxwell and Anspaugh (2011) and NUREG/CR-7270;
+  the regulatory documents and laboratory reports by report number.
 
 ### Changed
 

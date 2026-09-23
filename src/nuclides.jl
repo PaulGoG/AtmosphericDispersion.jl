@@ -76,15 +76,14 @@ Tritium as HTO, the chemical form a heavy-water reactor releases in quantity
 and the one that deposits readily.
 
 Deposition velocity 0.4–0.8 × 10⁻² m/s, from the notes to CNCAN NSR-23 Table 6,
-which attribute it to experimental measurement — Murphy, C.E. Jr, "Tritium
-transport and cycling in the environment", *Health Physics* **65**(6), 1993 — and
+which attribute it to experimental measurement — [Murphy1993](@citet) — and
 attach the condition that the tropopause be taken at 12–15 km. The lower bound
 agrees with the values in common use elsewhere: the MACCS2 default of 0.5,
 0.42 measured at the Savannah River Site, and 0.392–0.444 from AECL.
 
 **That HTO deposits at all is a divergence from other guidance**, and a
-deliberate one. IAEA SRS-19 §3.9, EUR 15760 §3.2 and HPA-RPD-058 §3.2.2.3 each
-assign tritium a deposition velocity of **zero** and handle it by specific
+deliberate one. IAEA SRS-19 [IAEA2001](@cite) §3.9, EUR 15760 [Simmonds1995](@cite)
+§3.2 and HPA-RPD-058 [SmithSimmonds2009](@cite) §3.2.2.3 each assign tritium a deposition velocity of **zero** and handle it by specific
 activity instead. This package follows the normative the work was done under;
 set the velocities to zero to follow the others.
 """

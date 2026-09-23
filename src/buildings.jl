@@ -43,11 +43,11 @@ const WAKE_INFLUENCE_RADII = 3.0
 Coefficient `C` of the wake broadening of the dispersion parameters,
 `√(σ² + C A/π)`. Setting it to zero disables the building correction entirely.
 
-**One**, which is what IAEA Safety Reports Series No. 19 (2001) Eq. (6) writes
-as `Σ_z = (σ_z² + A_B/π)^(1/2)` and the German AVV zu §47 StrlSchV (2012)
+**One**, which is what IAEA Safety Reports Series No. 19 [IAEA2001](@cite) Eq. (6) writes
+as `Σ_z = (σ_z² + A_B/π)^(1/2)` and the German AVV zu §47 StrlSchV [AVV2012](@cite)
 Eqs. (4.31)/(4.32) as `√(σ² + I_G²/π)`. The 2021 thesis code used 1.5, following
 the Romanian normative it was written against, and no source outside that
-normative was found for it; NRC Regulatory Guide 1.111 Eq. (9) is a third
+normative was found for it; NRC Regulatory Guide 1.111 [NRC1977](@cite) Eq. (9) is a third
 convention again, applying 0.5 to the building *height* rather than its area.
 
 See [`NSR23_WAKE_COEFFICIENT`](@ref) to restore the 2021 value.

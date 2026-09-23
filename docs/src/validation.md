@@ -18,7 +18,7 @@ the transport speed together.
 
 ## Against the published literature
 
-The governing normative is **CNCAN NSR-23**, the Romanian nuclear regulator's
+The governing normative is **CNCAN NSR-23** [CNCAN2004](@cite), the Romanian nuclear regulator's
 norm the 2021 thesis was written against. Every parameterisation it hands down
 turns out to be a standard published scheme, and where the two disagree this
 package now follows the international source and keeps the normative's value
@@ -27,11 +27,11 @@ described.
 
 | | Published form | Agreement |
 |---|---|---|
-| σ_y | Briggs (1973) open country, `a x(1+10⁻⁴x)^(−1/2)`, a = 0.22…0.04 | **exact**, all six classes |
-| σ_z shape `g(x)` | Hosker (1974), `a x^b/(1 + c x^d)` | **exact**, all 24 coefficients |
+| σ_y | [Briggs1973](@citet) open country, `a x(1+10⁻⁴x)^(−1/2)`, a = 0.22…0.04 | **exact**, all six classes |
+| σ_z shape `g(x)` | [Hosker1974](@citet), `a x^b/(1 + c x^d)` | **exact**, all 24 coefficients |
 | σ_z roughness `F(z₀,x)` | Hosker (1974), both branches | **exact**, all 24 coefficients — after correcting two |
-| Long-term sector constant | NRC RG 1.111 `2.032`, IAEA SRS-19 `1.5238` | **exact to the published rounding** |
-| Distance to final rise | Briggs `x_f = 14F^(5/8)`, `34F^(2/5)` | **exact** |
+| Long-term sector constant | NRC RG 1.111 [NRC1977](@cite) `2.032`, IAEA SRS-19 [IAEA2001](@cite) `1.5238` | **exact to the published rounding** |
+| Distance to final rise | Briggs, as in [Hanna1982](@citet), `x_f = 14F^(5/8)`, `34F^(2/5)` | **exact** |
 | Neutral final buoyant rise | Briggs `21.4F^(3/4)/u`, `38.7F^(3/5)/u` | **exact up to the literature's own rounding** |
 | Stable final rise | Briggs `2.6[F/(us)]^(1/3)` | **exact** |
 | Transitional rise | the two-thirds law `1.6F^(1/3)x^(2/3)/u` | **exact** |
@@ -39,12 +39,13 @@ described.
 
 ### The vertical dispersion scheme, and two wrong digits
 
-`σ_z = g(x)F(z₀,x)` is Hosker's analytic fit to F.B. Smith (1972) and Briggs
-(1973), published as IAEA-SM-181/19 in *Physical Behaviour of Radioactive
-Contaminants in the Atmosphere* (IAEA, Vienna, 1974). The normative reproduces
-it without attribution. It is printed in full in **HPA-RPD-058** (Health
-Protection Agency, 2009) Table 3.3 and **NRPB-R91** (1979) Table 3, and both
-printings agree digit for digit.
+`σ_z = g(x)F(z₀,x)` is Hosker's analytic fit [Hosker1974](@cite) to the
+schemes of F.B. Smith [Smith1973](@cite) and Briggs [Briggs1973](@cite),
+published as IAEA-SM-181/19 in *Physical Behaviour of Radioactive Contaminants
+in the Atmosphere*. The normative reproduces it without attribution. It is
+printed in full in **HPA-RPD-058** [SmithSimmonds2009](@cite) Table 3.3 and
+**NRPB-R91** [Clarke1979](@cite) Table 3, and both printings agree digit for
+digit.
 
 Asserting the whole table against those printings found **two wrong
 coefficients** in the roughness correction:
@@ -67,10 +68,10 @@ caught it, because the error is in the data, not the algebra.
 ### The long-term equation is a regulatory one
 
 `dilution_long_term` is not a bespoke form. The same equation, constant
-included, is stated by **NRC Regulatory Guide 1.111** Rev. 1 (1977) Eq. (3) and
-its implementation **XOQDOQ** (NUREG/CR-2919, 1982) Eq. (1), by **IAEA Safety
-Reports Series No. 19** (2001) Eq. (V-2), and by the German **AVV zu §47
-StrlSchV** (2012) Eq. (4.4). RG 1.111 writes the sector constant as `2.032` and
+included, is stated by **NRC Regulatory Guide 1.111** Rev. 1 [NRC1977](@cite)
+Eq. (3) and its implementation **XOQDOQ** [Sagendorf1982](@cite) Eq. (1), by
+**IAEA Safety Reports Series No. 19** [IAEA2001](@cite) Eq. (V-2), and by the
+German **AVV zu §47 StrlSchV** [AVV2012](@cite) Eq. (4.4). RG 1.111 writes the sector constant as `2.032` and
 says in words that it is `√(2/π)` divided by a 22.5° sector in radians; SRS-19
 works in twelve sectors, where the same constant is `1.5238`. Both are asserted,
 for every class and distance.
@@ -127,8 +128,8 @@ at every σ_z, and the profile tends to `1/A` of its own accord: 1.4 % above it
 at `Σ_z = A`, 5 × 10⁻⁹ at `2A`. The truncated sum stays within 0.06 % of the
 converged one up to `Σ_z = A` and is 3 % low at `1.5 A`.
 
-Depths are Table 3.5(a), which the report attributes to Clarke (1979) and Jones
-(1980):
+Depths are Table 3.5(a), which the report attributes to [Clarke1979](@citet)
+and [Jones1980](@citet):
 
 | A | B | C | D | E | F |
 |---|---|---|---|---|---|
@@ -163,14 +164,14 @@ rising — so the correction is in the conservative direction.
 treats a plume above the lid in two ways, and the package carries both, as
 `above_lid`:
 
-- `rise_inhibited`, the default. NRPB-R157 §B2.3: "plume rise will be inhibited
+- `rise_inhibited`, the default. NRPB-R157 [Jones1983](@cite) §B2.3: "plume rise will be inhibited
   by a capping inversion to the mixing layer. If a plume rises into such an
   inversion the amount of material in the mixing layer, and hence ground-level
   concentration, will be reduced." Holding the whole plume at the lid,
   `H = min(H, A)`, is therefore the conservative reading. It is continuous in
   `H`, and it is the case Table 3.7 tabulates. It is also what doubles class F
   in the table above: a source at a reflecting lid is its own image.
-- `full_penetration`. EPA ISC3, User's Guide vol. II §1.1.6.1: "if the effective
+- `full_penetration`. EPA ISC3, User's Guide vol. II [EPA1995](@cite) §1.1.6.1: "if the effective
   stack height, he, exceeds the mixing height, zi, the plume is assumed to fully
   penetrate the elevated inversion and the ground-level concentration is set
   equal to zero". ISC3 also takes stable air as unbounded, which is a depth of
@@ -198,7 +199,7 @@ now.
 
 **Resuspension.** `K = A exp(−λ₁t) + B exp(−λ₂t)` with
 `A = 10⁻⁵ m⁻¹, B = 10⁻⁹ m⁻¹, λ₁ = 10⁻² d⁻¹, λ₂ = 2 × 10⁻⁵ d⁻¹` is **IAEA Safety
-Series No. 57** (1982), §3.6, Eq. (3.14A) — all four constants, exactly, in the
+Series No. 57** [IAEA1982](@cite), §3.6, Eq. (3.14A) — all four constants, exactly, in the
 same units, read in the primary document, which states them in that sentence.
 It is reference [3] of NSR-23's own bibliography, which is how they got here.
 Safety Series 57 is now superseded and says so on every page, but no successor
@@ -206,8 +207,8 @@ restates these constants. That report also brackets them: A over 10⁻⁶–10�
 10⁻¹⁰–10⁻⁸ m⁻¹, with the fast half-life "of the order of weeks" (this gives
 69.3 d) and the slow one "in the range 50 to 100 years" (94.9 yr). Asserted.
 
-A later model supersedes it — Maxwell and Anspaugh, *Health Physics* **101**
-(2011), also in NUREG/CR-7270 — which keeps the amplitudes but puts the fast
+A later model supersedes it — [MaxwellAnspaugh2011](@citet), also in
+NUREG/CR-7270 [Bixler2022](@cite) — which keeps the amplitudes but puts the fast
 decay constant at 0.07 d⁻¹ rather than 0.01. The package therefore runs high
 with elapsed time: 1.8× at ten days, 6× at thirty. Recorded, not changed.
 
@@ -221,8 +222,8 @@ carried only one; both are here now, selected by `WashoutSpecies`:
 | All other nuclides | 2 × 10⁻⁵ | 3 × 10⁻⁴ | **5 × 10⁻⁴** | **2 × 10⁻²** |
 
 The intensity dependence is the published one: fitting each column in log–log
-gives an exponent of **0.753** for three of four, and `Λ ∝ J^0.75` is Slinn
-(1977) via **NRPB-R322** (ADMLC, 2001) §3.1.1. Safety Series 57 §3.4.2 takes a
+gives an exponent of **0.753** for three of four, and `Λ ∝ J^0.75` is
+[Slinn1977](@citet) via **NRPB-R322** [ADMLC2001](@cite) §3.1.1. Safety Series 57 §3.4.2 takes a
 third position, `Λ = aI`, linear; NRPB-R157 §D3.4 brackets the exponent at 0.5
 to 1.0, which contains both, so neither is asserted against the other.
 
@@ -235,14 +236,14 @@ iodine, so 1.6 × 10⁻⁴ and 1.1 × 10⁻⁴ s⁻¹ at that rate. All four fal
 
 **Snow is where it breaks down, and the normative disagrees with itself.** The
 tritium row's snow values are the rain values divided by 100 and 500 — a
-particle-scavenging suppression, which IAEA TECDOC-379 §3.5.4 supports for
+particle-scavenging suppression, which IAEA TECDOC-379 [IAEA1986](@cite) §3.5.4 supports for
 *particles* (inorganic iodine in powder snow at 0.2 mm/h, 5 × 10⁻⁸ s⁻¹, against
 1.7 × 10⁻⁵ for the same species in rain). But the other-nuclides row runs the
 *other* way, three to four orders of magnitude **above** its own rain values.
 
 Snow scavenging of tritiated water is isotopic exchange at the crystal surface,
-not impaction, so the suppression is the wrong mechanism for it. Ogram (Ontario
-Hydro 85-233-K, 1985) measured it, and the measurement lands almost exactly on
+not impaction, so the suppression is the wrong mechanism for it.
+[Ogram1985](@citet) measured it, and the measurement lands almost exactly on
 NSR-23's *other-nuclides* snow lower limit:
 
 | mm/h | Ogram HTO | NSR-23 other-nuclides snow Λ_L | ratio |
@@ -262,8 +263,7 @@ The last parameter in the reference configuration without a citation, and it
 turned out to have one. The notes to **NSR-23 Table 6** state the deposition
 velocity of HTO as **0.4–0.8 × 10⁻² m/s** and that of HT as an order of magnitude
 lower, **0.04–0.05 × 10⁻² m/s**, both attributed to experimental measurement —
-Murphy, *Tritium transport and cycling in the environment*, **Health Physics
-65**(6), 1993 — under the stated condition that the tropopause be taken at
+[Murphy1993](@citet) — under the stated condition that the tropopause be taken at
 12–15 km. Those are exactly the four numbers the package carries.
 
 The lower bound is close to what others measure: 0.5 cm/s is the MACCS2 default
@@ -273,7 +273,7 @@ lower bound is at the edge of the measurements rather than inside them, which is
 asserted as such.
 
 **That HTO deposits at all is a divergence, and a deliberate one.** IAEA SRS-19
-§3.9, EUR 15760 §3.2 and HPA-RPD-058 §3.2.2.3 each assign tritium a deposition
+§3.9, EUR 15760 [Simmonds1995](@cite) §3.2 and HPA-RPD-058 §3.2.2.3 each assign tritium a deposition
 velocity of **zero**, handling it by specific activity instead. This package
 follows the normative the work was done under and says so; setting both
 velocities to zero follows the others.
@@ -287,8 +287,8 @@ value selected by `[model] plume_rise`, defaulting to Briggs:
 | | Briggs, the default | 2021 code | Also published |
 |---|---|---|---|
 | Combined-law buoyancy denominator | **0.72** = 2β², β = 0.6 | 0.5 | — |
-| Neutral momentum rise, `c w₀D/u` | **3** — Briggs (1969) Eq. 5.2, EPA ISC3 Eq. (1-16) | 1.5, the momentum term of Holland (1953), Turner Eq. (4.1) | — |
-| Stable final rise, `c[F/(uS)]^(1/3)` | **2.6** — Briggs, Handbook on Atmospheric Diffusion | 2.6 | 2.4, NRC XOQDOQ |
+| Neutral momentum rise, `c w₀D/u` | **3** — [Briggs1969](@citet) Eq. 5.2, EPA ISC3 Eq. (1-16) | 1.5, the momentum term of [Holland1953](@citet), [Turner1970](@citet) Eq. (4.1) | — |
+| Stable final rise, `c[F/(uS)]^(1/3)` | **2.6** — Briggs, in the Handbook on Atmospheric Diffusion [Hanna1982](@cite) | 2.6 | 2.4, NRC XOQDOQ |
 
 The first is the one that matters. The combined momentum-and-buoyancy law must
 reduce to the pure-buoyancy law when the momentum flux vanishes, and with 0.5 it
@@ -333,8 +333,7 @@ suppression, and the right physics for aerosols and reactive gases: IAEA
 TECDOC-379 §3.5.4 gives 5 × 10⁻⁸ s⁻¹ for inorganic iodine in powder snow at
 0.2 mm/h against 1.7 × 10⁻⁵ for the same species in rain, a factor of some 340
 the same way. But snow scavenging of **tritiated water is isotopic exchange at
-the crystal surface, not impaction**, and Ogram (Ontario Hydro 85-233-K, 1985)
-measures it about **a thousand times above** the normative column, not below it.
+the crystal surface, not impaction**, and Ogram measures it about **a thousand times above** the normative column, not below it.
 `[model] washout = "hto"` selects Ogram's correlation for snow; rain is
 identical either way. The reference case of this package is HTO, so the choice
 matters for it.
