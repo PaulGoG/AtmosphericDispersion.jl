@@ -58,16 +58,14 @@ function main(args)
     best_grid = (0.0, 1, 0.0)       # χ/Q, sector, radius
     for k in 1:nsectors(g)
         β = sector_bearing(g, k)
-        profile = [
-            dilution_long_term(
-                r * sin(β),
-                r * cos(β),
-                site,
-                rose;
-                nuclide = config.nuclide,
-                washout = config.washout,
-            ) for r in radii
-        ]
+        profile = [dilution_long_term(
+                       r * sin(β),
+                       r * cos(β),
+                       site,
+                       rose;
+                       nuclide = config.nuclide,
+                       washout = config.washout,
+                   ) for r in radii]
         χQ = last(profile)
         χ = χQ * config.activity
         i = argmax(profile)
