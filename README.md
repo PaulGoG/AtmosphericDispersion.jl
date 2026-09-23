@@ -58,7 +58,7 @@ julia -e 'include("test/activate.jl"); include("test/runtests.jl")'       # test
 julia scripts/figures.jl                                                  # regenerate the README figures
 julia scripts/validation.jl                                               # regenerate the validation figures
 julia docs/make.jl                                                        # build the manual
-julia -e 'using JuliaFormatter; format(".")'                              # apply the committed style
+julia -e 'using JuliaFormatter; format(".")'                              # apply the committed style; needs JuliaFormatter in the default environment
 ```
 
 A run is described by a TOML file, never by editing source. The loader checks
@@ -244,6 +244,11 @@ Closed, and recorded here because they were open for a long time:
 .
 ├── Project.toml            package manifest and [compat]
 ├── activate.jl             activates and instantiates the root environment
+├── CHANGELOG.md            what changed, release by release
+├── CITATION.cff            citation metadata, rendered by GitHub
+├── LICENSE                 MIT
+├── .JuliaFormatter.toml    the committed formatting style, SciMLStyle
+├── .gitattributes, .gitignore
 ├── config/
 │   └── reference.toml      the CANDU tritium case, with bounds in the comments
 ├── figures/                README figures and animations, from scripts/figures.jl
