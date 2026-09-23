@@ -107,6 +107,11 @@ it has no buildings; and its roughness class is not one of the two corrected.
 - The scripts and `docs/make.jl` activate their own environment, so
   `julia scripts/run.jl config/reference.toml` runs as written, without
   `--project`. The figure scripts take an optional output directory.
+- `scripts/run.jl` evaluates the receptor grid of `[grid]`, `spacing` to
+  `extent` in every sector, and reports the maximum over the radii beside the
+  values at the extent, then the air concentration resuspended from the most
+  exposed receptor's deposition under `[model] resuspension`. Both keys were
+  validated on load and read by nothing.
 - The comments of `config/reference.toml` state what each key is, its unit and
   its bounds. What the choices mean is in the configuration page of the manual.
 - The narrative of the README moved into the manual: conventions, validation,
