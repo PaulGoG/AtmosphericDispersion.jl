@@ -315,7 +315,7 @@ for the BSc thesis at the Faculty of Physics, University of Bucharest, in June
   author  = {Gogîță, Paul-Adrian},
   title   = {AtmosphericDispersion.jl: Gaussian-plume atmospheric dispersion of stack releases},
   year    = {2026},
-  version = {0.1.0},
+  version = {0.2.0},
   url     = {https://github.com/PaulGoG/AtmosphericDispersion.jl}
 }
 ```

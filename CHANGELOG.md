@@ -6,6 +6,10 @@ follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.2.0] - 2026-09-23
+
 These change results, and several of them change the interface. Of them only
 the mixing layer moves the reference case, by up to +23 % at 20 km: its stack is
 buoyancy-dominated, so the plume-rise constants that changed are never reached;

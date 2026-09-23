@@ -1,6 +1,6 @@
 name = "AtmosphericDispersion"
 uuid = "f3782548-7dae-470d-bd66-51102aeb28c8"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Paul-Adrian Gogîță"]
 
 [deps]
