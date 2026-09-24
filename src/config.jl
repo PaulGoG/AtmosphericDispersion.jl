@@ -106,7 +106,14 @@ const _ATMOSPHERE_KEYS = (
     "surface",
     "roughness",
 )
-const _MODEL_KEYS = ("plume_rise", "resuspension", "washout")
+const _MODEL_KEYS = (
+    "plume_rise",
+    "resuspension",
+    "washout",
+    "dispersion",
+    "stable_rise_wind",
+    "extrapolation",
+)
 const _MIXING_KEYS = ("scheme", "above_lid", "uniform_depth", "depths")
 const _BUILDINGS_KEYS = ("wake_coefficient", "building")
 const _BUILDING_KEYS = ("east", "north", "height", "frontal_area")
@@ -124,6 +131,20 @@ const _GRID_KEYS = ("extent", "spacing")
 
 const _RISE_CHOICES = Dict("briggs" => BRIGGS_RISE, "xoqdoq" => XOQDOQ_RISE, "nsr23" =>
     NSR23_RISE)
+
+const _DISPERSION_CHOICES = Dict(
+    "hosker" => DISPERSION_HOSKER,
+    "briggs_open_country" => DISPERSION_BRIGGS_OPEN_COUNTRY,
+    "briggs_urban" => DISPERSION_BRIGGS_URBAN,
+    "eimutis_konicek" => DISPERSION_EIMUTIS_KONICEK,
+)
+
+const _STABLE_WIND_CHOICES = Dict(
+    "mean_over_rise" => WIND_MEAN_OVER_RISE,
+    "release_height" => WIND_AT_RELEASE_HEIGHT,
+)
+
+const _EXTRAPOLATION_POLICIES = ("warn", "refuse", "allow")
 
 const _MIXING_SCHEMES = ("tabulated", "uniform", "custom", "unbounded")
 
@@ -234,12 +255,27 @@ function configuration_from(root::AbstractDict)
         _WASHOUT_CHOICES,
         "model.washout",
     )
+    dispersion = _choice(
+        _value(model, "dispersion", String, "model"; default = "hosker"),
+        _DISPERSION_CHOICES,
+        "model.dispersion",
+    )
+    stable_rise_wind = _choice(
+        _value(model, "stable_rise_wind", String, "model"; default = "mean_over_rise"),
+        _STABLE_WIND_CHOICES,
+        "model.stable_rise_wind",
+    )
+    extrapolation = _value(model, "extrapolation", String, "model"; default = "warn")
+    extrapolation in _EXTRAPOLATION_POLICIES || _fail(
+        "model.extrapolation",
+        "must be one of $(join(_EXTRAPOLATION_POLICIES, ", ")), got $(repr(extrapolation))",
+    )
 
     lid = get(root, "mixing_layer", Dict{String,Any}())
     lid isa AbstractDict || _fail("mixing_layer", "expected a table, got $(typeof(lid))")
     mixing = _mixing_from(lid)
 
-    site = Site(; source, atmosphere, buildings, rise, mixing)
+    site = Site(; source, atmosphere, buildings, rise, mixing, dispersion, stable_rise_wind)
 
     rose = _rose_from(_table(root, "wind_rose", ""))
     nuclide = _nuclide_from(_table(root, "nuclide", ""))
@@ -277,6 +313,7 @@ function configuration_from(root::AbstractDict)
     spacing = _positive(_value(grid, "spacing", Float64, "grid"), "grid.spacing")
     spacing < extent ||
         _fail("grid.spacing", "must be smaller than grid.extent ($extent m), got $spacing")
+    _check_validity(dispersion, spacing, extent, extrapolation)
 
     event = WashoutEvent(; duration = washout, precipitation, rate, model = washout_model)
 
@@ -291,6 +328,40 @@ function configuration_from(root::AbstractDict)
         extent,
         spacing,
     )
+end
+
+# The receptor grid runs from `spacing` to `extent`; where either end lies
+# outside the validity range of the dispersion scheme, the run extrapolates the
+# published formulae, and `model.extrapolation` says whether that is refused,
+# announced or accepted.
+function _check_validity(
+        scheme::DispersionScheme,
+        spacing::Real,
+        extent::Real,
+        policy::AbstractString,
+)
+    policy == "allow" && return nothing
+    lower, upper = validity_range(scheme)
+    offending = String[]
+    paths = String[]
+    if spacing < lower
+        push!(
+            offending,
+            "the nearest receptor, grid.spacing = $spacing m, lies below its $lower m lower end",
+        )
+        push!(paths, "grid.spacing")
+    end
+    if extent > upper
+        push!(offending, "grid.extent = $extent m lies beyond its $upper m upper end")
+        push!(paths, "grid.extent")
+    end
+    isempty(offending) && return nothing
+    message = "the receptor grid extrapolates $scheme past its stated validity range of " *
+              "$(lower)–$(upper) m: " * join(offending, "; ") *
+              ". Set model.extrapolation = \"allow\" to accept this silently"
+    policy == "refuse" && _fail(first(paths), message)
+    @warn message
+    return nothing
 end
 
 function _mixing_from(t::AbstractDict)

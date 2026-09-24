@@ -37,6 +37,48 @@ described.
 | Transitional rise | the two-thirds law `1.6F^(1/3)x^(2/3)/u` | **exact** |
 | Combined rise | Briggs, `3F_m x/β_j²u² + 3F x²/2β²u³` | momentum half exact, **buoyancy half 13.6 % high** |
 
+### Four dispersion schemes, and their range
+
+The normative's pairing — Briggs' open-country σ_y with Hosker's σ_z — is one
+of four schemes a `Site` can evaluate, selected by `[model] dispersion`:
+
+| Scheme | σ_y | σ_z | Fitted over |
+|---|---|---|---|
+| `hosker`, the default | Briggs open country | Hosker, roughness-corrected | 100 m – 10 km, bounded by the σ_y |
+| `briggs_open_country` | Briggs open country | Briggs open country | 100 m – 10 km |
+| `briggs_urban` | Briggs urban | Briggs urban | 100 m – 10 km |
+| `eimutis_konicek` | Eimutis–Konicek | Eimutis–Konicek, on three ranges | 100 m – 100 km |
+
+Briggs' two sets are [Briggs1973](@citet) Appendix D, which tabulates plume
+half-widths `R = 1.25 σ` for rural and urban sites, as the Handbook on
+Atmospheric Diffusion [Hanna1982](@cite) Table 4.5 prints them: the σ
+themselves, rounded to the figures shown, and quoted for `10² < x < 10⁴ m`. The
+urban set is Briggs' fit to the St. Louis experiment of
+[McElroyPooler1968](@citet); classes A and B share a curve, as do E and F.
+Reading the primary document settled one digit. The Handbook prints the
+denominator of the E–F urban σ_z as `(1 + 0.00015x)`; Briggs' own table and EPA
+ISC3 [EPA1995](@cite) Table 1-4 have `0.0015`, and 0.0015 is what the package
+carries. The suite asserts the Handbook's printing exactly, and Briggs' `R/1.25`
+to the rounding, which reaches 7 % where 0.056 became 0.06.
+
+The Eimutis–Konicek scheme is the analytic fit of [EimutisKonicek1972](@citet)
+to the Pasquill–Gifford curves, `σ_y = a x^0.9031` and `σ_z = a x^b + c` on
+three ranges of distance, which the NRC codes XOQDOQ [Sagendorf1982](@cite)
+and PAVAN [Bander1982](@cite) evaluate. The paper is not open; the 42
+coefficients are those of the two codes' `DATA` statements, which agree digit
+for digit, and are asserted entry by entry. The three pieces of each class join
+to within a per cent at 100 m and 1 km.
+
+Every scheme states the range of distance it was fitted over, and the package
+says when a run leaves it. `validity_range` returns the band; a configuration
+whose receptor grid reaches outside it is loaded with a warning, refused, or
+accepted silently as `[model] extrapolation` directs, and `scripts/run.jl`
+reports how many radii extrapolate. The reference configuration's 20 km grid is
+twice the default scheme's band — Gaussian screening to 20 km is ordinary
+regulatory practice, SRS-19 stopping there — and the file says `allow`. The
+four schemes for class D, across their bands, are
+`figures/validation/dispersion_schemes.png`.
+
 ### The vertical dispersion scheme, and two wrong digits
 
 `σ_z = g(x)F(z₀,x)` is Hosker's analytic fit [Hosker1974](@cite) to the
@@ -152,7 +194,7 @@ reference case:
 | C | 1.00 | 1.01 | 1.16 |
 | D | 1.00 | 1.00 | 1.00 |
 | E | 1.00 | 1.00 | 1.01 |
-| F | **2.28** | **2.14** | **2.12** |
+| F | **2.06** | **2.03** | **2.06** |
 
 The unstable classes reach the lid first, despite having the deepest one,
 because σ_z grows fastest there. The lid can only raise ground-level
@@ -160,7 +202,7 @@ concentration — it reflects back down material that would otherwise have kept
 rising — so the correction is in the conservative direction.
 
 **A plume above the lid.** Class F is a different case: its tabulated depth is
-100 m while plume rise puts the effective release at 103.5 m. Published practice
+100 m while plume rise puts the effective release at 100.8 m. Published practice
 treats a plume above the lid in two ways, and the package carries both, as
 `above_lid`:
 
@@ -184,7 +226,7 @@ convention and made the field discontinuous: a plume 0.1 m below a 100 m lid
 gave twice the ground-level concentration of one 0.1 m above it.
 
 In the reference case the choice moves the undepleted long-term χ/Q at 20 km in
-the most exposed sector from 4.2 × 10⁻⁹ s m⁻³ with no lid to 5.2 × 10⁻⁹ with
+the most exposed sector from 4.3 × 10⁻⁹ s m⁻³ with no lid to 5.2 × 10⁻⁹ with
 the rise inhibited, and to 3.4 × 10⁻⁹ with full penetration.
 
 Note that the analytic invariants — the crosswind integral, the sector
@@ -307,7 +349,7 @@ against a published 21.4.
 fidelity tests use it, so the 2021 results remain reproducible.
 
 **The reference case does not move**, and that is worth saying rather than
-leaving as a surprise: the CANDU stack is buoyancy-dominated — 57.7 m of buoyant
+leaving as a surprise: the CANDU stack is buoyancy-dominated — 55.7 m of buoyant
 rise against 10.6 m of momentum rise in class D, an imbalance far outside the
 tolerance for the combined law — so it takes the pure-buoyancy branch, which
 none of these constants touch. The correction bites on momentum-dominated and
@@ -315,7 +357,24 @@ balanced releases, which is where the 13.6 % was.
 
 Selecting `xoqdoq` does move it: the reference atmosphere is stably stratified,
 so the stable branch is active, and the effective release height at 2 km in
-class D falls from 108.0 m to 103.6 m.
+class D falls from 106.0 m to 101.8 m.
+
+**The wind of the stable final rise is the mean over the rise.** Briggs'
+stable limit `2.6 [F/(uS)]^(1/3)` is Eq. 2.19 of the Handbook, which defines
+its `u` as "an average value between the heights h_s and h_s + Δh". The 2021
+code, like XOQDOQ, took the wind at the release height. The rise and the mean
+depend on each other — a higher rise averages over more of the profile, and a
+faster mean lowers the rise — so `stable_rise_wind_speed` solves the two
+together, iterating from the release-height value until the rise settles to a
+part in 10¹²; the mean of the power-law profile over a layer is in closed form,
+`layer_mean_wind_speed`. The reference atmosphere is stably stratified in every
+class, so the stable limit binds throughout and the mean lowers every effective
+height by 1 to 3 m: class D at 2 km from 108.0 m to 106.0 m, class F from
+103.5 m to 100.8 m, still above its 100 m lid. The long-term χ/Q in the most
+exposed sector rises by 5 % at 1 km, 4 % at 2 km, 1.7 % at 5 km and 0.3 % at
+20 km, and the class D ground-level maximum moves from 1.51 × 10⁻⁶ s m⁻³ at
+2.20 km to 1.58 × 10⁻⁶ at 2.15 km. `[model] stable_rise_wind = "release_height"`
+restores the release-height convention.
 
 Resuspension is selectable the same way: `[model] resuspension` takes
 `iaea_ss57` (the default, Safety Series 57) or `maxwell_anspaugh` (2011, also

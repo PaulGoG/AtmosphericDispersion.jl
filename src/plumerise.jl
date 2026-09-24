@@ -75,6 +75,30 @@ Briggs throughout, and the default: `2β² = 0.72`, `3 w₀D/u`, `2.6[F/(uS)]^(1
 const BRIGGS_RISE = RiseCoefficients()
 
 """
+    StableRiseWind
+
+Which wind speed enters the stable final rise `c [F/(uS)]^(1/3)`.
+
+  - `WIND_MEAN_OVER_RISE` — the mean of the profile between the release height
+    and the top of the rise, which is how the Handbook on Atmospheric Diffusion
+    [Hanna1982](@cite) defines the `u` of its Eq. 2.19: "an average value
+    between the heights h_s and h_s + Δh". The rise and the mean depend on each
+    other and are solved together; see [`stable_rise_wind_speed`](@ref). The
+    default.
+  - `WIND_AT_RELEASE_HEIGHT` — the transport wind at the release height, as the
+    neutral limit and the transitional law take it, and as NRC XOQDOQ
+    [Sagendorf1982](@cite) and the 2021 code did.
+
+Only a [`Site`](@ref), which knows the wind profile, can form the mean. The
+functions that take a scalar wind speed take whichever value they are given,
+through their `stable_wind` keyword.
+"""
+@enum StableRiseWind::UInt8 begin
+    WIND_MEAN_OVER_RISE = 1
+    WIND_AT_RELEASE_HEIGHT = 2
+end
+
+"""
     XOQDOQ_RISE
 
 Briggs, with the stable coefficient NRC XOQDOQ [Sagendorf1982](@cite) writes as 2.4.
@@ -114,7 +138,7 @@ correlation.
 const BUOYANCY_FLUX_BREAKPOINT = 55.0
 
 """
-    final_buoyant_rise(F, u, S, rise = BRIGGS_RISE)
+    final_buoyant_rise(F, u, S, rise = BRIGGS_RISE; stable_wind = u)
 
 Final rise in metres of a buoyant plume, from the buoyancy flux `F` in m⁴/s³,
 the wind speed `u` in m/s at the release height, and the stability parameter
@@ -124,34 +148,49 @@ The smallest of the applicable limits is taken: the neutral limit, which
 ambient turbulence sets and which always applies, and — only where the air is
 stably stratified, `S > 0` — the stable and calm limits that stratification
 imposes.
+
+`stable_wind` is the wind speed the stable limit `c [F/(uS)]^(1/3)` is
+evaluated with. The Handbook on Atmospheric Diffusion defines it as the mean
+of the profile over the depth of the rise, which [`Site`](@ref) supplies; see
+[`StableRiseWind`](@ref). By default it is `u`.
 """
-function final_buoyant_rise(F::Real, u::Real, S::Real, rise::RiseCoefficients = BRIGGS_RISE)
+function final_buoyant_rise(
+        F::Real,
+        u::Real,
+        S::Real,
+        rise::RiseCoefficients = BRIGGS_RISE;
+        stable_wind::Real = u,
+)
     F ≥ 0 || throw(DomainError(F, "the rise correlations describe a buoyant plume"))
     u > 0 || throw(DomainError(u, "wind speed at the release height must be positive"))
+    stable_wind > 0 ||
+        throw(DomainError(stable_wind, "the wind speed of the stable rise must be positive"))
     x₀ = buoyancy_transition_distance(F)
     neutral = 1.6 * F^(1 / 3) * (3.5 * x₀)^(2 / 3) / u
     S > 0 || return neutral
-    stable = rise.stable_final * (F / (u * S))^(1 / 3)
+    stable = rise.stable_final * (F / (stable_wind * S))^(1 / 3)
     calm = 5.0 * F^(1 / 4) * S^(-3 / 8)
     return min(neutral, stable, calm)
 end
 
 """
-    buoyant_rise(x, F, u, S, rise = BRIGGS_RISE)
+    buoyant_rise(x, F, u, S, rise = BRIGGS_RISE; stable_wind = u)
 
 Rise in metres of a buoyant plume at downwind distance `x` metres: the
 transitional law `1.6 F^(1/3) x^(2/3) / u` while the plume is still rising, and
-the final rise beyond.
+the final rise beyond. `stable_wind` is passed to
+[`final_buoyant_rise`](@ref).
 """
 function buoyant_rise(
         x::Real,
         F::Real,
         u::Real,
         S::Real,
-        rise::RiseCoefficients = BRIGGS_RISE,
+        rise::RiseCoefficients = BRIGGS_RISE;
+        stable_wind::Real = u,
 )
     x ≥ 0 || throw(DomainError(x, "downwind distance cannot be negative"))
-    final = final_buoyant_rise(F, u, S, rise)
+    final = final_buoyant_rise(F, u, S, rise; stable_wind)
     transitional = 1.6 * F^(1 / 3) * x^(2 / 3) / u
     x < 3.5 * buoyancy_transition_distance(F) && transitional ≤ final && return transitional
     return final
@@ -206,14 +245,15 @@ function momentum_rise(
 end
 
 """
-    combined_rise(x, F, Fₘ, w₀, u, S, D, rise = BRIGGS_RISE)
+    combined_rise(x, F, Fₘ, w₀, u, S, D, rise = BRIGGS_RISE; stable_wind = u)
 
 Rise in metres from the semi-empirical law combining momentum and buoyancy,
 
     Δh = 3^(1/3) [ Fₘ x / ((1/3 + u/w₀)² u²) + F x² / (c u³) ]^(1/3)
 
 capped at the sum of the two final rises. Used where neither mechanism
-dominates the other.
+dominates the other. `stable_wind` is passed to [`final_buoyant_rise`](@ref)
+for the cap.
 
 `c` is `rise.combined_buoyancy`. With Briggs' `c = 2β² = 0.72` the expression
 reduces, as `Fₘ → 0`, to the two-thirds law `1.6 F^(1/3) x^(2/3) / u` that
@@ -227,12 +267,14 @@ function combined_rise(
         u::Real,
         S::Real,
         D::Real,
-        rise::RiseCoefficients = BRIGGS_RISE,
+        rise::RiseCoefficients = BRIGGS_RISE;
+        stable_wind::Real = u,
 )
     x ≥ 0 || throw(DomainError(x, "downwind distance cannot be negative"))
     u > 0 || throw(DomainError(u, "wind speed at the release height must be positive"))
     w₀ > 0 || throw(DomainError(w₀, "exit velocity must be positive for the combined law"))
-    final = final_momentum_rise(Fₘ, w₀, D, u, S, rise) + final_buoyant_rise(F, u, S, rise)
+    final = final_momentum_rise(Fₘ, w₀, D, u, S, rise) +
+            final_buoyant_rise(F, u, S, rise; stable_wind)
     transitional = 3^(1 / 3) *
                    (Fₘ * x / ((1 / 3 + u / w₀)^2 * u^2) +
                     F * x^2 / (rise.combined_buoyancy * u^3))^(
@@ -258,23 +300,26 @@ function _plume_rise(
         w₀::Real,
         D::Real,
         u::Real,
-        rise::RiseCoefficients,
+        rise::RiseCoefficients;
+        stable_wind::Real = u,
 )
-    buoyant = final_buoyant_rise(F, u, S, rise)
+    buoyant = final_buoyant_rise(F, u, S, rise; stable_wind)
     momentum = final_momentum_rise(Fₘ, w₀, D, u, S, rise)
     total = buoyant + momentum
     balanced = iszero(total) ||
                2 * abs(buoyant - momentum) / total ≤ MECHANISM_BALANCE_TOLERANCE
-    balanced && return combined_rise(x, F, Fₘ, w₀, u, S, D, rise)
+    balanced && return combined_rise(x, F, Fₘ, w₀, u, S, D, rise; stable_wind)
     momentum > buoyant && return momentum_rise(x, Fₘ, w₀, D, u, S, rise)
-    return buoyant_rise(x, F, u, S, rise)
+    return buoyant_rise(x, F, u, S, rise; stable_wind)
 end
 
 """
-    plume_rise(x, source, atmosphere, u, rise = BRIGGS_RISE)
+    plume_rise(x, source, atmosphere, u, rise = BRIGGS_RISE; stable_wind = u)
 
 Rise of the plume above the release height, in metres, at downwind distance `x`
-metres, with `u` the wind speed at the release height in m/s.
+metres, with `u` the wind speed at the release height in m/s and `stable_wind`
+the wind speed of the stable final rise, by default the same; see
+[`StableRiseWind`](@ref).
 
 The dominant mechanism is chosen by comparing the two final rises: where they
 agree to within [`MECHANISM_BALANCE_TOLERANCE`](@ref) in relative terms neither
@@ -287,10 +332,12 @@ function plume_rise(
         source::StackSource,
         atmosphere::Atmosphere,
         u::Real,
-        rise::RiseCoefficients = BRIGGS_RISE,
+        rise::RiseCoefficients = BRIGGS_RISE;
+        stable_wind::Real = u,
 )
     F = buoyancy_flux(source, atmosphere)
     Fₘ = momentum_flux(source, atmosphere)
     S = stability_parameter(atmosphere)
-    return _plume_rise(x, F, Fₘ, S, source.exit_velocity, source.diameter, u, rise)
+    return _plume_rise(
+        x, F, Fₘ, S, source.exit_velocity, source.diameter, u, rise; stable_wind,)
 end

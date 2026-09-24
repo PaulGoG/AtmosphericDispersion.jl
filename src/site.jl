@@ -79,10 +79,15 @@ abstract type AbstractSite end
 
 """
     Site(; source, atmosphere, buildings = BuildingEnvelope(), rise = BRIGGS_RISE,
-         mixing = MIXING_TABULATED)
+         mixing = MIXING_TABULATED, dispersion = DISPERSION_HOSKER,
+         stable_rise_wind = WIND_MEAN_OVER_RISE)
 
 A stack in its surroundings: everything a dispersion calculation needs that
 does not vary over the receptor grid.
+
+`dispersion` selects the [`DispersionScheme`](@ref) the site's parameters are
+evaluated with, and `stable_rise_wind` the [`StableRiseWind`](@ref) of its
+stable final rise.
 
 The release height, the buoyancy and momentum fluxes and the stability
 parameter are all independent of receptor position and of stability class, so
@@ -96,6 +101,8 @@ struct Site <: AbstractSite
     buildings::BuildingEnvelope
     rise::RiseCoefficients
     mixing::MixingLayer
+    dispersion::DispersionScheme
+    stable_rise_wind::StableRiseWind
     release_height::Float64
     buoyancy::Float64
     momentum::Float64
@@ -107,6 +114,8 @@ struct Site <: AbstractSite
             buildings::BuildingEnvelope = BuildingEnvelope(),
             rise::RiseCoefficients = BRIGGS_RISE,
             mixing::MixingLayer = MIXING_TABULATED,
+            dispersion::DispersionScheme = DISPERSION_HOSKER,
+            stable_rise_wind::StableRiseWind = WIND_MEAN_OVER_RISE,
     )
         return new(
             source,
@@ -114,6 +123,8 @@ struct Site <: AbstractSite
             buildings,
             rise,
             mixing,
+            dispersion,
+            stable_rise_wind,
             wake_height(source, atmosphere, buildings),
             buoyancy_flux(source, atmosphere),
             momentum_flux(source, atmosphere),
@@ -121,6 +132,13 @@ struct Site <: AbstractSite
         )
     end
 end
+
+"""
+    dispersion_scheme(site)
+
+The [`DispersionScheme`](@ref) the site's parameters are evaluated with.
+"""
+dispersion_scheme(site::Site) = site.dispersion
 
 """
     release_height(site)
@@ -148,15 +166,75 @@ function transport_wind_speed(site::Site, class::PasquillClass)
 end
 
 """
+    STABLE_RISE_TOLERANCE
+
+Relative change of the stable final rise between two iterations below which
+[`stable_rise_wind_speed`](@ref) takes the rise and its mean wind as solved.
+"""
+const STABLE_RISE_TOLERANCE = 1e-12
+
+"""
+    STABLE_RISE_MAX_ITERATIONS
+
+Iterations [`stable_rise_wind_speed`](@ref) allows the rise and its mean wind
+to converge in before it gives up. The map contracts strongly — the rise
+varies as the inverse cube root of the wind — and a handful suffice.
+"""
+const STABLE_RISE_MAX_ITERATIONS = 100
+
+"""
+    stable_rise_wind_speed(site, class)
+
+The wind speed in m/s that the stable final rise of `site` is evaluated with in
+the given stability class.
+
+Under `WIND_MEAN_OVER_RISE` it is the mean of the wind profile between
+the release height and the top of the stable rise, `Δh = c [F/(ūS)]^(1/3)`,
+which depends on that mean in turn: the two are solved together by iterating
+from the rise at the release-height wind, each pass averaging the profile over
+the current rise and re-evaluating it, until the rise settles to
+[`STABLE_RISE_TOLERANCE`](@ref). The profile has no skill below the height its
+reference is quoted at, so the layer starts at [`REFERENCE_HEIGHT`](@ref) where
+the release is lower, as [`transport_wind_speed`](@ref) is floored.
+
+Under `WIND_AT_RELEASE_HEIGHT`, or where there is no stable rise to
+average over — unstable or neutral air, or a plume without buoyancy — it is the
+transport wind.
+"""
+function stable_rise_wind_speed(site::Site, class::PasquillClass)
+    u = transport_wind_speed(site, class)
+    site.stable_rise_wind == WIND_AT_RELEASE_HEIGHT && return u
+    c, F, S = site.rise.stable_final, site.buoyancy, site.stability
+    (S > 0 && F > 0 && c > 0 && u > 0) || return u
+    atmosphere = site.atmosphere
+    z₀ = max(release_height(site), REFERENCE_HEIGHT)
+    Δh = c * (F / (u * S))^(1 / 3)
+    for _ in 1:STABLE_RISE_MAX_ITERATIONS
+        ū = layer_mean_wind_speed(
+            atmosphere.reference_speed, z₀, z₀ + Δh, atmosphere.surface, class,)
+        Δh′ = c * (F / (ū * S))^(1 / 3)
+        abs(Δh′ - Δh) ≤ STABLE_RISE_TOLERANCE * Δh′ && return ū
+        Δh = Δh′
+    end
+    error(
+        "the stable final rise and the mean wind over it did not converge in " *
+        "$STABLE_RISE_MAX_ITERATIONS iterations",
+    )
+end
+
+"""
     plume_rise(x, site, class)
 
 Rise of the plume above its release height, in metres, at downwind distance `x`
-metres, using the transport wind of the given stability class.
+metres, using the transport wind of the given stability class, and for the
+stable final rise the wind of [`stable_rise_wind_speed`](@ref).
 """
 function plume_rise(x::Real, site::Site, class::PasquillClass)
     u = transport_wind_speed(site, class)
+    stable_wind = stable_rise_wind_speed(site, class)
     w₀, D = site.source.exit_velocity, site.source.diameter
-    return _plume_rise(x, site.buoyancy, site.momentum, site.stability, w₀, D, u, site.rise)
+    return _plume_rise(
+        x, site.buoyancy, site.momentum, site.stability, w₀, D, u, site.rise; stable_wind,)
 end
 
 """
@@ -172,7 +250,8 @@ effective_height(x::Real, site::Site, class::PasquillClass) = release_height(sit
 """
     corrected_lateral_dispersion(x, site, class; release_duration = SHORT_RELEASE_REFERENCE)
 
-Lateral dispersion parameter in metres, broadened by the building wake.
+Lateral dispersion parameter in metres of the site's
+[`DispersionScheme`](@ref), broadened by the building wake.
 """
 function corrected_lateral_dispersion(
         x::Real,
@@ -180,17 +259,18 @@ function corrected_lateral_dispersion(
         class::PasquillClass;
         release_duration::Real = SHORT_RELEASE_REFERENCE,
 )
-    σy = lateral_dispersion(x, class; release_duration)
+    σy = lateral_dispersion(x, class, site.dispersion; release_duration)
     return wake_broadened(σy, effective_height(x, site, class), site.buildings)
 end
 
 """
     corrected_vertical_dispersion(x, site, class)
 
-Vertical dispersion parameter in metres, broadened by the building wake.
+Vertical dispersion parameter in metres of the site's
+[`DispersionScheme`](@ref), broadened by the building wake.
 """
 function corrected_vertical_dispersion(x::Real, site::Site, class::PasquillClass)
-    σz = vertical_dispersion(x, class, site.atmosphere.roughness)
+    σz = vertical_dispersion(x, class, site.dispersion, site.atmosphere.roughness)
     return wake_broadened(σz, effective_height(x, site, class), site.buildings)
 end
 
@@ -258,6 +338,7 @@ struct PrescribedPlume <: AbstractSite
 end
 
 mixing_layer(plume::PrescribedPlume) = mixing_layer(plume.site)
+dispersion_scheme(plume::PrescribedPlume) = dispersion_scheme(plume.site)
 
 _has_prescribed_vertical(::Site) = false
 _has_prescribed_vertical(plume::PrescribedPlume) = plume.vertical !== nothing
@@ -283,7 +364,7 @@ function corrected_lateral_dispersion(
     lateral = plume.lateral
     lateral === nothing || return lateral
     # The wake test takes the plume's own height, which may itself be prescribed.
-    σy = lateral_dispersion(x, class; release_duration)
+    σy = lateral_dispersion(x, class, plume.site.dispersion; release_duration)
     return wake_broadened(σy, effective_height(x, plume, class), plume.site.buildings)
 end
 
@@ -294,6 +375,7 @@ function corrected_vertical_dispersion(
 )
     vertical = plume.vertical
     vertical === nothing || return vertical
-    σz = vertical_dispersion(x, class, plume.site.atmosphere.roughness)
-    return wake_broadened(σz, effective_height(x, plume, class), plume.site.buildings)
+    site = plume.site
+    σz = vertical_dispersion(x, class, site.dispersion, site.atmosphere.roughness)
+    return wake_broadened(σz, effective_height(x, plume, class), site.buildings)
 end

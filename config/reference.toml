@@ -17,9 +17,12 @@ surface = "agricultural"  # wind-profile surface; one of: water | agricultural |
 roughness = "pasture"     # roughness class; one of: grassland_water | arable | pasture | rural | forest_urban | metropolis
 
 [model]
-plume_rise = "briggs"       # plume-rise constants; one of: briggs | xoqdoq | nsr23
-resuspension = "iaea_ss57"  # resuspension factor; one of: iaea_ss57 | maxwell_anspaugh
-washout = "normative"       # washout scheme; one of: normative | hto
+plume_rise = "briggs"              # plume-rise constants; one of: briggs | xoqdoq | nsr23
+stable_rise_wind = "mean_over_rise"  # wind of the stable final rise; one of: mean_over_rise | release_height
+dispersion = "hosker"              # dispersion parameters; one of: hosker | briggs_open_country | briggs_urban | eimutis_konicek
+extrapolation = "allow"            # receptor grid outside the scheme's validity range; one of: warn | refuse | allow
+resuspension = "iaea_ss57"         # resuspension factor; one of: iaea_ss57 | maxwell_anspaugh
+washout = "normative"              # washout scheme; one of: normative | hto
 
 [mixing_layer]
 scheme = "tabulated"          # depth of the mixing layer; one of: tabulated | uniform | custom | unbounded

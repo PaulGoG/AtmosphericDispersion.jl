@@ -38,13 +38,28 @@ optional and defaults to the first value listed.
 | `plume_rise` | `briggs` | [`BRIGGS_RISE`](@ref): `2β² = 0.72`, `3 w₀D/u`, `2.6 [F/(uS)]^(1/3)` |
 | | `xoqdoq` | [`XOQDOQ_RISE`](@ref): as `briggs`, with the stable coefficient 2.4 of NUREG/CR-2919 [Sagendorf1982](@cite) |
 | | `nsr23` | [`NSR23_RISE`](@ref): 0.5 and 1.5, the constants of CNCAN NSR-23 [CNCAN2004](@cite) as the 2021 code carried them |
+| `stable_rise_wind` | `mean_over_rise` | `WIND_MEAN_OVER_RISE`: the `u` of the stable final rise is the mean of the profile between the release height and the top of the rise, as the Handbook [Hanna1982](@cite) defines it for its Eq. 2.19 |
+| | `release_height` | `WIND_AT_RELEASE_HEIGHT`: the transport wind at the release height, as XOQDOQ and the 2021 code took it |
+| `dispersion` | `hosker` | `DISPERSION_HOSKER`: Briggs' open-country `σ_y` with Hosker's roughness-corrected `σ_z`, the normative's pairing |
+| | `briggs_open_country` | `DISPERSION_BRIGGS_OPEN_COUNTRY`: both parameters from [Briggs1973](@citet), Handbook Table 4.5 |
+| | `briggs_urban` | `DISPERSION_BRIGGS_URBAN`: Briggs' urban set, fitted to the St. Louis experiment of [McElroyPooler1968](@citet) |
+| | `eimutis_konicek` | `DISPERSION_EIMUTIS_KONICEK`: the fit of [EimutisKonicek1972](@citet) to the Pasquill–Gifford curves, as NRC XOQDOQ and PAVAN [Bander1982](@cite) evaluate it |
+| `extrapolation` | `warn` | a receptor grid reaching outside the scheme's [`validity_range`](@ref) is loaded with a warning naming the offending end |
+| | `refuse` | the same grid is refused, on `grid.spacing` or `grid.extent` |
+| | `allow` | the grid is accepted silently; the reference configuration says this, its 20 km extent being twice the 10 km band of the default scheme |
 | `resuspension` | `iaea_ss57` | IAEA Safety Series 57 [IAEA1982](@cite), Eq. (3.14A) |
 | | `maxwell_anspaugh` | [MaxwellAnspaugh2011](@citet); NUREG/CR-7270 [Bixler2022](@cite) |
 | `washout` | `normative` | NSR-23 Table 7 throughout |
 | | `hto` | snow scavenging from [Ogram1985](@citet) Eq. (38), for tritiated water; rain unchanged |
 
-See [`RiseCoefficients`](@ref), [`ResuspensionModel`](@ref) and
-[`WashoutModel`](@ref) for the physics behind each.
+See [`RiseCoefficients`](@ref), [`StableRiseWind`](@ref),
+[`DispersionScheme`](@ref), [`ResuspensionModel`](@ref) and
+[`WashoutModel`](@ref) for the physics behind each. The validity range of a
+scheme is the range of distance its parameters were fitted over; every
+Briggs-based scheme is quoted for 100 m to 10 km, the Eimutis–Konicek fit for
+100 m to 100 km. Nothing in the evaluation refuses a distance outside it; the
+policy applies to the receptor grid at load, and `scripts/run.jl` reports how
+many radii extrapolate.
 
 ## The `[mixing_layer]` table
 

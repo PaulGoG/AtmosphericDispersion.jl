@@ -178,3 +178,132 @@
         end
     end
 end
+
+@testset "Dispersion schemes" begin
+    @testset "Briggs open country is the normative's σ_y" begin
+        for k in PASQUILL_CLASSES, x in (0.0, 100.0, 1000.0, 10_000.0)
+
+            @test briggs_lateral_dispersion(x, k, DISPERSION_BRIGGS_OPEN_COUNTRY) ==
+                  lateral_dispersion(x, k)
+            @test lateral_dispersion(x, k, DISPERSION_HOSKER) == lateral_dispersion(x, k)
+        end
+    end
+
+    @testset "the scheme dispatch" begin
+        for k in PASQUILL_CLASSES, r in ROUGHNESS_CLASSES, x in (100.0, 1000.0, 10_000.0)
+            @test vertical_dispersion(x, k, DISPERSION_HOSKER, r) ==
+                  vertical_dispersion(x, k, r)
+            for s in (DISPERSION_BRIGGS_OPEN_COUNTRY, DISPERSION_BRIGGS_URBAN)
+                @test vertical_dispersion(x, k, s, r) == briggs_vertical_dispersion(x, k, s)
+                @test lateral_dispersion(x, k, s) == briggs_lateral_dispersion(x, k, s)
+            end
+            @test vertical_dispersion(x, k, DISPERSION_EIMUTIS_KONICEK, r) ==
+                  eimutis_konicek_vertical_dispersion(x, k)
+            @test lateral_dispersion(x, k, DISPERSION_EIMUTIS_KONICEK) ==
+                  eimutis_konicek_lateral_dispersion(x, k)
+            p = dispersion_parameters(
+                x, k, DISPERSION_BRIGGS_URBAN, r; release_duration = 3600,)
+            @test p.σy ==
+                  meander_broadened(briggs_lateral_dispersion(x, k, DISPERSION_BRIGGS_URBAN), 3600)
+            @test p.σz == briggs_vertical_dispersion(x, k, DISPERSION_BRIGGS_URBAN)
+        end
+        @test_throws ArgumentError briggs_lateral_coefficients(PASQUILL_D, DISPERSION_HOSKER)
+        @test_throws ArgumentError briggs_vertical_dispersion(
+            100.0, PASQUILL_D, DISPERSION_EIMUTIS_KONICEK,)
+        @test_throws DomainError briggs_lateral_dispersion(-1.0, PASQUILL_D, DISPERSION_BRIGGS_URBAN)
+        @test_throws DomainError briggs_vertical_dispersion(0.0, PASQUILL_D, DISPERSION_BRIGGS_URBAN)
+    end
+
+    @testset "meander broadening" begin
+        @test meander_broadened(100.0, 60) == 100.0
+        @test meander_broadened(100.0, 600) == 100.0
+        @test meander_broadened(100.0, 3600) ≈ 100 * 6^0.2
+        @test_throws DomainError meander_broadened(100.0, 0)
+    end
+
+    @testset "every scheme orders the classes and grows with distance" begin
+        xs = (100.0, 300.0, 1000.0, 3000.0, 10_000.0)
+        for s in DISPERSION_SCHEMES
+            for k in PASQUILL_CLASSES
+                @test issorted([lateral_dispersion(x, k, s) for x in xs])
+                @test issorted([vertical_dispersion(x, k, s, ROUGHNESS_PASTURE) for x in xs])
+            end
+            # Weakly ordered: the urban set pairs A with B and E with F.
+            for x in xs
+                @test issorted([lateral_dispersion(x, k, s) for k in PASQUILL_CLASSES]; rev = true)
+                @test issorted(
+                    [vertical_dispersion(x, k, s, ROUGHNESS_PASTURE)
+                     for k in PASQUILL_CLASSES];
+                    rev = true,
+                )
+            end
+        end
+    end
+
+    # The urban σ_z exceeds the open-country one at every distance of the
+    # band; the urban σ_y does so only in the near field, its `(1 + 4×10⁻⁴x)`
+    # denominator growing four times faster than the open-country one.
+    @testset "urban air disperses faster than open country" begin
+        for k in PASQUILL_CLASSES
+            for x in (100.0, 1000.0, 10_000.0)
+                @test briggs_vertical_dispersion(x, k, DISPERSION_BRIGGS_URBAN) >
+                      briggs_vertical_dispersion(x, k, DISPERSION_BRIGGS_OPEN_COUNTRY)
+            end
+            for x in (100.0, 1000.0)
+                @test briggs_lateral_dispersion(x, k, DISPERSION_BRIGGS_URBAN) >
+                      briggs_lateral_dispersion(x, k, DISPERSION_BRIGGS_OPEN_COUNTRY)
+            end
+        end
+    end
+
+    @testset "the Eimutis–Konicek pieces join" begin
+        for k in PASQUILL_CLASSES, x in EIMUTIS_KONICEK_RANGES
+
+            below = eimutis_konicek_vertical_dispersion(prevfloat(x), k)
+            above = eimutis_konicek_vertical_dispersion(x, k)
+            @test isapprox(below, above; rtol = 0.02)
+        end
+        @test eimutis_konicek_vertical_coefficients(PASQUILL_A, 0.0) ===
+              eimutis_konicek_vertical_coefficients(PASQUILL_A, 99.0)
+        @test_throws DomainError eimutis_konicek_vertical_dispersion(0.0, PASQUILL_D)
+        @test_throws DomainError eimutis_konicek_vertical_coefficients(PASQUILL_D, -1.0)
+        @test eimutis_konicek_lateral_dispersion(0.0, PASQUILL_D) == 0
+        @test_throws DomainError eimutis_konicek_lateral_dispersion(-1.0, PASQUILL_D)
+    end
+
+    @testset "validity ranges" begin
+        for s in DISPERSION_SCHEMES
+            lo, hi = validity_range(s)
+            @test lo == 100
+            @test within_validity(lo, s) && within_validity(hi, s)
+            @test !within_validity(prevfloat(lo), s) && !within_validity(nextfloat(hi), s)
+        end
+        @test validity_range(DISPERSION_HOSKER)[2] == 10_000
+        @test validity_range(DISPERSION_BRIGGS_OPEN_COUNTRY)[2] == 10_000
+        @test validity_range(DISPERSION_BRIGGS_URBAN)[2] == 10_000
+        @test validity_range(DISPERSION_EIMUTIS_KONICEK)[2] == 100_000
+    end
+
+    @testset "the layer mean of the wind profile" begin
+        u₁₀ = 4.0
+        for s in WIND_PROFILE_SURFACES, k in PASQUILL_CLASSES
+
+            for (z₁, z₂) in ((10.0, 60.0), (50.0, 250.0), (210.0, 400.0), (5.0, 15.0))
+                q, _ = quadgk(z -> wind_speed(u₁₀, z, s, k), z₁, z₂)
+                @test layer_mean_wind_speed(u₁₀, z₁, z₂, s, k) ≈ q / (z₂ - z₁) rtol = 1e-10
+            end
+            @test layer_mean_wind_speed(u₁₀, 50.0, 50.0, s, k) ==
+                  wind_speed(u₁₀, 50.0, s, k)
+            # Positive shear: the mean over a layer lies between the winds at its ends.
+            @test wind_speed(u₁₀, 50.0, s, k) ≤
+                  layer_mean_wind_speed(u₁₀, 50.0, 100.0, s, k) ≤
+                  wind_speed(u₁₀, 100.0, s, k)
+        end
+        @test_throws DomainError layer_mean_wind_speed(
+            u₁₀, 0.0, 10.0, SURFACE_WATER, PASQUILL_D,)
+        @test_throws DomainError layer_mean_wind_speed(
+            u₁₀, 20.0, 10.0, SURFACE_WATER, PASQUILL_D,)
+        @test_throws DomainError layer_mean_wind_speed(
+            -1.0, 10.0, 20.0, SURFACE_WATER, PASQUILL_D,)
+    end
+end

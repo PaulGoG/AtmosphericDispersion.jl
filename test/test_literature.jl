@@ -531,3 +531,113 @@
               briggs_z[PASQUILL_F](1000.0)
     end
 end
+
+# Benchmarks against the published dispersion schemes and the regulatory
+# screening tables that build on them.
+@testset "Literature validation: dispersion schemes and screening tables" begin
+    # Briggs (1973), Diffusion Estimation for Small Emissions, ATDL Contribution
+    # 79, issued as TID-28289: Appendix D tabulates plume half-widths R = 1.25 σ
+    # for rural and urban sites. Hanna, Briggs and Hosker (1982) Table 4.5
+    # prints the σ themselves, rounded to the figures shown, and EPA ISC3
+    # Tables 1-3 and 1-4 repeat that printing. The Handbook misprints the
+    # denominator of the E–F urban σ_z as (1 + 0.00015x); Briggs' own table and
+    # ISC3 have 0.0015. Asserted: the Handbook's printing exactly, and that it
+    # is Briggs' R/1.25 to the rounding, which reaches 7 % where 0.056 became
+    # 0.06.
+    @testset "σ_y and σ_z are Briggs 1973, open country and urban" begin
+        handbook_open_y = (0.22, 0.16, 0.11, 0.08, 0.06, 0.04)
+        handbook_open_z = (
+            x -> 0.20x,
+            x -> 0.12x,
+            x -> 0.08x * (1 + 0.0002x)^(-0.5),
+            x -> 0.06x * (1 + 0.0015x)^(-0.5),
+            x -> 0.03x * (1 + 0.0003x)^(-1),
+            x -> 0.016x * (1 + 0.0003x)^(-1),
+        )
+        handbook_urban_y = (0.32, 0.32, 0.22, 0.16, 0.11, 0.11)
+        handbook_urban_z = (
+            x -> 0.24x * (1 + 0.001x)^0.5,
+            x -> 0.24x * (1 + 0.001x)^0.5,
+            x -> 0.20x,
+            x -> 0.14x * (1 + 0.0003x)^(-0.5),
+            x -> 0.08x * (1 + 0.0015x)^(-0.5),
+            x -> 0.08x * (1 + 0.0015x)^(-0.5),
+        )
+        # Briggs (1973) Appendix D, R_y and R_z.
+        briggs_rural_Ry = (0.28, 0.20, 0.14, 0.10, 0.07, 0.05)
+        briggs_rural_Rz = (
+            x -> 0.25x,
+            x -> 0.15x,
+            x -> 0.10x / sqrt(1 + 0.0002x),
+            x -> 0.07x / sqrt(1 + 0.0015x),
+            x -> 0.04x / (1 + 0.0003x),
+            x -> 0.02x / (1 + 0.0003x),
+        )
+        briggs_urban_Ry = (0.40, 0.40, 0.28, 0.20, 0.14, 0.14)
+        briggs_urban_Rz = (
+            x -> 0.30x * sqrt(1 + 0.001x),
+            x -> 0.30x * sqrt(1 + 0.001x),
+            x -> 0.25x,
+            x -> 0.18x / sqrt(1 + 0.0003x),
+            x -> 0.10x / sqrt(1 + 0.0015x),
+            x -> 0.10x / sqrt(1 + 0.0015x),
+        )
+        open, urban = DISPERSION_BRIGGS_OPEN_COUNTRY, DISPERSION_BRIGGS_URBAN
+        for (i, class) in enumerate(PASQUILL_CLASSES), x in (100.0, 1000.0, 10_000.0)
+
+            @test briggs_lateral_dispersion(x, class, open) ≈
+                  handbook_open_y[i] * x * (1 + 1e-4x)^(-0.5) rtol = 1e-12
+            @test briggs_vertical_dispersion(x, class, open) ≈ handbook_open_z[i](x) rtol = 1e-12
+            @test briggs_lateral_dispersion(x, class, urban) ≈
+                  handbook_urban_y[i] * x * (1 + 4e-4x)^(-0.5) rtol = 1e-12
+            @test briggs_vertical_dispersion(x, class, urban) ≈ handbook_urban_z[i](x) rtol = 1e-12
+
+            @test briggs_lateral_dispersion(x, class, open) ≈
+                  briggs_rural_Ry[i] * x / sqrt(1 + 1e-4x) / 1.25 rtol = 0.08
+            @test briggs_vertical_dispersion(x, class, open) ≈ briggs_rural_Rz[i](x) / 1.25 rtol = 0.08
+            @test briggs_lateral_dispersion(x, class, urban) ≈
+                  briggs_urban_Ry[i] * x / sqrt(1 + 4e-4x) / 1.25 rtol = 0.08
+            @test briggs_vertical_dispersion(x, class, urban) ≈ briggs_urban_Rz[i](x) / 1.25 rtol = 0.08
+        end
+        # The Handbook's validity band, stated in the table's caption.
+        @test validity_range(open) == (100.0, 10_000.0)
+        @test validity_range(urban) == (100.0, 10_000.0)
+    end
+
+    # Eimutis and Konicek (1972), Atmospheric Environment 6, 859–863: σ_y =
+    # a x^0.9031 and σ_z = a x^b + c on three ranges of distance. The paper is
+    # not open; the coefficients are those of the DATA statements of subroutine
+    # POLYN in NRC XOQDOQ (NUREG/CR-2919, listing p. A.42) and PAVAN
+    # (NUREG/CR-2858), two independent listings that agree digit for digit,
+    # and are asserted entry by entry.
+    @testset "σ_y and σ_z under DISPERSION_EIMUTIS_KONICEK are the NRC coefficients" begin
+        AY = (0.3658, 0.2751, 0.2089, 0.1471, 0.1046, 0.0722)
+        AZ = (
+            (0.192, 0.156, 0.116, 0.079, 0.063, 0.053),
+            (0.00066, 0.0382, 0.113, 0.222, 0.211, 0.086),
+            (0.00024, 0.055, 0.113, 1.26, 6.73, 18.05),
+        )
+        BZ = (
+            (0.936, 0.922, 0.905, 0.881, 0.871, 0.814),
+            (1.941, 1.149, 0.911, 0.725, 0.678, 0.74),
+            (2.094, 1.098, 0.911, 0.516, 0.305, 0.18),
+        )
+        CZ = (
+            (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+            (9.27, 3.3, 0.0, -1.7, -1.3, -0.35),
+            (-9.6, 2.0, 0.0, -13.0, -34.0, -48.6),
+        )
+        @test EIMUTIS_KONICEK_LATERAL_EXPONENT == 0.9031
+        @test EIMUTIS_KONICEK_RANGES == (100.0, 1000.0)
+        for (i, class) in enumerate(PASQUILL_CLASSES)
+            @test eimutis_konicek_lateral_coefficient(class) == AY[i]
+            for (r, x) in enumerate((50.0, 500.0, 5000.0))
+                k = eimutis_konicek_vertical_coefficients(class, x)
+                @test (k.a, k.b, k.c) == (AZ[r][i], BZ[r][i], CZ[r][i])
+                @test eimutis_konicek_vertical_dispersion(x, class) ≈
+                      AZ[r][i] * x^BZ[r][i] + CZ[r][i]
+                @test eimutis_konicek_lateral_dispersion(x, class) ≈ AY[i] * x^0.9031
+            end
+        end
+    end
+end

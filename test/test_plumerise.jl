@@ -139,3 +139,31 @@
         end
     end
 end
+
+@testset "The wind of the stable final rise" begin
+    F, S = 50.0, 1e-3
+    for u in (2.0, 5.0)
+        default = final_buoyant_rise(F, u, S)
+        @test final_buoyant_rise(F, u, S; stable_wind = u) == default
+        # A faster mean wind lowers the stable limit and touches nothing else.
+        faster = final_buoyant_rise(F, u, S; stable_wind = 2u)
+        @test faster ≤ default
+        x₀ = buoyancy_transition_distance(F)
+        neutral = 1.6 * F^(1 / 3) * (3.5 * x₀)^(2 / 3) / u
+        stable = 2.6 * (F / (2u * S))^(1 / 3)
+        calm = 5.0 * F^(1 / 4) * S^(-3 / 8)
+        @test faster ≈ min(neutral, stable, calm)
+        @test_throws DomainError final_buoyant_rise(F, u, S; stable_wind = 0.0)
+    end
+    # Unstable air has no stable branch, so the keyword is inert there.
+    @test final_buoyant_rise(F, 4.0, -1e-3; stable_wind = 40.0) ==
+          final_buoyant_rise(F, 4.0, -1e-3)
+    # It threads through the transitional, combined and selected laws.
+    @test buoyant_rise(1e5, F, 4.0, S; stable_wind = 8.0) ==
+          final_buoyant_rise(F, 4.0, S; stable_wind = 8.0)
+    @test combined_rise(1e5, F, 1e-14, 10.0, 4.0, S, 2.0; stable_wind = 8.0) ≈
+          final_momentum_rise(1e-14, 10.0, 2.0, 4.0, S) +
+          final_buoyant_rise(F, 4.0, S; stable_wind = 8.0)
+    @test plume_rise(1e5, REFERENCE_STACK, REFERENCE_AIR, 4.0; stable_wind = 8.0) <
+          plume_rise(1e5, REFERENCE_STACK, REFERENCE_AIR, 4.0)
+end

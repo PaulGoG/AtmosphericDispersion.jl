@@ -91,7 +91,7 @@ wind takes. All three vanish in the near field, where an elevated plume has not
 yet reached the ground.
 
 Right: the effective release height by stability class. Plume rise lifts the
-50.3 m stack to between 103.5 and 113 m and saturates within half a kilometre, higher
+50.3 m stack to between 101 and 112 m and saturates within half a kilometre, higher
 in unstable air where the plume rises further before ambient turbulence breaks
 it up.
 
@@ -119,7 +119,7 @@ six classes span a factor of 37, and at 1 km class F is twelve orders of
 magnitude below class B, because the plume has not yet reached the ground at all.
 That is why an assessment stands or falls on the joint frequency of direction
 *and* class rather than direction alone. Class F is also the one class the mixing
-lid reaches here: its plume rises to 103.5 m under a 100 m lid, is held at it,
+lid reaches here: its plume rises to 100.8 m under a 100 m lid, is held at it,
 and gives about twice the ground-level value of an unbounded plume from 5 km
 outwards.
 
@@ -131,15 +131,15 @@ building heights escapes untouched, one leaving *below* the building top is
 entrained into the aerodynamic cavity and released at ground level. This
 building is on the far side of it, so the effective release height goes from
 **50.3 m to zero**. The third panel is the ratio of the two fields, on a scale
-that saturates at ten: a factor of 20 on the axis at 1 km, 3.2 at 2 km, and still
+that saturates at ten: a factor of 20 on the axis at 1 km, 3.3 at 2 km, and still
 1.6 at the 12 km edge of the map.
 
 ![Release height](figures/release_height.gif)
 
 **Release height.** Raising the stack does not reduce the release, it moves the
-ground-level maximum downwind and lowers it. Class D: 2.57 × 10⁻⁶ s m⁻³ at
-1.7 km from a 30 m stack, 1.51 × 10⁻⁶ at 2.2 km from the 50.3 m reference
-stack, and 4.26 × 10⁻⁷ at 4.2 km from 120 m — a factor of six off the peak for
+ground-level maximum downwind and lowers it. Class D: 2.77 × 10⁻⁶ s m⁻³ at
+1.7 km from a 30 m stack, 1.58 × 10⁻⁶ at 2.1 km from the 50.3 m reference
+stack, and 4.31 × 10⁻⁷ at 4.2 km from 120 m — a factor of six off the peak for
 four times the height.
 
 ![Depletion](figures/depletion.gif)
@@ -164,6 +164,7 @@ figure is what shows how wide the bracket is.
 | Figure | Against |
 |---|---|
 | `dispersion_parameters.png` | Briggs (1973) σ_y and σ_z, all six classes |
+| `dispersion_schemes.png` | the four schemes for class D — Hosker, Briggs open country and urban, Eimutis–Konicek — across their validity ranges |
 | `roughness_correction.png` | the published `(z₀/0.1)^0.2` scaling |
 | `washout.png` | NRPB-R322 and AVV amplitudes, and the `J^0.75` law |
 | `resuspension.png` | IAEA Safety Series 57, and its 2011 successor |
@@ -196,6 +197,11 @@ Done:
 - Surface and roughness categories; the coefficient tables as compile-time
   constants rather than DataFrame lookups in the inner loop
 - Wind profile and dispersion parameters; plume rise; building wake
+- Four dispersion schemes — the normative's Hosker pairing, Briggs open country,
+  Briggs urban, Eimutis–Konicek — each with the range of distance it was fitted
+  over, and a configured policy for a receptor grid that extrapolates it
+- The stable final rise on the mean wind over the rise, as the Handbook on
+  Atmospheric Diffusion defines it, solved together with the rise
 - `Site`, which precomputes everything independent of receptor position, and
   `PrescribedPlume`, which takes the height, wind and σ a published benchmark
   states as inputs
@@ -214,15 +220,12 @@ Done:
 
 Next:
 
-- Enforce the stated validity bands. Briggs' Table 4.5 is quoted for
-  10² < x < 10⁴ m and the package extrapolates past both ends without saying so
-- The urban σ_y and σ_z sets, which Briggs publishes alongside the open-country
-  ones and this package does not carry
-- The stable final rise takes `u` at release height; Handbook Eq. 2.19 says it
-  should be averaged over the rise depth
-- Two more published benchmarks are within reach of `PrescribedPlume`: NRC
-  XOQDOQ Test Case 2 needs its Eimutis–Konicek σ_z injected, and IAEA SRS-19
-  Annex IV needs the wake and cavity regimes
+- A stability category G, which XOQDOQ and HPA-RPD-058 both carry and this
+  package does not
+- The Prairie Grass crosswind-integrated concentrations, whose disputed
+  roughness length sits directly under Hosker's correction
+- Fumigation of a plume that has risen above the lid, which neither lid rule
+  models
 
 Closed, and recorded here because they were open for a long time:
 

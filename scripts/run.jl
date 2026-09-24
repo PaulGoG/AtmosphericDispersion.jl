@@ -44,6 +44,15 @@ function main(args)
         length(radii),
         first(radii),
         last(radii))
+    scheme = dispersion_scheme(site)
+    lower, upper = validity_range(scheme)
+    outside = count(r -> !within_validity(r, scheme), radii)
+    @printf("Dispersion       %s, fitted over %.0f to %.0f m; %d of %d radii extrapolate it\n",
+        scheme,
+        lower,
+        upper,
+        outside,
+        length(radii))
     println()
     @printf("%-5s  %45s  %22s\n", "", "at the extent", "maximum over the radii")
     @printf("%-5s  %12s  %14s  %15s  %12s  %8s\n",

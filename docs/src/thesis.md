@@ -14,14 +14,14 @@ assessed. Running that configuration both ways:
 | Correction | Effect on the reference case |
 |---|---|
 | **Wind-direction convention** | **Most-exposed sector S instead of N — a half turn — and χ/Q there higher by a factor of 1.51 at every distance** |
-| Plume-rise constants | none: the stack is buoyancy-dominated, 57.7 m of buoyant rise against 10.6 m of momentum, so the corrected constants are never reached |
+| Plume-rise constants | none: the stack is buoyancy-dominated, 55.7 m of buoyant rise against 10.6 m of momentum, so the corrected constants are never reached |
 | Building-wake coefficient | none: no buildings in the reference configuration |
 | Roughness coefficients | none: the corrected rows are z₀ = 0.01 and 0.04 m, and the case is pasture at 0.1 m |
-| Mixing layer, which the 2021 code did not have | none within 2 km; in the most exposed sector +2 % at 5 km, +12 % at 10 km and +23 % at 20 km, nearly all of it class F, whose plume is held at its 100 m lid |
+| Mixing layer, which the 2021 code did not have | none within 2 km; in the most exposed sector +2 % at 5 km, +11 % at 10 km and +22 % at 20 km, nearly all of it class F, whose plume is held at its 100 m lid |
 
 So the answer is short: **the published dose maps are rotated by a half turn,
 and the most-exposed sector carries 1.51 times what was reported** — more beyond
-a few kilometres, where the lid adds up to 23 %. Everything else corrected here
+a few kilometres, where the lid adds up to 22 %. Everything else corrected here
 would change a different configuration — a momentum-dominated stack, a site with
 buildings, grassland or arable roughness — and leaves this one alone.
 

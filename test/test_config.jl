@@ -291,3 +291,65 @@
         @test err.path == "nuclide.washout_species"
     end
 end
+
+@testset "Configuration: dispersion scheme, stable wind and extrapolation" begin
+    reference = joinpath(@__DIR__, "..", "config", "reference.toml")
+    withkey(f) = (t = TOML.parsefile(reference); f(t); t)
+    failure(t) =
+        try
+            configuration_from(t)
+            nothing
+        catch e
+            e
+        end
+
+    c = configuration_from(withkey(t -> begin
+        t["model"]["dispersion"] = "briggs_urban"
+        t["model"]["stable_rise_wind"] = "release_height"
+    end))
+    @test dispersion_scheme(c.site) === DISPERSION_BRIGGS_URBAN
+    @test c.site.stable_rise_wind === WIND_AT_RELEASE_HEIGHT
+    default = load_configuration(reference)
+    @test dispersion_scheme(default.site) === DISPERSION_HOSKER
+    @test default.site.stable_rise_wind === WIND_MEAN_OVER_RISE
+    for (key, option) in (
+        ("dispersion", "briggs_open_country"),
+        ("stable_rise_wind", "mean_over_rise"),
+        ("extrapolation", "refuse")
+    )
+        err = failure(withkey(t -> (t["model"][key] = "nonsense")))
+        @test err isa ConfigurationError
+        @test err.path == "model.$key"
+        @test occursin(option, err.message)
+    end
+
+    # The reference grid reaches 20 km, twice the band of every Briggs-based
+    # scheme, and the file accepts that with "allow".
+    @test_logs configuration_from(withkey(identity))
+    @test_logs (:warn, r"validity range") configuration_from(
+        withkey(t -> (t["model"]["extrapolation"] = "warn")),
+    )
+    err = failure(withkey(t -> (t["model"]["extrapolation"] = "refuse")))
+    @test err isa ConfigurationError
+    @test err.path == "grid.extent"
+    @test occursin("20000.0 m lies beyond", err.message)
+    # Inside the band every policy is silent.
+    @test_logs configuration_from(withkey(t -> begin
+        t["model"]["extrapolation"] = "refuse"
+        t["grid"]["extent"] = 10_000.0
+        t["grid"]["spacing"] = 100.0
+    end))
+    # The nearest receptor is checked too, on its own key.
+    err = failure(withkey(t -> begin
+        t["model"]["extrapolation"] = "refuse"
+        t["grid"]["spacing"] = 50.0
+        t["grid"]["extent"] = 5000.0
+    end))
+    @test err isa ConfigurationError
+    @test err.path == "grid.spacing"
+    # Eimutis–Konicek reaches 100 km, so the reference grid lies inside its band.
+    @test_logs configuration_from(withkey(t -> begin
+        t["model"]["extrapolation"] = "refuse"
+        t["model"]["dispersion"] = "eimutis_konicek"
+    end))
+end

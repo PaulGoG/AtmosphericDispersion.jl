@@ -167,3 +167,75 @@ end
         end
     end
 end
+
+@testset "The wind of the stable rise of a site" begin
+    site = REFERENCE_SITE       # stably stratified and buoyant: the mean applies
+    at_release = Site(;
+        source = REFERENCE_STACK,
+        atmosphere = REFERENCE_AIR,
+        stable_rise_wind = WIND_AT_RELEASE_HEIGHT,
+    )
+    @test site.stable_rise_wind === WIND_MEAN_OVER_RISE
+    c, F, S = BRIGGS_RISE.stable_final, site.buoyancy, site.stability
+    z₀ = max(release_height(site), REFERENCE_HEIGHT)
+    for class in PASQUILL_CLASSES
+        u = transport_wind_speed(site, class)
+        ū = stable_rise_wind_speed(site, class)
+        @test stable_rise_wind_speed(at_release, class) == u
+        # Positive shear: the mean over the rise exceeds the wind at its base.
+        @test ū > u
+        # It is the mean of the profile over exactly the rise it produces.
+        Δh = c * (F / (ū * S))^(1 / 3)
+        @test layer_mean_wind_speed(
+            REFERENCE_AIR.reference_speed, z₀, z₀ + Δh, REFERENCE_AIR.surface, class,) ≈ ū rtol = 1e-10
+        # A faster wind cannot raise the plume.
+        @test effective_height(1e5, site, class) ≤ effective_height(1e5, at_release, class)
+    end
+    # In class D of the reference case the stable limit binds, and the mean
+    # wind lowers it.
+    @test effective_height(1e5, site, PASQUILL_D) <
+          effective_height(1e5, at_release, PASQUILL_D)
+
+    # No stable rise to average over: unstable air, or a plume without buoyancy.
+    unstable = Site(;
+        source = REFERENCE_STACK,
+        atmosphere = reference_atmosphere(; lapse_rate = -0.02),
+    )
+    jet = Site(; source = reference_stack(; exit_density = 1.2), atmosphere = REFERENCE_AIR)
+    @test jet.buoyancy == 0
+    for class in PASQUILL_CLASSES
+        @test stable_rise_wind_speed(unstable, class) ==
+              transport_wind_speed(unstable, class)
+        @test stable_rise_wind_speed(jet, class) == transport_wind_speed(jet, class)
+    end
+    # Calm air: the transport wind is zero and comes back untouched.
+    calm = Site(;
+        source = REFERENCE_STACK,
+        atmosphere = reference_atmosphere(; reference_speed = 0.0),
+    )
+    @test stable_rise_wind_speed(calm, PASQUILL_D) == 0
+end
+
+@testset "The dispersion scheme of a site" begin
+    @test dispersion_scheme(REFERENCE_SITE) === DISPERSION_HOSKER
+    for s in DISPERSION_SCHEMES
+        site = Site(; source = REFERENCE_STACK, atmosphere = REFERENCE_AIR, dispersion = s)
+        @test dispersion_scheme(site) === s
+        @test dispersion_scheme(PrescribedPlume(site)) === s
+        for class in PASQUILL_CLASSES, x in (100.0, 1000.0, 10_000.0)
+
+            @test corrected_lateral_dispersion(x, site, class) ==
+                  lateral_dispersion(x, class, s)
+            @test corrected_lateral_dispersion(x, site, class; release_duration = 3600) ==
+                  lateral_dispersion(x, class, s; release_duration = 3600)
+            @test corrected_vertical_dispersion(x, site, class) ==
+                  vertical_dispersion(x, class, s, REFERENCE_AIR.roughness)
+            # With no buildings a prescribed height changes neither parameter.
+            plume = PrescribedPlume(site; height = 10.0)
+            @test corrected_vertical_dispersion(x, plume, class) ==
+                  corrected_vertical_dispersion(x, site, class)
+            @test corrected_lateral_dispersion(x, plume, class) ==
+                  corrected_lateral_dispersion(x, site, class)
+        end
+    end
+end

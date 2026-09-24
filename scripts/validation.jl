@@ -159,6 +159,70 @@ function figure_dispersion_parameters()
     return savefigure(fig, OUT, "dispersion_parameters")
 end
 
+"σ_y and σ_z of the four dispersion schemes, class D, across their validity ranges."
+function figure_dispersion_schemes()
+    x = 10 .^ range(2, 5, length = 400)
+    fig = Figure(size = (1500, 640))
+    ax1 = Axis(
+        fig[2, 1],
+        xlabel = "Downwind distance [m]",
+        ylabel = rich(it("σ"), subscript(it("y")), " [m]"),
+        xscale = log10,
+        yscale = log10,
+        xticks = logticks(2, 5),
+        yticks = logticks(0, 4),
+    )
+    ax2 = Axis(
+        fig[2, 2],
+        xlabel = "Downwind distance [m]",
+        ylabel = rich(it("σ"), subscript(it("z")), " [m]"),
+        xscale = log10,
+        yscale = log10,
+        xticks = logticks(2, 5),
+        yticks = logticks(0, 4),
+    )
+    # Beyond the 10 km band of the Briggs-based schemes, inside the 100 km of
+    # Eimutis–Konicek: drawn first so the curves lie over it.
+    for ax in (ax1, ax2)
+        vspan!(ax, 1e4, 1.2e5; color = (:grey, 0.1))
+        vlines!(
+            ax, [1e4]; color = (:black, 0.5), linestyle = :dash, linewidth = GUIDE_WIDTH,)
+    end
+    schemes = (
+        (DISPERSION_HOSKER, "Hosker (default)", PALETTE.blue),
+        (DISPERSION_BRIGGS_OPEN_COUNTRY, "Briggs open country", PALETTE.green),
+        (DISPERSION_BRIGGS_URBAN, "Briggs urban", PALETTE.orange),
+        (DISPERSION_EIMUTIS_KONICEK, "Eimutis–Konicek", PALETTE.purple),
+    )
+    handles = []
+    for (scheme, _, colour) in schemes
+        push!(handles, lines!(
+            ax1, x, [lateral_dispersion(xi, PASQUILL_D, scheme)
+                     for xi in x], color = colour,))
+        lines!(
+            ax2,
+            x,
+            [vertical_dispersion(xi, PASQUILL_D, scheme, ROUGHNESS_PASTURE) for xi in x],
+            color = colour,
+        )
+    end
+    for ax in (ax1, ax2)
+        xlims!(ax, 90, 1.2e5)
+        text!(
+            ax,
+            0.04,
+            0.95;
+            space = :relative,
+            align = (:left, :top),
+            fontsize = ANNOTATION_SIZE,
+            color = :black,
+            text = "Class D. Shaded: beyond the 10 km Briggs band",
+        )
+    end
+    Legend(fig[1, 1:2], handles, [label for (_, label, _) in schemes])
+    return savefigure(fig, OUT, "dispersion_schemes")
+end
+
 "The roughness correction against the published 0.2 power law."
 function figure_roughness()
     x = 10 .^ range(2, 4.3, length = 300)
@@ -549,6 +613,7 @@ function main()
     config = load_configuration(joinpath(@__DIR__, "..", "config", "reference.toml"))
     for p in (
         figure_dispersion_parameters(),
+        figure_dispersion_schemes(),
         figure_roughness(),
         figure_washout(),
         figure_resuspension(),

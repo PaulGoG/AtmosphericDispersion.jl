@@ -6,7 +6,50 @@ follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- **Four dispersion schemes**, selected by `[model] dispersion` and carried by
+  `Site`. `hosker`, the normative's pairing of Briggs' open-country σ_y with
+  Hosker's roughness-corrected σ_z, remains the default. `briggs_open_country`
+  and `briggs_urban` take both parameters from Briggs (1973) as the Handbook on
+  Atmospheric Diffusion prints them in Table 4.5, the urban set being his fit
+  to the St. Louis experiment. `eimutis_konicek` is the fit of Eimutis and
+  Konicek (1972) to the Pasquill–Gifford curves that NRC XOQDOQ and PAVAN
+  evaluate, its 42 coefficients asserted against both codes' listings. The
+  Handbook's `0.00015` inside the E–F urban σ_z is a misprint for Briggs'
+  `0.0015`, checked in his own report and in EPA ISC3. `dispersion_parameters`
+  returns both σ of a scheme; the existing `lateral_dispersion` and
+  `vertical_dispersion` calls are unchanged.
+- **Validity ranges.** Every scheme states the range of distance it was fitted
+  over — 100 m to 10 km for the three Briggs-based schemes, 100 m to 100 km for
+  Eimutis–Konicek — as `validity_range`, with `within_validity` for one
+  distance. A configuration whose receptor grid reaches outside the band is
+  loaded with a warning, refused, or accepted silently as
+  `[model] extrapolation = "warn" | "refuse" | "allow"` directs, and
+  `scripts/run.jl` reports how many radii extrapolate. The reference
+  configuration's 20 km grid is twice the default band and says `allow`.
+- `layer_mean_wind_speed`, the mean of the power-law profile over a layer in
+  closed form, and `stable_rise_wind_speed`, the wind the stable final rise of
+  a site is evaluated with.
+- The validation figure `dispersion_schemes.png`: the four schemes side by side
+  for class D, across their bands.
+
+### Changed
+
+- **The stable final rise takes the mean wind over the rise.** The Handbook
+  defines the `u` of Briggs' `2.6 [F/(uS)]^(1/3)`, its Eq. 2.19, as "an average
+  value between the heights h_s and h_s + Δh"; the 2021 code, and XOQDOQ, took
+  the wind at the release height. `Site` now solves the rise and the mean
+  together, `[model] stable_rise_wind = "mean_over_rise"` by default, and
+  `"release_height"` restores the old convention; the functions that take a
+  scalar wind gain a `stable_wind` keyword. The reference atmosphere is stably
+  stratified in every class, so every effective height falls by 1 to 3 m —
+  class D at 2 km from 108.0 to 106.0 m, class F from 103.5 to 100.8 m, still
+  above its 100 m lid — and the ground-level maxima rise by up to 8 % and move
+  inward, class D from 1.51 × 10⁻⁶ s m⁻³ at 2.20 km to 1.58 × 10⁻⁶ at 2.15 km.
+  The long-term χ/Q in the most exposed sector rises by 5 % at 1 km and by
+  0.3 % at 20 km, where it stays 5.2 × 10⁻⁹ s m⁻³. The figures and the numbers
+  in the documentation are regenerated.
 
 ## [0.2.0] - 2026-09-23
 
