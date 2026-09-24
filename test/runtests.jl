@@ -26,4 +26,5 @@ include("fixtures.jl")
     include("test_config.jl")
     include("test_physics_validation.jl")
     include("test_literature.jl")
+    include("test_regulatory.jl")
 end

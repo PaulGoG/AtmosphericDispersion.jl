@@ -147,3 +147,49 @@ function wake_broadened(σ::Real, H::Real, envelope::BuildingEnvelope)
     H < h && return broadened
     return broadened - (H - h) / (1.5 * h) * (broadened - σ)
 end
+
+"""
+    BuildingZone
+
+Where a receptor sits relative to the building that most disturbs the flow,
+after IAEA Safety Reports Series No. 19 [IAEA2001](@cite) §3.3, which bounds
+the three zones by the release height `H`, the building height `H_B`, its
+frontal area `A_B` and the downwind distance `x`:
+
+  - `DISPLACEMENT_ZONE` — `H > 2.5 H_B`: the flow is deflected around the
+    building and dispersion is undisturbed.
+  - `WAKE_ZONE` — `H ≤ 2.5 H_B` and `x > 2.5 √A_B`: the disturbed wake downwind
+    of the building, where the plume is broadened by [`wake_broadened`](@ref).
+  - `CAVITY_ZONE` — `H ≤ 2.5 H_B` and `x ≤ 2.5 √A_B`: the recirculating cavity
+    in the lee of the building, where the Gaussian plume does not apply and
+    [`dilution_cavity`](@ref) or [`dilution_cavity_wall`](@ref) is used.
+"""
+@enum BuildingZone::UInt8 begin
+    DISPLACEMENT_ZONE = 1
+    WAKE_ZONE = 2
+    CAVITY_ZONE = 3
+end
+
+"""
+    CAVITY_EXTENT_FACTOR
+
+Multiple of `√A_B`, the square root of the building's frontal area, that the
+cavity zone extends downwind of it: 2.5, IAEA SRS-19 §3.3.
+"""
+const CAVITY_EXTENT_FACTOR = 2.5
+
+"""
+    building_zone(H, x, envelope)
+
+The [`BuildingZone`](@ref) of a receptor at downwind distance `x` metres for a
+plume at effective height `H` metres over the [`BuildingEnvelope`](@ref). An
+empty envelope places every receptor in the displacement zone.
+"""
+function building_zone(H::Real, x::Real, envelope::BuildingEnvelope)
+    H ≥ 0 || throw(DomainError(H, "effective height cannot be below ground"))
+    x ≥ 0 || throw(DomainError(x, "downwind distance cannot be negative"))
+    h = equivalent_height(envelope)
+    (iszero(h) || H > 2.5 * h) && return DISPLACEMENT_ZONE
+    x > CAVITY_EXTENT_FACTOR * sqrt(equivalent_area(envelope)) && return WAKE_ZONE
+    return CAVITY_ZONE
+end

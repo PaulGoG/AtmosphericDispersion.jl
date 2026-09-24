@@ -51,3 +51,19 @@
         @test wake_broadened(σ, 0.0, off) ≈ σ
     end
 end
+
+@testset "Building zones after SRS-19" begin
+    e = BuildingEnvelope([
+        Building(; east = 20.0, north = 0.0, height = 20.0, frontal_area = 400.0),
+    ])
+    # 2.5 H_B = 50 m and 2.5 √A_B = 50 m.
+    @test CAVITY_EXTENT_FACTOR == 2.5
+    @test building_zone(60.0, 10.0, e) === DISPLACEMENT_ZONE
+    @test building_zone(50.0, 100.0, e) === WAKE_ZONE       # at the height bound, still disturbed
+    @test building_zone(50.0, 50.0, e) === CAVITY_ZONE      # at the distance bound, still the cavity
+    @test building_zone(0.0, 51.0, e) === WAKE_ZONE
+    @test building_zone(0.0, 0.0, e) === CAVITY_ZONE
+    @test building_zone(0.0, 1.0, BuildingEnvelope()) === DISPLACEMENT_ZONE
+    @test_throws DomainError building_zone(-1.0, 10.0, e)
+    @test_throws DomainError building_zone(10.0, -1.0, e)
+end

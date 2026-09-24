@@ -193,6 +193,81 @@ function dilution_long_term(
     return F_k * total / (r * sector_width(g))
 end
 
+"""
+    SRS19_CAVITY_COEFFICIENT
+
+`B₀ = 30` of IAEA SRS-19 [IAEA2001](@cite) Eq. (7), the dimensionless constant
+that "accounts for potential increases in the concentration in air along a
+vertical wall owing to the presence of zones of air stagnation created by
+building wakes".
+"""
+const SRS19_CAVITY_COEFFICIENT = 30.0
+
+"""
+    SRS19_CAVITY_LENGTH
+
+`K = 1 m` of IAEA SRS-19 Eq. (8), the length that makes the cavity dilution a
+time per volume.
+"""
+const SRS19_CAVITY_LENGTH = 1.0
+
+"""
+    dilution_cavity_wall(x, u; vent_diameter, coefficient = SRS19_CAVITY_COEFFICIENT)
+
+Dilution factor χ/Q in s/m³ at a receptor on the same building surface as the
+release, `x` metres from a vent of diameter `vent_diameter` metres, in a wind
+of `u` m/s: IAEA SRS-19 [IAEA2001](@cite) §3.6.1 Eq. (7),
+
+    χ/Q = B₀ / (u x²)
+
+adapted there from [WilsonBritter1982](@citet). Within three vent diameters
+SRS-19 takes the air to be undiluted, so the model is not defined there and
+the function throws. The Gaussian plume does not apply in the cavity; see
+[`BuildingZone`](@ref).
+"""
+function dilution_cavity_wall(
+        x::Real,
+        u::Real;
+        vent_diameter::Real,
+        coefficient::Real = SRS19_CAVITY_COEFFICIENT,
+)
+    u > 0 || throw(DomainError(u, "wind speed must be positive"))
+    vent_diameter > 0 ||
+        throw(DomainError(vent_diameter, "the vent diameter must be positive"))
+    coefficient > 0 ||
+        throw(DomainError(coefficient, "the cavity coefficient must be positive"))
+    x > 3 * vent_diameter || throw(
+        DomainError(
+        x,
+        "within three vent diameters SRS-19 takes the release undiluted; " *
+        "the wall model is defined beyond",
+    ),
+    )
+    return coefficient / (u * x^2)
+end
+
+"""
+    dilution_cavity(u, dimension)
+
+Dilution factor χ/Q in s/m³ per unit sector frequency at a receptor in the
+cavity of a building the release does not share a surface with: IAEA SRS-19
+[IAEA2001](@cite) §3.6.2 Eq. (8),
+
+    χ/Q = 1 / (π u H_B K)
+
+with `K = 1 m`, an empirical form [MillerYildiran1984](@citet) found
+conservative against some forty sets of tracer data around reactor structures.
+`dimension` is the building height `H_B` in metres, or its width where that is
+smaller, as SRS-19 directs after [Huber1984](@citet). Multiply by the sector
+frequency for a long-term concentration.
+"""
+function dilution_cavity(u::Real, dimension::Real)
+    u > 0 || throw(DomainError(u, "wind speed must be positive"))
+    dimension > 0 ||
+        throw(DomainError(dimension, "the building dimension must be positive"))
+    return inv(π * u * dimension * SRS19_CAVITY_LENGTH)
+end
+
 # Dispatched rather than branched, so the undepleted path stays free of the
 # nuclide machinery and both paths are type-stable. Washout without a nuclide is
 # refused: the washout row is a property of the species.

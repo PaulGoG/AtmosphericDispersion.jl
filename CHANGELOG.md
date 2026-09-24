@@ -33,6 +33,19 @@ follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
   a site is evaluated with.
 - The validation figure `dispersion_schemes.png`: the four schemes side by side
   for class D, across their bands.
+- **The building zones of IAEA SRS-19** §3.3 — displacement above `2.5 H_B`,
+  wake beyond `2.5 √A_B`, cavity between — as `building_zone`, and the two
+  cavity forms of §3.6: `dilution_cavity_wall`, `B₀/(u x²)` with `B₀ = 30` for
+  a receptor on the wall the vent is in, and `dilution_cavity`,
+  `1/(π u H_B K)` for one that is not.
+- **Two more end-to-end benchmarks**, in `test/test_regulatory.jl`. IAEA SRS-19
+  Tables I and II: all 77 cells of the diffusion factor and 106 of the 110 of
+  the wake-corrected one reproduce to the printed figure, the four others
+  sitting on a rounding boundary, and the three worked examples of Annex IV
+  come out. NRC XOQDOQ Test Case 2, the code's own continuous elevated
+  release — a momentum jet over rising terrain, summed over five wind classes
+  and five stability classes: all 22 printed χ/Q reproduce to within 0.05 %,
+  the rounding of the four printed figures.
 
 ### Changed
 

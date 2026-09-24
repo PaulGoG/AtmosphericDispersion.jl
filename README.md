@@ -178,7 +178,7 @@ Regenerate with `julia scripts/validation.jl`.
 The derivations and the evidence are in the documentation, under `docs/src/`:
 
 - [Conventions](docs/src/conventions.md): the wind-direction convention and what getting it wrong costs; why depletion factors multiply.
-- [Validation](docs/src/validation.md): every parameterisation against its published source, the two end-to-end benchmarks, the mixing layer, and where published schemes disagree.
+- [Validation](docs/src/validation.md): every parameterisation against its published source, the four end-to-end benchmarks, the mixing layer, and where published schemes disagree.
 - [The 2021 thesis code](docs/src/thesis.md): what the rewrite changed and how far the original results move.
 - API reference: `docs/src/api/`.
 - [References](docs/src/references.md): every source cited, by DOI where one exists; the list itself is rendered in the built documentation from `docs/src/refs.bib`.
@@ -211,8 +211,12 @@ Done:
 - Nuclides, and depletion by decay, dry deposition and washout
 - Dry and wet ground deposition, and resuspension
 - TOML configuration validated key by key, and a script entry point over it
-- Physics validation against the analytic invariants of the Gaussian plume, and
-  against the published Briggs, Hosker and regulatory parameterisations
+- Building zones after IAEA SRS-19 and its two cavity forms, where the Gaussian
+  plume does not apply
+- Physics validation against the analytic invariants of the Gaussian plume,
+  against the published Briggs, Hosker and regulatory parameterisations, and
+  end to end against HPA-RPD-058 Table 3.7, Turner Table 7-4, the SRS-19
+  screening tables with their worked examples, and XOQDOQ Test Case 2
 - Static QA in the suite: Aqua, JET, ExplicitImports. The dispersion
   parameters, and the plume rise under `NSR23_RISE`, are asserted equal to the
   2021 formulae; the departures from that code are in the changelog
@@ -290,7 +294,8 @@ Closed, and recorded here because they were open for a long time:
 │   │                       tables, dispersion, source, plumerise, buildings, site,
 │   │                       mixing, dilution, depletion, deposition, config
 │   ├── test_physics_validation.jl   analytic invariants of the Gaussian plume
-│   └── test_literature.jl  published tables and constants, source by source
+│   ├── test_literature.jl  published tables and constants, source by source
+│   └── test_regulatory.jl  SRS-19's tables and examples and XOQDOQ's test case, end to end
 ├── docs/
 │   ├── Project.toml
 │   ├── activate.jl

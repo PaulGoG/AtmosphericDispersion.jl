@@ -201,3 +201,19 @@
         )
     end
 end
+
+@testset "The cavity forms of SRS-19" begin
+    @test SRS19_CAVITY_COEFFICIENT == 30
+    @test SRS19_CAVITY_LENGTH == 1
+    @test dilution_cavity_wall(5.0, 2.0; vent_diameter = 0.5) ≈ 30 / (2 * 25)
+    @test dilution_cavity_wall(5.0, 2.0; vent_diameter = 0.5, coefficient = 15.0) ≈ 15 / 50
+    # Within three vent diameters SRS-19 takes the release undiluted.
+    @test_throws DomainError dilution_cavity_wall(1.5, 2.0; vent_diameter = 0.5)
+    @test_throws DomainError dilution_cavity_wall(5.0, 0.0; vent_diameter = 0.5)
+    @test_throws DomainError dilution_cavity_wall(5.0, 2.0; vent_diameter = 0.0)
+    @test_throws DomainError dilution_cavity_wall(5.0, 2.0; vent_diameter = 0.5, coefficient = 0.0)
+    @test dilution_cavity(2.0, 30.0) ≈ 1 / (π * 2 * 30)
+    @test dilution_cavity(4.0, 30.0) ≈ dilution_cavity(2.0, 30.0) / 2
+    @test_throws DomainError dilution_cavity(0.0, 30.0)
+    @test_throws DomainError dilution_cavity(2.0, 0.0)
+end

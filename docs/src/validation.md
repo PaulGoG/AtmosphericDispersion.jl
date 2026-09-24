@@ -30,6 +30,8 @@ described.
 | σ_y | [Briggs1973](@citet) open country, `a x(1+10⁻⁴x)^(−1/2)`, a = 0.22…0.04 | **exact**, all six classes |
 | σ_z shape `g(x)` | [Hosker1974](@citet), `a x^b/(1 + c x^d)` | **exact**, all 24 coefficients |
 | σ_z roughness `F(z₀,x)` | Hosker (1974), both branches | **exact**, all 24 coefficients — after correcting two |
+| σ_y, σ_z open country and urban | Briggs (1973), Handbook Table 4.5 | **exact**, and Briggs' own `R/1.25` to its rounding |
+| σ_y, σ_z Eimutis–Konicek | the XOQDOQ and PAVAN listings of [EimutisKonicek1972](@citet) | **exact**, all 42 coefficients |
 | Long-term sector constant | NRC RG 1.111 [NRC1977](@cite) `2.032`, IAEA SRS-19 [IAEA2001](@cite) `1.5238` | **exact to the published rounding** |
 | Distance to final rise | Briggs, as in [Hanna1982](@citet), `x_f = 14F^(5/8)`, `34F^(2/5)` | **exact** |
 | Neutral final buoyant rise | Briggs `21.4F^(3/4)/u`, `38.7F^(3/5)/u` | **exact up to the literature's own rounding** |
@@ -151,6 +153,56 @@ the package derives both. `PrescribedPlume` wraps a `Site` and takes them as
 given — the two σ as well, for Turner's problems — bypassing plume rise, the wind
 profile and the dispersion curves. A prescribed σ_z holds at one distance only,
 so the depletion integral refuses it.
+
+### The screening tables of SRS-19, and XOQDOQ's own test case
+
+Two further published calculations run through the package end to end.
+
+**IAEA Safety Reports Series No. 19** [IAEA2001](@cite) tabulates its
+30°-sector diffusion factor `F` (Eq. (3), Table I) for seven bands of release
+height and its wake-corrected factor `B` (Eqs. (4)–(6), Table II) for ten
+bands of building area, both to one significant figure at eleven distances
+from 100 m to 20 km, and works three examples on them in Annex IV. The σ_z
+behind the tables are stated in the notes to Table I — Briggs' open-country
+class D form up to 45 m, which the `briggs_open_country` scheme evaluates, and
+the Jülich and Karlsruhe power laws `E x^G` above it, which enter as a
+prescribed σ_z — and SRS-19's screening rule holds `F` at its maximum over
+distance for every receptor nearer than that maximum (its Fig. 8). Read
+through that rule, **all 77 cells of Table I** are reproduced to the printed
+figure by a release height inside the band, and **106 of the 110 cells of
+Table II** at the lower edge of the area band. The four that are not sit on a
+rounding boundary: 7.5 × 10⁻⁴ printed as 8, and 3.5 × 10⁻⁷ or below printed as
+4 where the table repeats Table I's last row across every band, the wake term
+being a 3 % effect at 20 km. Every cell lies within the printed figure's
+half-unit widened by a tenth.
+
+The worked examples exercise the zones SRS-19 §3.3 draws around a building,
+which `building_zone` classifies — the displacement zone above `2.5 H_B`, the
+wake zone beyond `2.5 √A_B`, and the cavity between — and the two cavity forms
+of §3.6: `B₀/(u x²)` with `B₀ = 30` for a receptor on the same wall as the
+vent, `dilution_cavity_wall`, after [WilsonBritter1982](@citet), and
+`1/(π u H_B K)` with `K = 1 m` for one that is not, `dilution_cavity`, the
+empirical form of [MillerYildiran1984](@citet) that SRS-19 qualifies with the
+width rule of [Huber1984](@citet). Example IV-1's farm reads `F = 10⁻⁵ m⁻²`
+from Table I, and the package gives 1.3 × 10⁻⁵; IV-2's intake on the wall
+comes out at exactly the report's 0.6 Bq/m³ and its farm at `B = 4 × 10⁻⁵`;
+IV-3's residence in the cavity at 1.3 × 10⁻³ Bq/m³.
+
+**NRC XOQDOQ Test Case 2** [Sagendorf1982](@cite) is the code's own continuous
+elevated release, Appendices B and C: a 10 m/s jet from a 2 m stack at 45 m
+with no heat, a joint frequency distribution of 100 hours in three directions
+over five wind-speed classes and stability classes C to G, terrain rising to
+200 m at 10 km, and the undepleted annual-average χ/Q printed at 22 distances
+from 0.25 to 50 miles to four figures. Everything the code does on the way is
+stated in the report and reproduced from it — the wind adjusted to the release
+height by a power law with exponent 0.25 or 0.5 by class, Briggs' momentum
+rise with Gifford's downwash and the exponents as the FORTRAN rounds them, the
+terrain interpolated linearly with the effective height floored at zero, the
+Eimutis–Konicek σ capped at 1000 m and class G taken as `σ_F²/σ_E` — and the
+sector-averaged kernel with its 2.032 is the package's own, `dilution_extended`
+over a plume prescribed cell by cell. **All 22 values agree to within 0.05 %**,
+the rounding of the printed figures, and the sector receiving half the hours
+prints exactly twice them.
 
 ### The mixing layer
 

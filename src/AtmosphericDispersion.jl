@@ -141,6 +141,12 @@ export Building,
        equivalent_height,
        equivalent_area,
        wake_broadened,
+       BuildingZone,
+       DISPLACEMENT_ZONE,
+       WAKE_ZONE,
+       CAVITY_ZONE,
+       building_zone,
+       CAVITY_EXTENT_FACTOR,
        WAKE_INFLUENCE_RADII,
        DEFAULT_WAKE_COEFFICIENT,
        NSR23_WAKE_COEFFICIENT
@@ -164,7 +170,11 @@ export AbstractSite,
 export plume_frame,
        dilution_instantaneous,
        dilution_extended,
-       dilution_long_term
+       dilution_long_term,
+       dilution_cavity,
+       dilution_cavity_wall,
+       SRS19_CAVITY_COEFFICIENT,
+       SRS19_CAVITY_LENGTH
 export DepositionVelocity, Nuclide, TRITIATED_WATER, TRITIUM_GAS, TRITIUM_DECAY_CONSTANT
 export ResuspensionModel, RESUSPENSION_IAEA_SS57, RESUSPENSION_MAXWELL_ANSPAUGH
 export WashoutModel, WASHOUT_NORMATIVE, WASHOUT_HTO, ogram_snow_washout
