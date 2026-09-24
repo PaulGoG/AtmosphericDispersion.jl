@@ -73,7 +73,7 @@
     # Reproduce it literally here and require exact agreement, so that a
     # mistyped coefficient cannot pass as a modelling choice.
     @testset "fidelity to the 2021 implementation" begin
-        T1 = Dict(  # Tabel_1.csv
+        T1 = Dict(  # Table_1.csv, Tabel_1.csv as submitted
             'A' => (0.112, 1.06, 5.38e-4, 0.815),
             'B' => (0.13, 0.95, 6.52e-4, 0.75),
             'C' => (0.112, 0.92, 9.05e-4, 0.718),
@@ -81,7 +81,7 @@
             'E' => (0.0609, 0.895, 1.96e-3, 0.684),
             'F' => (0.0638, 0.783, 1.36e-3, 0.672),
         )
-        # Tabel_2.csv: z_0, c_1, d_1, c_2, d_2. The first two c_1 read 1.58
+        # Table_2.csv, Tabel_2.csv as submitted: z_0, c_1, d_1, c_2, d_2. The first two c_1 read 1.58
         # and 2.08 here, which is what the 2021 tables carried; Hosker
         # publishes 1.56 and 2.02. This reference implementation keeps the
         # 2021 values, so those two rows no longer match the package — see
@@ -102,7 +102,7 @@
             'E' => 0.06,
             'F' => 0.04,
         )
-        T4 = Dict(  # Tabel_4.csv, by surface then class
+        T4 = Dict(  # Table_4.csv, Tabel_4.csv as submitted, by surface then class
             1 => Dict(
                 'A' => 0.03,
                 'B' => 0.05,

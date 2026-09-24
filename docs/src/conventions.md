@@ -26,7 +26,7 @@ another, and two of the sixteen sectors became unreachable. Sectors here are
 centred on the cardinal directions and binned by rounding to the nearest centre,
 so a cardinal direction sits as far from a boundary as it can and bins exactly.
 
-The thesis anticipated this last hazard and `SectoareCerc.jl` was written to
+The thesis anticipated this last hazard and `Circle_sectors.jl` was written to
 check it, but that script sampled a *random* point on the circle, which almost
 surely never lands on a boundary — so the test could not detect the failure it
 was written for. All sixteen cardinal directions, and both sides of every

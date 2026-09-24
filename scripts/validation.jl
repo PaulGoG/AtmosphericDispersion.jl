@@ -405,12 +405,14 @@ function figure_resuspension()
     for (day, c) in ((10.0, PALETTE.green), (30.0, PALETTE.orange))
         r = resuspension_factor(day) / maxwell_anspaugh(day)
         vlines!(ax, [day], color = (c, 0.4), linewidth = GUIDE_WIDTH, linestyle = :dash)
+        # Left of the day's line, below the gap between the curves: the steep
+        # one passes to the right of it.
         text!(
             ax,
             day,
-            resuspension_factor(day);
-            text = @sprintf("  %.1f×", r),
-            align = (:left, :bottom),
+            1e-7;
+            text = @sprintf("%.1f×  ", r),
+            align = (:right, :center),
             fontsize = ANNOTATION_SIZE,
             color = c,
         )

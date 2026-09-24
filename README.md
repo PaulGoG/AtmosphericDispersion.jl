@@ -6,6 +6,8 @@
 [![Coverage](https://codecov.io/gh/PaulGoG/AtmosphericDispersion.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/PaulGoG/AtmosphericDispersion.jl)
 [![Aqua](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
+`atmospheric-dispersion` `gaussian-plume` `radiological-assessment` `dose-assessment` `nuclear-safety` `air-quality` `computational-physics` `julia`
+
 Gaussian-plume atmospheric dispersion of radioactive stack releases: dilution
 factor, time-integrated air concentration, dry and wet ground deposition, and
 resuspension, over Pasquill–Gifford stability classes and a wind rose.
@@ -313,9 +315,10 @@ Closed, and recorded here because they were open for a long time:
 
 ## History
 
-The [`original`](../../tree/original) branch holds the code exactly as submitted
-for the BSc thesis at the Faculty of Physics, University of Bucharest, in June
-2021, together with the thesis itself (`BSc_thesis_2021.pdf`, in Romanian).
+The [`original`](../../tree/original) branch holds the code as submitted for
+the BSc thesis at the Faculty of Physics, University of Bucharest, in June 2021,
+its files under English names since 2026 with the submitted names mapped in its
+README, together with the thesis itself (`BSc_thesis_2021.pdf`, in Romanian).
 `main` shares no history with it. The account of what changed is in
 [docs/src/thesis.md](docs/src/thesis.md).
 
