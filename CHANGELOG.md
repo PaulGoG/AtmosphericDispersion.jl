@@ -6,6 +6,16 @@ follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.3.0] - 2026-09-24
+
+One change moves results: the stable final rise now takes the wind averaged
+over the depth of the rise, so every effective height of the reference case
+falls by 1 to 3 m and its long-term χ/Q rises by 5 % at 1 km and by 0.3 % at
+20 km. The rest adds schemes, validity ranges, building zones and two
+benchmarks, and leaves the default results alone.
+
 ### Added
 
 - **Four dispersion schemes**, selected by `[model] dispersion` and carried by

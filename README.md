@@ -331,7 +331,7 @@ README, together with the thesis itself (`BSc_thesis_2021.pdf`, in Romanian).
   author  = {Gogîță, Paul-Adrian},
   title   = {AtmosphericDispersion.jl: Gaussian-plume atmospheric dispersion of stack releases},
   year    = {2026},
-  version = {0.2.0},
+  version = {0.3.0},
   url     = {https://github.com/PaulGoG/AtmosphericDispersion.jl}
 }
 ```
