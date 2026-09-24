@@ -18,12 +18,12 @@ t_zile = t_R/86400
 # In medie avem 450.6 ore de precipitatii pe an
 t_spalare = t_R * (450.6/(365*24))
 
-include("Constante.jl")
-include("CitireDate.jl")
+include("Constants.jl")
+include("Read_data.jl")
 include("Helpers.jl")
-include("Calcul_dilutie.jl")
+include("Dilution.jl")
 include("Vectorize.jl")
-include("ReprezentariGrafice.jl")
+include("Graphics.jl")
 
 #= 
 Pentru emisiile cu t < 24 ore folosim clasa de stabilitate atmosferica 

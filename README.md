@@ -1,16 +1,18 @@
 # AtmosphericDispersion.jl — `original`
 
-This branch is the BSc thesis code exactly as submitted to the Faculty of
-Physics, University of Bucharest in June 2021, together with the thesis it
-belongs to. It is kept as a reference point. `main` is a rewrite and carries no
-history from here.
+This branch is the BSc thesis code as submitted to the Faculty of Physics,
+University of Bucharest in June 2021, together with the thesis it belongs to.
+It is kept as a reference point. `main` is a rewrite and carries no history from
+here.
 
 Nothing on this branch has been repaired. Identifiers, comments and output
 strings are in Romanian, file paths use Windows separators and will not resolve
 on Linux, and the numerical and structural defects listed below are left in
-place deliberately.
+place deliberately. The one change since submission is to the names: the files
+and directories carry English names, and the `include` and data-path strings
+that name them were changed to match. The mapping is [below](#file-names).
 
-![Tritium resuspension over the simulated domain](Reprezentari_Grafice/Animatie_3D.gif)
+![Tritium resuspension over the simulated domain](Graphics/Animation_3D.gif)
 
 ## What it computes
 
@@ -43,20 +45,37 @@ K(t) = A e^{−λ₁t} + B e^{−λ₂t}.
 | File | Role |
 |---|---|
 | `Main.jl` | Entry point. Sets release time, stability class, terrain, precipitation, grid |
-| `Constante.jl` | Physical and installation constants |
-| `CitireDate.jl` | Loads the tabulated NSR-23 coefficients |
+| `Constants.jl` | Physical and installation constants |
+| `Read_data.jl` | Loads the tabulated NSR-23 coefficients |
 | `Helpers.jl` | Wind profile, plume rise, σ and Σ, decay and deposition factors, wind-rose sector geometry |
-| `Calcul_dilutie.jl` | The three dilution formulae, evaluated pointwise |
+| `Dilution.jl` | The three dilution formulae, evaluated pointwise |
 | `Vectorize.jl` | Builds the fields over the grid |
-| `ReprezentariGrafice.jl` | Surface, heatmap, contour and animation output |
-| `SectoareCerc.jl` | Standalone check of the sector-assignment geometry |
-| `Date_Tabelate_CSV/` | NSR-23 Tables 1–4 and 7, wind-rose frequencies, building geometry |
+| `Graphics.jl` | Surface, heatmap, contour and animation output |
+| `Circle_sectors.jl` | Standalone check of the sector-assignment geometry |
+| `Tabulated_data/` | NSR-23 Tables 1–4 and 7, wind-rose frequencies, building geometry |
+
+### File names
+
+The names as submitted, for reading the thesis and the 2021 commit history
+against this branch. Nothing inside the files changed but the strings that name
+these paths.
+
+| Now | As submitted |
+|---|---|
+| `Constants.jl` | `Constante.jl` |
+| `Read_data.jl` | `CitireDate.jl` |
+| `Dilution.jl` | `Calcul_dilutie.jl` |
+| `Graphics.jl` | `ReprezentariGrafice.jl` |
+| `Circle_sectors.jl` | `SectoareCerc.jl` |
+| `Tabulated_data/Table_1.csv` … `Table_7.csv` | `Date_Tabelate_CSV/Tabel_1.csv` … `Tabel_7.csv` |
+| `Tabulated_data/Buildings.csv` | `Date_Tabelate_CSV/Cladiri.csv` |
+| `Tabulated_data/Frequencies.csv` | `Date_Tabelate_CSV/Frecvente.csv` |
+| `Graphics/Animation_3D.gif` | `Reprezentari_Grafice/Animatie_3D.gif` |
 
 ## Running it
 
-Not reproducible as it stands, on Linux or on Windows. `CitireDate.jl` and
-`ReprezentariGrafice.jl` use backslash path separators, `Reprezentari_Grafice/`
-must already exist, and there is no `Project.toml` pinning `Plots`, `Trapz`,
+Not reproducible as it stands, on Linux or on Windows. `Read_data.jl` and
+`Graphics.jl` use backslash path separators, `Graphics/` must already exist, and there is no `Project.toml` pinning `Plots`, `Trapz`,
 `DataFrames` or `CSV`. `Main.jl` also requires a kernel restart whenever the
 release time changes, because `Q_0` is computed from `t_R` at include time.
 
@@ -69,7 +88,7 @@ sectors counterclockwise from East, starting at a sector edge. The
 meteorological convention — the one ADMS and the norm's own frequency tables
 follow — centres sector 1 on North, increases clockwise, and denotes the
 direction the wind blows *from*. That is an axis rotation, a handedness flip and
-a half-sector binning offset, and it propagates into every `Frecvente.csv`
+a half-sector binning offset, and it propagates into every `Frequencies.csv`
 lookup and therefore into all long-duration results.
 
 **Performance.** `Echivalent_Cladire()` is recomputed twice per call inside both

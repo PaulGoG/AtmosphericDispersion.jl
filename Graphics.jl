@@ -12,7 +12,7 @@ function Reprezinta_Suprafata(x, y, P, xinf, zheader, titlu)
     xformatter = x->string(Int(x/1000)),
     zformatter = :scientific)
     display(plt)
-    savefig("Reprezentari_Grafice\\SurfacePlot_$(titlu)_1.png")
+    savefig("Graphics\\SurfacePlot_$(titlu)_1.png")
 
     plt = surface(x, y, transpose(P),  
     xlabel = "x (km)", ylabel = "y (km)", zlabel = zheader,
@@ -23,7 +23,7 @@ function Reprezinta_Suprafata(x, y, P, xinf, zheader, titlu)
     xformatter = x->string(Int(x/1000)),
     zformatter = :scientific)
     display(plt)
-    savefig("Reprezentari_Grafice\\SurfacePlot_$(titlu)_2.png")
+    savefig("Graphics\\SurfacePlot_$(titlu)_2.png")
 
     plt = surface(x, y, transpose(P),  
     xlabel = "x (km)", ylabel = "y (km)", zlabel = zheader,
@@ -34,7 +34,7 @@ function Reprezinta_Suprafata(x, y, P, xinf, zheader, titlu)
     xformatter = x->string(Int(x/1000)),
     zformatter = :scientific)
     display(plt)
-    savefig("Reprezentari_Grafice\\SurfacePlot_$(titlu)_3.png")
+    savefig("Graphics\\SurfacePlot_$(titlu)_3.png")
 
     plt = surface(x, y, transpose(P),  
     xlabel = "x (km)", ylabel = "y (km)", zlabel = zheader,
@@ -45,7 +45,7 @@ function Reprezinta_Suprafata(x, y, P, xinf, zheader, titlu)
     xformatter = x->string(Int(x/1000)),
     zformatter = :scientific)
     display(plt)
-    savefig("Reprezentari_Grafice\\SurfacePlot_$(titlu)_4.png")
+    savefig("Graphics\\SurfacePlot_$(titlu)_4.png")
 end
 function Reprezinta_Gradient(x, y, P, xinf, zheader, titlu)
     plt = heatmap(x, y, transpose(P),  
@@ -57,7 +57,7 @@ function Reprezinta_Gradient(x, y, P, xinf, zheader, titlu)
     zformatter = :scientific,
     colorbar_title = zheader)
     display(plt)
-    savefig("Reprezentari_Grafice\\HeatmapPlot_$(titlu)_1.png")
+    savefig("Graphics\\HeatmapPlot_$(titlu)_1.png")
 
     plt = heatmap(x, y, transpose(P),  
     xlabel = "x (km)", ylabel = "y (km)", zlabel = zheader,
@@ -68,7 +68,7 @@ function Reprezinta_Gradient(x, y, P, xinf, zheader, titlu)
     zformatter = :scientific,
     colorbar_title = zheader)
     display(plt)
-    savefig("Reprezentari_Grafice\\HeatmapPlot_$(titlu)_2.png")
+    savefig("Graphics\\HeatmapPlot_$(titlu)_2.png")
 end
 function Reprezinta_Contur(x, y, P, xinf, zheader, titlu)
     plt = contourf(x, y, transpose(P),  
@@ -80,7 +80,7 @@ function Reprezinta_Contur(x, y, P, xinf, zheader, titlu)
     zformatter = :scientific,
     colorbar_title = zheader)
     display(plt)
-    savefig("Reprezentari_Grafice\\ContourPlot_$(titlu)_1.png")
+    savefig("Graphics\\ContourPlot_$(titlu)_1.png")
 
     plt = contourf(x, y, transpose(P),  
     xlabel = "x (km)", ylabel = "y (km)", zlabel = zheader,
@@ -91,7 +91,7 @@ function Reprezinta_Contur(x, y, P, xinf, zheader, titlu)
     zformatter = :scientific,
     colorbar_title = zheader)
     display(plt)
-    savefig("Reprezentari_Grafice\\ContourPlot_$(titlu)_2.png")
+    savefig("Graphics\\ContourPlot_$(titlu)_2.png")
 end
 function Graficul_Resuspensiei(t_zile)
     y = [Coeficient_Resuspensie(i) for i in 1:t_zile]
@@ -105,7 +105,7 @@ function Graficul_Resuspensiei(t_zile)
     framestyle = :box,
     legend = false)
     display(plt)
-    savefig("Reprezentari_Grafice\\CoeficientResuspensie.png")
+    savefig("Graphics\\CoeficientResuspensie.png")
 end
 function Animatie_Suprafata_Rotatie(x, y, P)
     anim = Animation()
@@ -124,5 +124,5 @@ function Animatie_Suprafata_Rotatie(x, y, P)
         xformatter = x->("$(string(Int(abs(x)/1000))) km"))
         frame(anim)
     end
-    gif(anim, "Reprezentari_Grafice\\Animatie_3D.gif", fps = 8)
+    gif(anim, "Graphics\\Animation_3D.gif", fps = 8)
 end

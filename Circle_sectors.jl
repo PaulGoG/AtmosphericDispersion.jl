@@ -9,7 +9,7 @@ using Trapz
 using DataFrames
 using CSV
 
-include("Constante.jl")
+include("Constants.jl")
 include("Helpers.jl")
 
 θ = collect(0:0.1:2*π)
