@@ -48,6 +48,41 @@ jobs:
           files: lcov.info
           use_oidc: true
           fail_ci_if_error: false
+  format:
+    name: Formatting
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write # needed to allow julia-actions/cache to proactively delete old caches that it has created
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v3
+      # JuliaFormatter is not a dependency of the package or its tests, so it
+      # goes into a throwaway environment, held to the major version whose
+      # output the sources were formatted with.
+      - name: Check against .JuliaFormatter.toml
+        shell: julia --color=yes {0}
+        run: |
+          using Pkg
+          Pkg.activate(; temp = true)
+          Pkg.add(name = "JuliaFormatter", version = "2.14 - 2")
+          using JuliaFormatter
+          if !format("."; overwrite = false)
+              format(".")
+              run(`git --no-pager diff`)
+              @error """
+              Formatting differs from .JuliaFormatter.toml; the diff above is the
+              correction. Run
+
+                  julia -e 'using JuliaFormatter; format(".")'
+
+              and commit the result.
+              """
+              exit(1)
+          end
   docs:
     name: Documentation
     runs-on: ubuntu-latest
