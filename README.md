@@ -5,6 +5,10 @@
 [![Build Status](https://github.com/PaulGoG/AtmosphericDispersion.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/PaulGoG/AtmosphericDispersion.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/PaulGoG/AtmosphericDispersion.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/PaulGoG/AtmosphericDispersion.jl)
 [![Aqua](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
+[![JET](https://img.shields.io/badge/%F0%9F%9B%A9%EF%B8%8F_tested_with-JET.jl-233f9a)](https://github.com/aviatesk/JET.jl)
+[![SciML Code Style](https://img.shields.io/static/v1?label=code%20style&message=SciML&color=9558b2&labelColor=389826)](https://github.com/SciML/SciMLStyle)
+[![Release](https://img.shields.io/github/v/release/PaulGoG/AtmosphericDispersion.jl)](https://github.com/PaulGoG/AtmosphericDispersion.jl/releases/latest)
+[![License: MIT](https://img.shields.io/github/license/PaulGoG/AtmosphericDispersion.jl)](LICENSE)
 
 `atmospheric-dispersion` `gaussian-plume` `radiological-assessment` `dose-assessment` `nuclear-safety` `air-quality` `computational-physics` `julia`
 
