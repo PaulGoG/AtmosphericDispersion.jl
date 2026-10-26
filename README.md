@@ -23,14 +23,14 @@ against its published source.
 ![The plume as the wind sweeps the compass](figures/plume_sweep.gif)
 
 The ground-level plume as the wind direction sweeps the compass, class D. The
-bearing is the direction the wind blows **from**, as in an ADMS `.met` file, so
+bearing is the direction the wind blows *from*, as in an ADMS `.met` file, so
 the plume always lies on the far side of the stack: a northerly puts it south.
-Averaging these over a year, weighted by how often the wind blows *towards* each
-sector, is what the long-term field below is — and reading that weighting the
-wrong way round is the single largest defect this rewrite fixes.
+The long-term field below is the average of these over a year, weighted by how
+often the wind blows *towards* each sector. Reading that weighting the wrong way
+round was the largest defect of the 2021 code.
 
-The solver core — plume rise, dispersion parameters, building wake, deposition
-and resuspension — is nuclide-agnostic. Tritium (HTO/HT) release from a CANDU
+The solver core (plume rise, dispersion parameters, building wake, deposition
+and resuspension) is nuclide-agnostic. Tritium (HTO/HT) release from a CANDU
 stack is a parameterisation of it, and is the case the original work addressed.
 
 ## Layout
@@ -84,9 +84,9 @@ A run is described by a TOML file, never by editing source.
 [`config/reference.toml`](config/reference.toml) is the annotated template:
 ten tables, every key with its unit and bounds in a one-line comment. The
 loader checks presence, type, enumerated choice and numerical bound, rejects
-keys it does not read, and names the offending key by its full dotted path —
-`ConfigurationError at \`grid.spacing\`: must be smaller than grid.extent
-(20000.0 m), got 20000.0` — so a rejected file says what to change. Where
+keys it does not read, and names the offending key by its full dotted path
+(`ConfigurationError at \`grid.spacing\`: must be smaller than grid.extent
+(20000.0 m), got 20000.0`), so a rejected file says what to change. Where
 published schemes disagree, the choice is a key:
 
 | Key | Choices | Default |
@@ -119,20 +119,19 @@ manual says what each choice means.
 
 The long-term field for the reference configuration: tritium as HTO, 6.8 × 10¹⁴
 Bq over a year, on a 30 × 30 km grid. The sixteen-fold structure is the wind
-rose — the field is not circular because the frequency of transport towards each
-sector is not uniform — and the southward bias is the rose peaking on winds
-*from* the north. Reading the convention the other way reflects this map through
-the origin, which is how a dose assessment ends up pointed at the wrong side of
-a site.
+rose: the field is not circular because the frequency of transport towards each
+sector is not uniform. The southward bias is the rose peaking on winds *from*
+the north. Reading the convention the other way reflects this map through the
+origin and puts a dose assessment on the wrong side of a site.
 
 ![The three regimes and the effective release height](figures/regimes.png)
 
 Left: the three dilution regimes along the plume axis. The instantaneous and
-extended forms agree closely near the axis, as they must — the sector average is
-the crosswind integral of the three-dimensional field spread over the arc — and
-the long-term field is flatter because it is averaged over every direction the
-wind takes. All three vanish in the near field, where an elevated plume has not
-yet reached the ground.
+extended forms agree closely near the axis, since the sector average is the
+crosswind integral of the three-dimensional field spread over the arc. The
+long-term field is flatter because it is averaged over every direction the wind
+takes. All three vanish in the near field, where an elevated plume has not yet
+reached the ground.
 
 Right: the effective release height by stability class. Plume rise lifts the
 50.3 m stack to between 101 and 112 m and saturates within half a kilometre,
@@ -144,60 +143,59 @@ the effective height by 2 m relative to the release-height convention.
 
 ### What the parameters do
 
-Four sweeps of the same release, each varying one thing. Every panel of a figure
-shares one colour scale, so the comparison is quantitative rather than a set of
-separately normalised pictures.
+The figures below are four sweeps of the same release, each varying one thing.
+Every panel of a figure shares one colour scale, so the comparison is
+quantitative.
 
-Two things make the differences legible. Half-decade **contours** are drawn over
-each field, because a smooth ramp across three decades hides everything but the
-largest changes and a contour that sits further out is a difference you can
-measure. And the paired comparisons carry a third panel with the **ratio** of
-the two fields on a diverging scale centred on one, where anything away from
-white is a real change and the colour bar reads as a factor.
+Half-decade contours are drawn over each field, because a smooth ramp across
+three decades hides everything but the largest changes and a contour that sits
+further out is a difference you can measure. The paired comparisons carry a
+third panel with the ratio of the two fields on a diverging scale centred on
+one, where anything away from white is a real change and the colour bar reads
+as a factor.
 
 ![Stability classes A to F](figures/stability_classes.gif)
 
-**Stability.** The single largest control on where the release lands. Class A
-spreads it over a wide, dilute fan whose ground-level maximum sits 0.5 km out;
-class F holds it in a narrow ribbon that does not peak until 15 km. The peak
-values themselves differ by less than a factor of 3 — but *where* they fall moves
-by a factor of 28, and at a fixed receptor the spread is enormous: at 20 km the
-six classes span a factor of 37, and at 1 km class F is twelve orders of
-magnitude below class B, because the plume has not yet reached the ground at all.
-That is why an assessment stands or falls on the joint frequency of direction
-*and* class rather than direction alone. Class F is also the one class the mixing
-lid reaches here: its plume rises to 100.8 m under a 100 m lid, is held at it,
-and gives about twice the ground-level value of an unbounded plume from 5 km
-outwards.
+**Stability.** The stability class is the largest control on where the release
+lands. Class A spreads it over a wide, dilute fan whose ground-level maximum
+sits 0.5 km out; class F holds it in a narrow ribbon that does not peak until
+15 km. The peak values themselves differ by less than a factor of 3, but the
+distance at which they fall moves by a factor of 28. At a fixed receptor the
+spread is enormous: at 20 km the six classes span a factor of 37, and at 1 km
+class F is twelve orders of magnitude below class B, because the plume has not
+yet reached the ground at all. An assessment therefore needs the joint frequency
+of direction and class. Class F is also the one class the mixing lid reaches
+here: its plume rises to 100.8 m under a 100 m lid, is held at it, and gives
+about twice the ground-level value of an unbounded plume from 5 km outwards.
 
 ![Building wake](figures/building_wake.gif)
 
 **Building wake, worst case.** A 60 m building 25 m from a 50.3 m stack. The
-wake criterion is a threshold, not a gradient: a stack clearing two and a half
-building heights escapes untouched, one leaving *below* the building top is
-entrained into the aerodynamic cavity and released at ground level. This
-building is on the far side of it, so the effective release height goes from
-**50.3 m to zero**. The third panel is the ratio of the two fields, on a scale
-that saturates at ten: a factor of 20 on the axis at 1 km, 3.3 at 2 km, and still
-1.6 at the 12 km edge of the map.
+wake criterion is a threshold: a stack clearing two and a half building heights
+escapes untouched, and one leaving below the building top is entrained into the
+aerodynamic cavity and released at ground level. This building is on the far
+side of it, so the effective release height goes from 50.3 m to zero. The third
+panel is the ratio of the two fields, on a scale that saturates at ten: a factor
+of 20 on the axis at 1 km, 3.3 at 2 km, and still 1.6 at the 12 km edge of the
+map.
 
 ![Release height](figures/release_height.gif)
 
-**Release height.** Raising the stack does not reduce the release, it moves the
-ground-level maximum downwind and lowers it. Class D: 2.77 × 10⁻⁶ s m⁻³ at
-1.7 km from a 30 m stack, 1.58 × 10⁻⁶ at 2.1 km from the 50.3 m reference
-stack, and 4.31 × 10⁻⁷ at 4.2 km from 120 m — a factor of six off the peak for
-four times the height.
+**Release height.** Raising the stack moves the ground-level maximum downwind
+and lowers it. In class D the maximum is 2.77 × 10⁻⁶ s m⁻³ at 1.7 km from a
+30 m stack, 1.58 × 10⁻⁶ at 2.1 km from the 50.3 m reference stack, and
+4.31 × 10⁻⁷ at 4.2 km from 120 m. Four times the height lowers the peak by a
+factor of six.
 
 ![Depletion](figures/depletion.gif)
 
 **Depletion.** The same plume with and without radioactive decay, dry deposition
-and an hour of washout. For HTO the loss is modest over this range — the decay
-constant is 1.78 × 10⁻⁹ s⁻¹ and the deposition velocity 4 mm/s — but it
-accumulates with distance, and the factors compose by multiplication, not
-addition: 4 % at 1 km and 8 % at 20 km, of which the hour of rain is 3.5 %.
-Again the ratio panel is what shows it: two fields differing by a few per cent
-are indistinguishable on a ramp spanning three decades.
+and an hour of washout. For HTO the loss is modest over this range (the decay
+constant is 1.78 × 10⁻⁹ s⁻¹ and the deposition velocity 4 mm/s), but it
+accumulates with distance, and the factors compose by multiplication: 4 % at
+1 km and 8 % at 20 km, of which the hour of rain is 3.5 %. The ratio panel shows
+the difference: two fields differing by a few per cent are indistinguishable on
+a ramp spanning three decades.
 
 Regenerate all of them with `julia scripts/figures.jl`.
 
@@ -240,12 +238,12 @@ Handbook on Atmospheric Diffusion misprints the urban E–F σ_z coefficient as
 `figures/validation/` holds one figure per parameterisation, each drawn against
 the published form it is meant to be. Where the test suite asserts an identity
 the curves must lie on top of one another; where it only claims a bracket, the
-figure is what shows how wide the bracket is.
+figure shows how wide the bracket is.
 
 | Figure | Against |
 |---|---|
 | `dispersion_parameters.png` | Briggs (1973) σ_y and σ_z, all six classes |
-| `dispersion_schemes.png` | the four schemes for class D — Hosker, Briggs open country and urban, Eimutis–Konicek — across their validity ranges |
+| `dispersion_schemes.png` | the four schemes for class D (Hosker, Briggs open country and urban, Eimutis–Konicek) across their validity ranges |
 | `roughness_correction.png` | the published `(z₀/0.1)^0.2` scaling |
 | `washout.png` | NRPB-R322 and AVV amplitudes, and the `J^0.75` law |
 | `resuspension.png` | IAEA Safety Series 57, and its 2011 successor |
@@ -292,11 +290,11 @@ Not yet carried:
 - Fumigation of a plume that has risen above the lid, which neither lid rule
   models
 
-One caveat on the reference case. Its wind rose is not a measured rose for a
-site: the frequencies came from meteorological data for the Pitești fuel plant
-and the Cernavodă NPP, read in 2021 under the convention this package now
-refuses to assume. The convention is fixed; the numbers remain an illustrative
-case and the configuration says so rather than implying a site.
+The wind rose of the reference case is not a measured rose for a site: the
+frequencies came from meteorological data for the Pitești fuel plant and the
+Cernavodă NPP, read in 2021 under the convention this package now refuses to
+assume. The convention is fixed; the numbers remain an illustrative case, and
+the configuration says so.
 
 ## Full tree
 

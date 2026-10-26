@@ -31,8 +31,8 @@ benchmarks, and leaves the default results alone.
   returns both σ of a scheme; the existing `lateral_dispersion` and
   `vertical_dispersion` calls are unchanged.
 - **Validity ranges.** Every scheme states the range of distance it was fitted
-  over — 100 m to 10 km for the three Briggs-based schemes, 100 m to 100 km for
-  Eimutis–Konicek — as `validity_range`, with `within_validity` for one
+  over (100 m to 10 km for the three Briggs-based schemes, 100 m to 100 km for
+  Eimutis–Konicek) as `validity_range`, with `within_validity` for one
   distance. A configuration whose receptor grid reaches outside the band is
   loaded with a warning, refused, or accepted silently as
   `[model] extrapolation = "warn" | "refuse" | "allow"` directs, and
@@ -43,8 +43,8 @@ benchmarks, and leaves the default results alone.
   a site is evaluated with.
 - The validation figure `dispersion_schemes.png`: the four schemes side by side
   for class D, across their bands.
-- **The building zones of IAEA SRS-19** §3.3 — displacement above `2.5 H_B`,
-  wake beyond `2.5 √A_B`, cavity between — as `building_zone`, and the two
+- **The building zones of IAEA SRS-19** §3.3 (displacement above `2.5 H_B`,
+  wake beyond `2.5 √A_B`, cavity between) as `building_zone`, and the two
   cavity forms of §3.6: `dilution_cavity_wall`, `B₀/(u x²)` with `B₀ = 30` for
   a receptor on the wall the vent is in, and `dilution_cavity`,
   `1/(π u H_B K)` for one that is not.
@@ -53,7 +53,7 @@ benchmarks, and leaves the default results alone.
   the wake-corrected one reproduce to the printed figure, the four others
   sitting on a rounding boundary, and the three worked examples of Annex IV
   come out. NRC XOQDOQ Test Case 2, the code's own continuous elevated
-  release — a momentum jet over rising terrain, summed over five wind classes
+  release, a momentum jet over rising terrain, summed over five wind classes
   and five stability classes: all 22 printed χ/Q reproduce to within 0.05 %,
   the rounding of the four printed figures.
 
@@ -66,9 +66,9 @@ benchmarks, and leaves the default results alone.
   together, `[model] stable_rise_wind = "mean_over_rise"` by default, and
   `"release_height"` restores the old convention; the functions that take a
   scalar wind gain a `stable_wind` keyword. The reference atmosphere is stably
-  stratified in every class, so every effective height falls by 1 to 3 m —
-  class D at 2 km from 108.0 to 106.0 m, class F from 103.5 to 100.8 m, still
-  above its 100 m lid — and the ground-level maxima rise by up to 8 % and move
+  stratified in every class, so every effective height falls by 1 to 3 m
+  (class D at 2 km from 108.0 to 106.0 m, class F from 103.5 to 100.8 m, still
+  above its 100 m lid) and the ground-level maxima rise by up to 8 % and move
   inward, class D from 1.51 × 10⁻⁶ s m⁻³ at 2.20 km to 1.58 × 10⁻⁶ at 2.15 km.
   The long-term χ/Q in the most exposed sector rises by 5 % at 1 km and by
   0.3 % at 20 km, where it stays 5.2 × 10⁻⁹ s m⁻³. The figures and the numbers
@@ -84,7 +84,7 @@ it has no buildings; and its roughness class is not one of the two corrected.
 ### Added
 
 - **A mixing layer.** The vertical profile between the ground and a capping
-  inversion is HPA-RPD-058 §3.2.2.1 Eq. (3.4), summed to double precision —
+  inversion is HPA-RPD-058 §3.2.2.1 Eq. (3.4), summed to double precision:
   the image series while `Σ_z < 0.7 A`, its cosine series above, whose leading
   term is the uniform `1/A` of Eq. (3.5). Activity is conserved over
   `0 ≤ z ≤ A` to within 4 × 10⁻¹⁶ at every σ_z. `MixingLayer` holds one depth
@@ -108,14 +108,14 @@ it has no buildings; and its roughness class is not one of the two corrected.
   benchmarks give these as inputs, and a σ read off a graph is an input to the
   problem. The depletion integral refuses a prescribed σ_z, which holds at one
   distance only.
-- **An end-to-end benchmark against HPA-RPD-058 Table 3.7** — 3 release heights
+- **An end-to-end benchmark against HPA-RPD-058 Table 3.7**: 3 release heights
   × 6 stability categories × 8 distances of published plume-depletion fractions.
   143 of the 144 cells reproduce to within 0.028 against a printed precision of
   0.01, and every row is monotone. The exception is an error in the source:
   category F at 30 m reads 0.13 at 50 km and 0.19 at 100 km, a depletion factor
   that rises with distance; this package gives 0.0188, one decimal point from
   the printed value.
-- **A second end-to-end benchmark, Turner Table 7-4** — the concentration
+- **A second end-to-end benchmark, Turner Table 7-4**: the concentration
   profile with height from the ground to 450 m at 1 km, the only published table
   found that exercises both reflection terms at arbitrary receptor height. All
   16 rows reproduce to within 2.3 %, the residual being Turner's own
@@ -214,7 +214,7 @@ stable, which is what the leading zero means.
 - Power-law wind profile, lateral and vertical dispersion parameters, plume rise
   by momentum and buoyancy, and the building-wake corrections.
 - `Site`, which precomputes everything independent of receptor position.
-- Three dilution regimes — instantaneous, extended and long term.
+- Three dilution regimes: instantaneous, extended and long term.
 - Nuclides, plume depletion by decay, dry deposition and washout, and ground
   deposition with resuspension.
 - TOML configuration validated key by key, with failures named by dotted path.
@@ -230,7 +230,7 @@ stable, which is what the leading zero means.
   on a boundary where floating-point round-off chose the bin; two of sixteen
   sectors were unreachable and two received double weight.
 - **Sector frame.** Sectors were indexed counterclockwise from east against a
-  compass that runs clockwise from north — a reflection as well as a rotation.
+  compass that runs clockwise from north: a reflection as well as a rotation.
 - **Depletion composition.** Wet and dry depletion factors were added rather
   than multiplied, giving twice the undepleted concentration in the limit of no
   depletion at all.

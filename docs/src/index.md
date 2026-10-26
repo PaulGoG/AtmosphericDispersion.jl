@@ -9,9 +9,8 @@ air concentration, dry and wet ground deposition, and resuspension, over
 Pasquill–Gifford stability classes and a wind rose.
 
 The solver core is nuclide-agnostic. A species enters only through its decay
-constant and its deposition velocity, so tritium from a heavy-water reactor —
-the case the original work addressed — is a parameterisation rather than an
-assumption.
+constant and its deposition velocity, so tritium from a heavy-water reactor
+(the case the original work addressed) is one parameterisation of the solver.
 
 ## A worked run
 
@@ -49,16 +48,16 @@ dilution_long_term(0.0, -config.extent, config.site, config.rose;
 
 Receptor positions are given in the geographic frame as displacements from the
 stack, east first then north, in metres. Bearings are in radians clockwise from
-north. A wind direction is the direction the wind blows **from**, as in
+north. A wind direction is the direction the wind blows *from*, as in
 meteorological practice and in ADMS.
 
-Sectors are indexed clockwise from north with sector 1 **centred** on north, so
+Sectors are indexed clockwise from north with sector 1 centred on north, so
 that for sixteen sectors the index runs N, NNE, NE and so on. Centring rather
 than starting at north puts the cardinal directions at sector centres, where
 binning cannot be decided by floating-point round-off.
 
 The long-term dilution formula weights by the frequency of wind blowing
-**towards** the receptor's sector, which is the opposite reading. [`WindRose`](@ref)
+*towards* the receptor's sector, which is the opposite reading. [`WindRose`](@ref)
 therefore takes the convention as a required argument and stores
 blowing-towards internally, so the formulae cannot be fed the wrong sense.
 Getting this wrong rotates the whole field by half a turn while leaving every
