@@ -76,7 +76,7 @@ Ambient state the plume disperses into.
 
 !!! note "Lapse rate and stability class are not independent"
     The Pasquill class and the lapse rate describe the same stratification. A
-    physically consistent calculation varies `lapse_rate` with the class —
+    physically consistent calculation varies `lapse_rate` with the class:
     negative for the unstable classes A to C, near the adiabatic value for D,
     positive for E and F. Holding one fixed while sweeping the other, as the
     2021 code did with a single strongly stable gradient applied to every class,
@@ -136,7 +136,7 @@ Buoyancy flux parameter `F` in m⁴/s³,
 from the density deficit of the emitted gas against the ambient air.
 
 Negative for a plume denser than the ambient air, in which case the rise
-correlations of this model do not apply — they describe buoyant plumes — and
+correlations of this model do not apply (they describe buoyant plumes), and
 [`buoyant_rise`](@ref) will reject it.
 """
 function buoyancy_flux(source::StackSource, atmosphere::Atmosphere)

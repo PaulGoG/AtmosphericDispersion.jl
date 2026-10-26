@@ -5,13 +5,13 @@ Deposition is expressed per unit ground area, in becquerel per square metre,
 for a release of `activity` becquerel. Dry deposition is the ground-level
 time-integrated concentration times a deposition velocity; wet deposition is
 the washout coefficient times the whole vertical column, since rain falling
-through the plume scavenges all of it, not only the part near the ground.
+through the plume scavenges all of it.
 
-Both take the *high* member of their bracketing pair — the high deposition
-velocity, the high washout coefficient — because more deposited material is the
-conservative assumption for the ground-shine and ingestion pathways. Depletion
-of the airborne plume takes the low members, for the opposite reason. See
-`DepositionVelocity`.
+Both take the high member of their bracketing pair (the high deposition
+velocity and the high washout coefficient) because more deposited material is
+the conservative assumption for the ground-shine and ingestion pathways.
+Depletion of the airborne plume takes the low members, for the opposite reason.
+See `DepositionVelocity`.
 =#
 
 """
@@ -118,7 +118,7 @@ describes material still loose on the surface, the slow term material
 progressively fixed into it.
 
 See [`RESUSPENSION_IAEA_SS57`](@ref) and [`RESUSPENSION_MAXWELL_ANSPAUGH`](@ref)
-for the two published parameter sets carried; any other is a call away.
+for the two published parameter sets carried.
 """
 struct ResuspensionModel
     fast_amplitude::Float64
@@ -145,8 +145,8 @@ end
     RESUSPENSION_IAEA_SS57
 
 IAEA Safety Series No. 57 [IAEA1982](@cite), §3.6, Eq. (3.14A):
-`10⁻⁵ exp(−10⁻² t) + 10⁻⁹ exp(−2×10⁻⁵ t)`. The default. Safety Series 57 reached
-this package by way of reference [3] of CNCAN NSR-23; it has since been
+`10⁻⁵ exp(−10⁻² t) + 10⁻⁹ exp(−2×10⁻⁵ t)`. It is the default. Safety Series 57
+reached this package by way of reference [3] of CNCAN NSR-23; it has since been
 superseded, and every page of it carries a "no longer valid" stamp, but no
 successor restates these constants. It falls by a factor of about 38 over the
 first year and by four orders of magnitude over ten.

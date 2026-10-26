@@ -144,15 +144,15 @@ summed over classes and weighted by the rose, and the two must agree on the
 vertical profile.
 
 `D_i` is the depletion factor of class `i`, which is one unless a `nuclide` is
-given. It sits **inside** the class sum because it depends on the class through
+given. It sits inside the class sum because it depends on the class through
 both the transport speed and the vertical dispersion. The 2021 code instead
 formed a separate depletion term as an unweighted sum of six exponentials, one
 per class, and so returned up to six in the limit of no deposition at all,
 where a surviving fraction must tend to one.
 
 `rose` supplies both, in the correct sense whichever convention it was built
-from — that is the point of [`WindRose`](@ref) storing blowing-towards
-frequencies. The sector is the one containing the receptor's bearing.
+from, because [`WindRose`](@ref) stores blowing-towards frequencies. The sector
+is the one containing the receptor's bearing.
 
 The distance `r` is radial, as in the sector-averaged formulation this comes
 from. The 2021 code instead projected the receptor onto the axis of its sector,

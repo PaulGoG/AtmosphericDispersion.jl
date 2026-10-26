@@ -4,11 +4,10 @@ Depletion of the airborne plume.
 Three processes remove material from the plume as it travels: radioactive
 decay, dry deposition to the ground, and washout by precipitation. Each is
 expressed as a factor in [0, 1] multiplying the undepleted concentration, and
-they compose by multiplication — they act on the same material in sequence, so
+they compose by multiplication: they act on the same material in sequence, so
 the surviving fraction is the product of the surviving fractions.
 
-That is the correction to the 2021 code. There, the wet and dry factors were
-*added*:
+Multiplication corrects the 2021 code, which added the wet and dry factors:
 
     χ = χ/Q · Q · DEC · (DEP_w + DEP_d)
 
@@ -57,8 +56,8 @@ is HPA-RPD-058 [SmithSimmonds2009](@cite) Eq. (3.17); it is [`crosswind_integrat
 along the plume axis.
 
 Evaluated by adaptive Gauss–Kronrod quadrature. The 2021 code used a fifty-point
-trapezoid rule, which is not adaptive and resolves the near field — where the
-integrand varies fastest — worst.
+trapezoid rule, which is not adaptive and is at its worst in the near field,
+where the integrand varies fastest.
 """
 function depletion_integral(x::Real, site::AbstractSite, class::PasquillClass)
     _has_prescribed_vertical(site) && throw(
@@ -92,7 +91,7 @@ Surviving airborne fraction after dry deposition over `x` metres,
 
     exp[ −√(2/π) (v_d / u) ∫ exp(−H²/2Σ_z²)/Σ_z dx' ]
 
-The *low* deposition velocity of the nuclide is used, which removes the least
+The low deposition velocity of the nuclide is used, which removes the least
 material and so is conservative for the airborne concentration.
 """
 function dry_depletion_factor(
@@ -119,7 +118,7 @@ intensity `rate` in mm/h, its `duration` in seconds, and the
 of [`PRECIPITATION_RATES`](@ref), the washout table being defined only there.
 
 Which row of the table applies is a property of the released species, so it
-lives on the [`Nuclide`](@ref) and not here.
+lives on the [`Nuclide`](@ref).
 """
 struct WashoutEvent
     precipitation::PrecipitationType
@@ -160,7 +159,7 @@ washout_coefficients(
 
 Surviving airborne fraction after the washout `event`, `exp(−Λ t)`.
 
-The *low* washout coefficient is used, for the same reason the low deposition
+The low washout coefficient is used, for the same reason the low deposition
 velocity is: it removes the least material and so is conservative for the
 airborne concentration. The high coefficient drives the ground deposition
 instead.
@@ -178,7 +177,7 @@ dry-deposition and washout factors.
 
 They multiply because they act in sequence on the same material. With no
 washout, no deposition and no decay each factor is one and so is the product,
-which is the limit that fixes the composition — the 2021 code added the wet and
+which is the limit that fixes the composition. The 2021 code added the wet and
 dry factors and so returned two in that limit.
 
 `washout` is a [`WashoutEvent`](@ref); with the default of `nothing` the plume

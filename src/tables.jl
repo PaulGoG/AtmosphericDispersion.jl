@@ -1,17 +1,17 @@
 #=
 Tabulated coefficients of the dispersion parameterisation.
 
-These are fixed tables of the governing normative — CNCAN NSR-23, the Romanian
-nuclear regulator's norm the 2021 thesis was written against — reproduced as
-Tables 1-4 and 7 of the thesis. They are compile-time constants rather than data files: they
-are small, they never vary between runs, and the values are read inside the
-innermost loops of every field evaluation, where a keyed lookup into a data
-frame costs more than the dispersion calculation itself.
+These are fixed tables of the governing normative (CNCAN NSR-23, the Romanian
+nuclear regulator's norm the 2021 thesis was written against), reproduced as
+Tables 1-4 and 7 of the thesis. They are compile-time constants rather than data
+files: they are small, they never vary between runs, and the values are read
+inside the innermost loops of every field evaluation, where a keyed lookup into a
+data frame costs more than the dispersion calculation itself.
 
 The vertical dispersion tables are Hosker's, and the normative reproduces them:
-[Hosker1974](@citet), IAEA-SM-181/19 — an analytic fit to the schemes of F.B.
-Smith [Smith1973](@cite) and Briggs [Briggs1973](@cite). They are printed in
-HPA-RPD-058 [SmithSimmonds2009](@cite) Table 3.3 and in NRPB-R91
+[Hosker1974](@citet), IAEA-SM-181/19. The tables are an analytic fit to the
+schemes of F.B. Smith [Smith1973](@cite) and Briggs [Briggs1973](@cite). They are
+printed in HPA-RPD-058 [SmithSimmonds2009](@cite) Table 3.3 and in NRPB-R91
 [Clarke1979](@cite) Table 3, and both printings are asserted in the test suite.
 
 Indexing is positional, through `classindex` and `Int(::enum)`, so every lookup
@@ -370,12 +370,12 @@ attributes to CAN/CSA-N288.2-M91, tabulates two:
   - `WASHOUT_TRITIUM_IODINE` — tritium and iodine, the default, and the case
     this package's reference configuration is.
   - `WASHOUT_OTHER_NUCLIDES` — every other radionuclide. Its rain values are
-    roughly twice the tritium row's; its **snow** values are three to four
-    orders of magnitude larger, not smaller.
+    roughly twice the tritium row's; its snow values are three to four orders of
+    magnitude larger.
 
-That the two snow rows differ by so much in opposite directions is the reason
-the snow scavenging of tritiated water is worth stating explicitly rather than
-inheriting. See [`WashoutModel`](@ref).
+Because the two snow rows differ by so much in opposite directions, the snow
+scavenging of tritiated water is stated explicitly rather than inherited. See
+[`WashoutModel`](@ref).
 """
 @enum WashoutSpecies begin
     WASHOUT_TRITIUM_IODINE = 1
@@ -422,18 +422,18 @@ Which scavenging scheme to use.
 
   - `WASHOUT_NORMATIVE` — the tabulated scheme of the normative, and the
     default. Its snow columns are the rain columns divided by exactly 100 and
-    500, a suppression appropriate to **particles and reactive gases**: IAEA
-    TECDOC-379 [IAEA1986](@cite) §3.5.4 gives 5 × 10⁻⁸ s⁻¹ for inorganic iodine in powder snow at
-    0.2 mm/h against 1.7 × 10⁻⁵ for the same species in rain, a factor of some
-    340 in the same direction.
+    500, a suppression appropriate to particles and reactive gases: IAEA
+    TECDOC-379 [IAEA1986](@cite) §3.5.4 gives 5 × 10⁻⁸ s⁻¹ for inorganic iodine
+    in powder snow at 0.2 mm/h against 1.7 × 10⁻⁵ for the same species in rain,
+    a factor of some 340 in the same direction.
   - `WASHOUT_HTO` — the same rain columns, with snow from [Ogram1985](@citet),
     §6.0 Eq. (38):
 
         Λ_s = 1.2×10⁻⁴ R^0.33 + 3.0×10⁻⁴ R^0.64   s⁻¹,  R in mm/h
 
-    Snow scavenging of tritiated water is **isotopic exchange at the crystal
-    surface**, not impaction, so the particle suppression is the wrong physics
-    for it. Ogram measures scavenging about three orders of magnitude *above* the
+    Snow scavenging of tritiated water is isotopic exchange at the crystal
+    surface, not impaction, so the particle suppression is the wrong physics for
+    it. Ogram measures scavenging about three orders of magnitude above the
     normative snow column, and calls the correlation an approximate upper limit.
 
 The reference case of this package is HTO, so the two differ for it by a factor

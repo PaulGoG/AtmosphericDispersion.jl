@@ -263,8 +263,8 @@ as the product of the shape function and the roughness correction,
 `σ_z = g(x) F(x)`.
 
 Throws a `DomainError` if the parameterisation returns a non-positive value.
-That happens only at distances far shorter than the model is meant for — below
-about a tenth of a millimetre for the smoothest class — but a negative `σ_z`
+That happens only at distances far shorter than the model is meant for (below
+about a tenth of a millimetre for the smoothest class), but a negative `σ_z`
 would otherwise propagate silently into every quantity downstream.
 """
 function vertical_dispersion(x::Real, class::PasquillClass, roughness::RoughnessClass)

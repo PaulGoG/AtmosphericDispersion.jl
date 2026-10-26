@@ -1,13 +1,13 @@
 #=
 Configuration.
 
-A run is described by a TOML file, not by editing source. The loader enforces
-exactly what the file's comments promise — presence, type, enumerated choice,
-numerical bound, and that no key is present which the loader does not read —
-and every failure names the key it failed on, by its full dotted path, so that
-a rejected file says what to change rather than where the parser happened to
-stop. An unread key is an error because it is otherwise indistinguishable from
-a misspelt one, which would fall back to its default without a word.
+A run is described by a TOML file. The loader enforces exactly what the file's
+comments promise (presence, type, enumerated choice, numerical bound, and that
+no key is present which the loader does not read), and every failure names the
+key it failed on, by its full dotted path, so that a rejected file says what to
+change rather than where the parser happened to stop. An unread key is an error
+because it is otherwise indistinguishable from a misspelt one, which would fall
+back to its default without a word.
 
 A pipeline must be unable to start from a configuration it cannot honour, so
 the checks run at load and construct the solver types immediately: anything the

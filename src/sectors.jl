@@ -3,7 +3,7 @@
 
 A wind rose divided into `n` equal angular sectors.
 
-Sectors are indexed `1:n` **clockwise from north**, with sector 1 **centred** on
+Sectors are indexed `1:n` clockwise from north, with sector 1 centred on
 north. For the usual `n = 16` this reproduces the cardinal sectors: sector 1 is
 N and spans bearings 348.75°–11.25°, sector 2 is NNE, and so on. This is the
 convention of ADMS meteorological input and of the joint-frequency tables that
@@ -13,9 +13,9 @@ long-term dispersion calculations are built on.
 converting a wind rose between the "blowing from" and "blowing toward"
 conventions is a rotation by `n ÷ 2` sectors.
 
-Centring sector 1 on north rather than starting it there is not cosmetic. It
-places the cardinal directions at sector centres, maximally far from a sector
-boundary, so binning them cannot be decided by floating-point round-off.
+Centring sector 1 on north, rather than starting it there, places the cardinal
+directions at sector centres, as far from a boundary as possible, so binning
+them cannot be decided by floating-point round-off.
 
 # Examples
 
@@ -83,13 +83,13 @@ north), or containing the point `(east, north)`.
 
 Binning rounds to the nearest sector centre rather than truncating a ratio.
 A bearing at a sector centre therefore bins exactly, because the ratio is an
-integer and a round-off of an ulp either way still rounds to it. This is what
-makes the cardinal directions safe: they lie at the centres.
+integer and a round-off of an ulp either way still rounds to it. The cardinal
+directions lie at the centres and are binned exactly for this reason.
 
 On a sector boundary the ratio is a half-integer, the tie rule takes the sector
-of higher bearing, and an ulp of round-off can place it either side. That is
-unavoidable — a boundary bearing is generally not representable — and harmless,
-since the two sectors meeting there are equally defensible. Do not build a
+of higher bearing, and an ulp of round-off can place it either side. A boundary
+bearing is generally not representable, so this cannot be avoided, and it is
+harmless: the two sectors meeting there are equally defensible. Do not build a
 result on which side a boundary falls.
 """
 function sector_of(grid::SectorGrid, β::Real)
@@ -126,8 +126,8 @@ end
 
 Index of the sector diametrically opposite `k`.
 
-Wind blowing *from* sector `k` blows *towards* `opposite(grid, k)`, which is
-what makes this the conversion between the two wind-direction conventions.
+Wind blowing from sector `k` blows towards `opposite(grid, k)`, so this is the
+conversion between the two wind-direction conventions.
 """
 function opposite(grid::SectorGrid, k::Integer)
     _checksector(grid, k)

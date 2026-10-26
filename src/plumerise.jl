@@ -7,34 +7,33 @@ Each mechanism has a transitional law valid near the stack and a final rise
 reached far from it; the model takes whichever mechanism dominates, or a
 combined law when neither does.
 
-Every correlation here is quoted for a *buoyant* plume in air whose stability
+Every correlation here is quoted for a buoyant plume in air whose stability
 parameter is known. Where the 2021 code would have raised a domain error on a
-negative base — an unstable atmosphere makes S negative, and S appears under
-fractional powers — the inapplicable branches are dropped instead, which is
-what the physics says: with no stable stratification there is no buoyancy
-ceiling for it to impose.
+negative base (an unstable atmosphere makes S negative, and S appears under
+fractional powers), the inapplicable branches are dropped instead: with no
+stable stratification there is no buoyancy ceiling for it to impose.
 =#
 
 """
     RiseCoefficients
 
 The three plume-rise constants that published schemes disagree on, so that the
-choice is made in the configuration rather than buried in the source.
+choice is made in the configuration.
 
   - `combined_buoyancy` — the denominator of the buoyancy term in the combined
     law. Briggs writes `3F x²/(2β²u³)` with an entrainment parameter `β = 0.6`,
-    giving **0.72**; NSR-23 has **0.5**, which does not reduce to the two-thirds
-    law as the momentum flux vanishes.
+    giving 0.72; NSR-23 has 0.5, which does not reduce to the two-thirds law as
+    the momentum flux vanishes.
   - `neutral_momentum` — the coefficient of the neutral final momentum rise,
     `c w₀D/u`. [Briggs1969](@citet) Eq. 5.2, as implemented by EPA ISC3
-    [EPA1995](@cite) Eq. (1-16),
-    gives **3**. CNCAN NSR-23 has **1.5**, which is the momentum term of
-    Holland's formula, `Δh = (w₀D/u)[1.5 + 2.68×10⁻³ p (T_s − T_a)D/T_s]` with
-    `p` in mbar ([Holland1953](@cite); [Turner1970](@citet) Eq. 4.1), taken
-    without its buoyancy term.
+    [EPA1995](@cite) Eq. (1-16), gives 3. CNCAN NSR-23 has 1.5, which is the
+    momentum term of Holland's formula,
+    `Δh = (w₀D/u)[1.5 + 2.68×10⁻³ p (T_s − T_a)D/T_s]` with `p` in mbar
+    ([Holland1953](@cite); [Turner1970](@citet) Eq. 4.1), taken without its
+    buoyancy term.
   - `stable_final` — the coefficient of the stable final buoyant rise,
     `c [F/(uS)]^(1/3)`. Briggs and the Handbook on Atmospheric Diffusion
-    [Hanna1982](@cite) give **2.6**; NRC XOQDOQ writes **2.4**.
+    [Hanna1982](@cite) give 2.6; NRC XOQDOQ writes 2.4.
 
 See [`BRIGGS_RISE`](@ref), [`XOQDOQ_RISE`](@ref) and [`NSR23_RISE`](@ref).
 """
@@ -80,11 +79,11 @@ const BRIGGS_RISE = RiseCoefficients()
 Which wind speed enters the stable final rise `c [F/(uS)]^(1/3)`.
 
   - `WIND_MEAN_OVER_RISE` — the mean of the profile between the release height
-    and the top of the rise, which is how the Handbook on Atmospheric Diffusion
+    and the top of the rise, as the Handbook on Atmospheric Diffusion
     [Hanna1982](@cite) defines the `u` of its Eq. 2.19: "an average value
     between the heights h_s and h_s + Δh". The rise and the mean depend on each
-    other and are solved together; see [`stable_rise_wind_speed`](@ref). The
-    default.
+    other and are solved together; see [`stable_rise_wind_speed`](@ref). This
+    is the default.
   - `WIND_AT_RELEASE_HEIGHT` — the transport wind at the release height, as the
     neutral limit and the transitional law take it, and as NRC XOQDOQ
     [Sagendorf1982](@cite) and the 2021 code did.
@@ -145,8 +144,8 @@ the wind speed `u` in m/s at the release height, and the stability parameter
 `S` in s⁻².
 
 The smallest of the applicable limits is taken: the neutral limit, which
-ambient turbulence sets and which always applies, and — only where the air is
-stably stratified, `S > 0` — the stable and calm limits that stratification
+ambient turbulence sets and which always applies, and, only where the air is
+stably stratified (`S > 0`), the stable and calm limits that stratification
 imposes.
 
 `stable_wind` is the wind speed the stable limit `c [F/(uS)]^(1/3)` is

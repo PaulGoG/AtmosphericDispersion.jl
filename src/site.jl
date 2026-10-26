@@ -11,10 +11,10 @@ const WAKE_WIND_THRESHOLD = 5.0
 
 Wind speed at height `z` metres averaged over the six Pasquill classes.
 
-The stack-downwash and building-wake corrections are geometric: they ask
-whether the efflux can overcome the wind at the stack top at all, not what the
-stratification is doing. They therefore take this class-averaged speed rather
-than a class-specific one.
+The stack-downwash and building-wake corrections are geometric: they ask whether
+the efflux can overcome the wind at the stack top, independently of the
+stratification, and therefore take this class-averaged speed rather than a
+class-specific one.
 """
 function mean_wind_speed(atmosphere::Atmosphere, z::Real)
     total = 0.0
@@ -168,7 +168,7 @@ Wind speed in m/s carrying the plume, evaluated at the release height.
 The power-law profile has no skill below the height its reference is quoted at,
 and returns zero at the ground, so the evaluation height is floored at
 [`REFERENCE_HEIGHT`](@ref). Without that floor a plume trapped in a building
-cavity — release height zero — would be transported at zero wind speed, and
+cavity (release height zero) would be transported at zero wind speed, and
 every dilution factor divides by it.
 """
 function transport_wind_speed(site::Site, class::PasquillClass)
@@ -188,8 +188,8 @@ const STABLE_RISE_TOLERANCE = 1e-12
     STABLE_RISE_MAX_ITERATIONS
 
 Iterations [`stable_rise_wind_speed`](@ref) allows the rise and its mean wind
-to converge in before it gives up. The map contracts strongly — the rise
-varies as the inverse cube root of the wind — and a handful suffice.
+to converge in before it gives up. The map contracts strongly, since the rise
+varies as the inverse cube root of the wind, and a handful suffice.
 """
 const STABLE_RISE_MAX_ITERATIONS = 100
 

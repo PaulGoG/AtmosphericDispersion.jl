@@ -7,8 +7,7 @@ Subtypes are [`BlowingFrom`](@ref) and [`BlowingToward`](@ref).
 The distinction is a 180° rotation of the entire rose. Getting it wrong rotates
 a long-term dispersion field by half a turn while leaving every magnitude, every
 sum rule and every unit intact, so nothing downstream can detect the error. The
-convention is therefore a required argument of the [`WindRose`](@ref)
-constructor, never a default.
+convention is therefore a required argument of the [`WindRose`](@ref) constructor.
 """
 abstract type WindDirectionConvention end
 
@@ -16,7 +15,7 @@ abstract type WindDirectionConvention end
     BlowingFrom()
 
 The direction a wind is blowing *from*: the meteorological convention, and what
-ADMS reads from the `PHI` field of a `.met` file. A westerly — 270° — blows from
+ADMS reads from the `PHI` field of a `.met` file. A westerly (270°) blows from
 the west towards the east. Measured wind roses are published this way.
 """
 struct BlowingFrom <: WindDirectionConvention end
@@ -37,7 +36,7 @@ Joint frequency distribution of wind direction and atmospheric stability over
 the sectors of `grid`.
 
 `frequencies[k]` is the fraction of the time the wind lies in sector `k`, read
-in the sense given by `convention` — either `BlowingFrom()` or
+in the sense given by `convention`, either `BlowingFrom()` or
 `BlowingToward()`. Frequencies must be non-negative and sum to one.
 
 `stability` is the distribution over Pasquill classes *conditional on the
@@ -141,7 +140,7 @@ nsectors(rose::WindRose) = nsectors(rose.grid)
 """
     frequency_toward(rose, k)
 
-Fraction of the time the wind blows *towards* sector `k` — the directional
+Fraction of the time the wind blows *towards* sector `k`, the directional
 weight the long-term sector-averaged dispersion formula applies to a receptor
 lying in sector `k`.
 """
