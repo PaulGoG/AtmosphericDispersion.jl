@@ -5,17 +5,35 @@ Gaussian-plume dispersion of stack releases: sector geometry, wind-rose
 statistics, plume rise, Briggs dispersion parameters, depletion and ground
 deposition.
 
-The public interface is organised around explicit input types rather than
-loose numbers, because the quantities this model consumes carry conventions that
-are invisible in their magnitudes — a wind direction read in the wrong sense, or
-a sector index counted the wrong way round, produces a result that is wrong by a
-rotation and right in every other respect.
+The public interface is organised around explicit input types rather than loose
+numbers. The quantities this model consumes carry conventions that their
+magnitudes do not reveal: a wind direction read in the wrong sense, or a sector
+index counted the wrong way round, gives a result that is wrong by a rotation
+and right in every other respect.
 """
 module AtmosphericDispersion
 
 using QuadGK: quadgk
 using TOML: TOML
 
+include("sectors.jl")
+include("stability.jl")
+include("windrose.jl")
+include("surfaces.jl")
+include("tables.jl")
+include("mixing.jl")
+include("dispersion.jl")
+include("source.jl")
+include("plumerise.jl")
+include("buildings.jl")
+include("site.jl")
+include("nuclides.jl")
+include("depletion.jl")
+include("dilution.jl")
+include("deposition.jl")
+include("config.jl")
+
+# sectors.jl
 export SectorGrid,
        nsectors,
        sector_width,
@@ -26,6 +44,8 @@ export SectorGrid,
        opposite,
        bearing,
        CARDINAL_16
+
+# stability.jl
 export PasquillClass,
        PASQUILL_A,
        PASQUILL_B,
@@ -37,6 +57,8 @@ export PasquillClass,
        pasquill,
        letter,
        classindex
+
+# windrose.jl
 export WindDirectionConvention,
        BlowingFrom,
        BlowingToward,
@@ -45,6 +67,8 @@ export WindDirectionConvention,
        frequency_from,
        stability_fraction,
        grid
+
+# surfaces.jl
 export WindProfileSurface,
        SURFACE_WATER,
        SURFACE_AGRICULTURAL,
@@ -62,6 +86,8 @@ export WindProfileSurface,
        PRECIPITATION_RAIN,
        PRECIPITATION_SNOW,
        PRECIPITATION_TYPES
+
+# tables.jl
 export VerticalShapeCoefficients,
        vertical_shape_coefficients,
        RoughnessCoefficients,
@@ -72,6 +98,20 @@ export VerticalShapeCoefficients,
        WashoutCoefficients,
        washout_coefficients,
        PRECIPITATION_RATES
+
+# mixing.jl
+export MixingLayer,
+       LidRule,
+       RISE_INHIBITED,
+       FULL_PENETRATION,
+       MIXING_TABULATED,
+       MIXING_UNBOUNDED,
+       mixing_depth,
+       vertical_factor,
+       crosswind_integrated_factor,
+       RECOMMENDED_MIXING_DEPTH
+
+# dispersion.jl
 export DispersionScheme,
        DISPERSION_HOSKER,
        DISPERSION_BRIGGS_OPEN_COUNTRY,
@@ -105,6 +145,7 @@ export wind_speed,
        SHORT_RELEASE_REFERENCE,
        SMOOTH_ROUGHNESS_LIMIT
 
+# source.jl
 export StackSource,
        Atmosphere,
        buoyancy_flux,
@@ -112,6 +153,8 @@ export StackSource,
        stability_parameter,
        STANDARD_GRAVITY,
        DRY_AIR_SPECIFIC_HEAT
+
+# plumerise.jl
 export buoyancy_transition_distance,
        final_buoyant_rise,
        buoyant_rise,
@@ -129,13 +172,7 @@ export buoyancy_transition_distance,
        BUOYANCY_FLUX_BREAKPOINT,
        MECHANISM_BALANCE_TOLERANCE
 
-include("sectors.jl")
-include("stability.jl")
-include("windrose.jl")
-include("surfaces.jl")
-include("tables.jl")
-include("mixing.jl")
-include("dispersion.jl")
+# buildings.jl
 export Building,
        BuildingEnvelope,
        equivalent_height,
@@ -150,6 +187,8 @@ export Building,
        WAKE_INFLUENCE_RADII,
        DEFAULT_WAKE_COEFFICIENT,
        NSR23_WAKE_COEFFICIENT
+
+# site.jl
 export AbstractSite,
        Site,
        PrescribedPlume,
@@ -167,6 +206,34 @@ export AbstractSite,
        corrected_lateral_dispersion,
        corrected_vertical_dispersion,
        WAKE_WIND_THRESHOLD
+
+# nuclides.jl
+export DepositionVelocity,
+       Nuclide,
+       TRITIATED_WATER,
+       TRITIUM_GAS,
+       TRITIUM_DECAY_CONSTANT,
+       ResuspensionModel,
+       RESUSPENSION_IAEA_SS57,
+       RESUSPENSION_MAXWELL_ANSPAUGH,
+       WashoutModel,
+       WASHOUT_NORMATIVE,
+       WASHOUT_HTO,
+       ogram_snow_washout,
+       WashoutSpecies,
+       WASHOUT_TRITIUM_IODINE,
+       WASHOUT_OTHER_NUCLIDES
+
+# depletion.jl
+export WashoutEvent,
+       decay_factor,
+       depletion_integral,
+       dry_depletion_factor,
+       wet_depletion_factor,
+       depletion_factor,
+       DEPLETION_INTEGRAL_FLOOR
+
+# dilution.jl
 export plume_frame,
        dilution_instantaneous,
        dilution_extended,
@@ -175,39 +242,15 @@ export plume_frame,
        dilution_cavity_wall,
        SRS19_CAVITY_COEFFICIENT,
        SRS19_CAVITY_LENGTH
-export DepositionVelocity, Nuclide, TRITIATED_WATER, TRITIUM_GAS, TRITIUM_DECAY_CONSTANT
-export ResuspensionModel, RESUSPENSION_IAEA_SS57, RESUSPENSION_MAXWELL_ANSPAUGH
-export WashoutModel, WASHOUT_NORMATIVE, WASHOUT_HTO, ogram_snow_washout
-export WashoutSpecies, WASHOUT_TRITIUM_IODINE, WASHOUT_OTHER_NUCLIDES
-export MixingLayer,
-       LidRule,
-       RISE_INHIBITED,
-       FULL_PENETRATION,
-       MIXING_TABULATED,
-       MIXING_UNBOUNDED,
-       mixing_depth,
-       vertical_factor,
-       crosswind_integrated_factor,
-       RECOMMENDED_MIXING_DEPTH
-export WashoutEvent,
-       decay_factor,
-       depletion_integral,
-       dry_depletion_factor,
-       wet_depletion_factor,
-       depletion_factor,
-       DEPLETION_INTEGRAL_FLOOR
-export dry_deposition,
-       wet_deposition, wet_deposition_sector, resuspension_factor, resuspended_concentration
-export ConfigurationError, RunConfiguration, load_configuration, configuration_from
 
-include("source.jl")
-include("plumerise.jl")
-include("buildings.jl")
-include("site.jl")
-include("nuclides.jl")
-include("depletion.jl")
-include("dilution.jl")
-include("deposition.jl")
-include("config.jl")
+# deposition.jl
+export dry_deposition,
+       wet_deposition,
+       wet_deposition_sector,
+       resuspension_factor,
+       resuspended_concentration
+
+# config.jl
+export ConfigurationError, RunConfiguration, load_configuration, configuration_from
 
 end
