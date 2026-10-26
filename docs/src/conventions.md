@@ -42,9 +42,9 @@ at the wrong side of the site.
 
 I misread the convention in 2021. The table is therefore a blowing-from rose,
 which is what every published wind rose is, and the 2021 code consumed it as
-blowing-toward. The 2021 dose field is rotated by half a turn, and its
-most-exposed sector is the least-exposed one. `config/reference.toml` declares
-`blowing_from` accordingly.
+blowing-toward. The 2021 dose field is rotated by half a turn, and the sector
+it reports as most exposed, N, is in fact the fifth least exposed of the
+sixteen. `config/reference.toml` declares `blowing_from` accordingly.
 
 The provenance of the numbers is still open: as far as I recall they are either
 placeholder values or real meteorological data for the Pitești fuel plant or the

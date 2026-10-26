@@ -225,7 +225,7 @@ stable, which is what the leading zero means.
 
 - **Wind-direction convention.** The thesis code consumed a blowing-from wind
   rose as blowing-toward, which rotates the long-term dose field by half a turn
-  and moves the most-exposed sector to the least-exposed one.
+  and moves the most-exposed sector to the opposite side of the site.
 - **Sector binning.** Sectors began at an edge, putting every cardinal direction
   on a boundary where floating-point round-off chose the bin; two of sixteen
   sectors were unreachable and two received double weight.
