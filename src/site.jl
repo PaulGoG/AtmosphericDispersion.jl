@@ -89,11 +89,12 @@ does not vary over the receptor grid.
 evaluated with, and `stable_rise_wind` the [`StableRiseWind`](@ref) of its
 stable final rise.
 
-The release height, the buoyancy and momentum fluxes and the stability
-parameter are all independent of receptor position and of stability class, so
-they are computed once here. The 2021 code recomputed them inside the innermost
-loop — the building reduction and the downwash correction, the latter six
-wind-profile evaluations deep, were repeated for every point of every field.
+The release height, the buoyancy and momentum fluxes, the stability parameter
+and the wind of the stable final rise in each class are all independent of
+receptor position, so they are computed once here. The 2021 code recomputed
+them inside the innermost loop: the building reduction and the downwash
+correction, the latter six wind-profile evaluations deep, were repeated for
+every point of every field.
 """
 struct Site <: AbstractSite
     source::StackSource
@@ -107,6 +108,7 @@ struct Site <: AbstractSite
     buoyancy::Float64
     momentum::Float64
     stability::Float64
+    stable_rise_winds::NTuple{6,Float64}
 
     function Site(;
             source::StackSource,
@@ -117,6 +119,14 @@ struct Site <: AbstractSite
             dispersion::DispersionScheme = DISPERSION_HOSKER,
             stable_rise_wind::StableRiseWind = WIND_MEAN_OVER_RISE,
     )
+        release = wake_height(source, atmosphere, buildings)
+        F = buoyancy_flux(source, atmosphere)
+        S = stability_parameter(atmosphere)
+        winds = ntuple(
+            i -> _stable_rise_wind(
+                atmosphere, release, F, S, rise, stable_rise_wind, PASQUILL_CLASSES[i],),
+            length(PASQUILL_CLASSES),
+        )
         return new(
             source,
             atmosphere,
@@ -125,10 +135,11 @@ struct Site <: AbstractSite
             mixing,
             dispersion,
             stable_rise_wind,
-            wake_height(source, atmosphere, buildings),
-            buoyancy_flux(source, atmosphere),
+            release,
+            F,
             momentum_flux(source, atmosphere),
-            stability_parameter(atmosphere),
+            S,
+            winds,
         )
     end
 end
@@ -186,7 +197,7 @@ const STABLE_RISE_MAX_ITERATIONS = 100
     stable_rise_wind_speed(site, class)
 
 The wind speed in m/s that the stable final rise of `site` is evaluated with in
-the given stability class.
+the given stability class, solved once when the site is constructed.
 
 Under `WIND_MEAN_OVER_RISE` it is the mean of the wind profile between
 the release height and the top of the stable rise, `Δh = c [F/(ūS)]^(1/3)`,
@@ -197,17 +208,28 @@ the current rise and re-evaluating it, until the rise settles to
 reference is quoted at, so the layer starts at [`REFERENCE_HEIGHT`](@ref) where
 the release is lower, as [`transport_wind_speed`](@ref) is floored.
 
-Under `WIND_AT_RELEASE_HEIGHT`, or where there is no stable rise to
-average over — unstable or neutral air, or a plume without buoyancy — it is the
+Under `WIND_AT_RELEASE_HEIGHT`, or where there is no stable rise to average
+over (unstable or neutral air, or a plume without buoyancy), it is the
 transport wind.
 """
-function stable_rise_wind_speed(site::Site, class::PasquillClass)
-    u = transport_wind_speed(site, class)
-    site.stable_rise_wind == WIND_AT_RELEASE_HEIGHT && return u
-    c, F, S = site.rise.stable_final, site.buoyancy, site.stability
+stable_rise_wind_speed(site::Site, class::PasquillClass) = site.stable_rise_winds[classindex(class)]
+
+# The fixed point behind `stable_rise_wind_speed`, on the quantities the site
+# constructor has in hand before the site exists.
+function _stable_rise_wind(
+        atmosphere::Atmosphere,
+        release::Float64,
+        F::Float64,
+        S::Float64,
+        rise::RiseCoefficients,
+        policy::StableRiseWind,
+        class::PasquillClass,
+)
+    z₀ = max(release, REFERENCE_HEIGHT)
+    u = wind_speed(atmosphere.reference_speed, z₀, atmosphere.surface, class)
+    policy == WIND_AT_RELEASE_HEIGHT && return u
+    c = rise.stable_final
     (S > 0 && F > 0 && c > 0 && u > 0) || return u
-    atmosphere = site.atmosphere
-    z₀ = max(release_height(site), REFERENCE_HEIGHT)
     Δh = c * (F / (u * S))^(1 / 3)
     for _ in 1:STABLE_RISE_MAX_ITERATIONS
         ū = layer_mean_wind_speed(
