@@ -6,7 +6,22 @@ follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-Nothing yet.
+### Changed
+
+- `Site` solves the wind of the stable final rise once per stability class
+  when it is constructed, where `stable_rise_wind_speed` used to iterate the
+  fixed point on every call, including at every node of the depletion
+  quadrature. `effective_height` halves in cost and the depleted long-term
+  dilution factor of the reference case drops from 3.0 to 1.9 ms. No result
+  changes.
+- The manual, the README, the docstrings and the comments are written as
+  plain prose; no number or claim moves, with one exception below.
+
+### Fixed
+
+- The conventions page and the 0.1.0 entry below said the sector the 2021
+  code reported as most exposed was the least exposed one. Under the reference
+  rose it is the fifth least exposed of sixteen; the page now states the rank.
 
 ## [0.3.0] - 2026-09-24
 
