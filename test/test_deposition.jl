@@ -123,9 +123,9 @@
             ),
         ) < ω / 100
 
-        # The column normalisation is √(2π) Σ_y u, which is what integrating
-        # the Gaussian plume over all z leaves. The 2021 code wrote √2 π,
-        # larger by exactly √π, understating deposition by that factor.
+        # The column normalisation is √(2π) Σ_y u, the result of integrating
+        # the Gaussian plume over all z. The 2021 code wrote √2 π, larger by
+        # exactly √π, understating deposition by that factor.
         Λ = washout_coefficients(PRECIPITATION_RAIN, 1.0).high
         u = transport_wind_speed(site, PASQUILL_D)
         x, _ = plume_frame(0.0, -1000.0, 0.0)

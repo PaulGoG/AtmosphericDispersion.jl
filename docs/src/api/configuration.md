@@ -4,10 +4,9 @@ CurrentModule = AtmosphericDispersion
 
 # Configuration
 
-A run is described by a TOML file, never by editing source. The loader checks
-presence, type, enumerated choice and numerical bound, rejects any key it does
-not read, and attaches every failure to the key it failed on by its full dotted
-path.
+A run is described entirely by a TOML file. The loader checks presence, type,
+enumerated choice and numerical bound, rejects any key it does not read, and
+attaches every failure to the key it failed on by its full dotted path.
 
 ```julia-repl
 julia> load_configuration("broken.toml")
@@ -21,12 +20,13 @@ An unread key is an error because it cannot be told from a misspelt one, and a
 misspelt optional key would otherwise take its default without a word.
 
 Validation runs at load and constructs the solver types immediately, so
-anything those constructors reject in turn — frequencies that do not sum to
-one, a negative stack height — fails at the same point rather than deep into a
+anything those constructors reject in turn (frequencies that do not sum to
+one, a negative stack height) fails at the same point rather than deep into a
 run.
 
 `config/reference.toml` is the annotated template: every key, its unit and its
-bounds. The comments there are limited to that; what the choices mean is below.
+bounds. The comments there are limited to that; the meaning of each choice is
+given below.
 
 ## The `[model]` table
 

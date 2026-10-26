@@ -43,7 +43,7 @@
         end
 
         # z₀ = 10 cm is the reference the fit is normalised on, so its
-        # correction is ln(2.72) — unity to within the rounding of e.
+        # correction is ln(2.72), unity to within the rounding of e.
         @test roughness_correction(1000.0, ROUGHNESS_PASTURE) ≈ 1 atol = 7e-4
     end
 
@@ -94,8 +94,8 @@
     # Eq. (3.14A) are 10⁻⁵ m⁻¹, 10⁻⁹ m⁻¹ for A and B respectively and
     # 1 × 10⁻² d⁻¹ and 2 × 10⁻⁵ d⁻¹ for λ₁ and λ₂ respectively."
     #
-    # Safety Series 57 has been superseded — every page of it now carries a
-    # "no longer valid" stamp — but it is the source these constants came
+    # Safety Series 57 has been superseded (every page of it now carries a
+    # "no longer valid" stamp), but it is the source these constants came
     # from, by way of reference [3] of CNCAN NSR-23, and no successor
     # restates them. See RESUSPENSION_MAXWELL_ANSPAUGH for the modern form.
     @testset "resuspension is IAEA Safety Series 57" begin
@@ -109,7 +109,7 @@
 
     # The washout table follows the published intensity dependence and
     # brackets the published amplitudes; it does not reproduce a single
-    # tabulation, and is asserted as what it is.
+    # tabulation.
     @testset "washout follows the published intensity law" begin
         # Λ ∝ J^0.75, from Slinn (1977) via NRPB-R322 (ADMLC, 2001) §3.1.1:
         # "a net dependence of scavenging coefficient on J^0.75".
@@ -143,8 +143,8 @@
             @test r.low ≤ 1.1e-4 ≤ r.high
         end
 
-        # The snow columns are the rain columns scaled down by a constant —
-        # a particle-scavenging suppression, and not a measurement.
+        # The snow columns are the rain columns scaled down by a constant, a
+        # particle-scavenging suppression and not a measurement.
         for (field, factor) in ((:low, 100), (:high, 500))
             ratios = [getfield(washout_coefficients(PRECIPITATION_RAIN, j), field) /
                       getfield(washout_coefficients(PRECIPITATION_SNOW, j), field)
@@ -159,7 +159,7 @@
     # height from the ground to 450 m, at x = 1 km on the plume axis.
     #
     # Q = 151 g/s, H = 150 m, u = 4 m/s, σ_y = 157 m, σ_z = 110 m. This is
-    # the only published table found that exercises *both* reflection terms
+    # the only published table found that exercises both reflection terms
     # at arbitrary receptor height; everything else evaluates at z = 0,
     # where the two coincide and a sign error in either would cancel.
     @testset "vertical profile against Turner Table 7-4" begin
@@ -217,8 +217,8 @@
         end
 
         # The profile peaks at plume height and is symmetric about it only
-        # in the first term; the ground reflection is what lifts z = 0 above
-        # the pure Gaussian and what makes the peak sit slightly below H.
+        # in the first term; the ground reflection lifts z = 0 above the
+        # pure Gaussian and makes the peak sit slightly below H.
         χs = [Q * dilution_instantaneous(0.0, -1000.0, Float64(z), site, PASQUILL_D, 0.0)
               for (z, _) in published]
         @test argmax(χs) == 6                       # z = 150 m, the release height
@@ -281,7 +281,7 @@
 
         # The one cell that is wrong in the source: category F at 30 m runs
         # 0.13 at 50 km and 0.19 at 100 km. A depletion factor cannot rise
-        # with distance — material already deposited does not return — so
+        # with distance (material already deposited does not return), so
         # the row is non-monotonic and cannot be right. This package gives
         # 0.0188 there, which is both monotone and a decimal point away from
         # the printed 0.19.
@@ -350,8 +350,8 @@
         @test ogram_snow_washout(1.0) ≈ 1.2e-4 + 3.0e-4
 
         # Ogram's measurement lands on NSR-23's own other-nuclides snow
-        # lower limit, a row it does not cite Ogram for — which is the
-        # evidence that the tritium row's snow column is the anomaly.
+        # lower limit, a row it does not cite Ogram for. That agreement is
+        # the evidence that the tritium row's snow column is the anomaly.
         for r in PRECIPITATION_RATES
             other = washout_coefficients(
                 PRECIPITATION_SNOW,
@@ -400,8 +400,8 @@
         # With c = 2β² = 0.72 the combined law implies a two-thirds
         # coefficient of (3/0.72)^(1/3) = 1.60915, against the 1.6 the
         # literature rounds it to and that `buoyant_rise` uses. The two
-        # therefore agree to 0.6 %, not exactly — the same rounding the
-        # neutral final rise shows as 21.425 against a published 21.4.
+        # therefore agree to 0.6 %; the neutral final rise shows the same
+        # rounding, 21.425 against a published 21.4.
         checked = 0
         for F in (5.0, 50.0, 500.0), u in (2.0, 5.0, 9.0), x in (50.0, 100.0, 300.0)
             two_thirds = 1.6 * F^(1 / 3) * x^(2 / 3) / u
@@ -505,11 +505,11 @@
         end
     end
 
-    # σ_z is *not* Briggs — it is the g(x)F(x) form of the normative, an
-    # NRPB-R91-style scheme with an explicit roughness correction. It is not
-    # asserted equal to Briggs; it is asserted to agree within the factor
-    # that separates published σ schemes, with the expected sign: less
-    # vertical spread than Briggs in unstable air, more in stable.
+    # σ_z is not Briggs: it is the g(x)F(x) form of the normative, an
+    # NRPB-R91-style scheme with an explicit roughness correction. It is
+    # asserted to agree with Briggs within the factor that separates
+    # published σ schemes, with the expected sign: less vertical spread
+    # than Briggs in unstable air, more in stable.
     @testset "σ_z brackets Briggs open country" begin
         briggs_z = Dict(
             PASQUILL_A => (x -> 0.20x),

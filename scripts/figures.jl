@@ -20,7 +20,7 @@ include(joinpath(@__DIR__, "theme_common.jl"))
 const FIGURES = isempty(ARGS) ? joinpath(@__DIR__, "..", "figures") : abspath(first(ARGS))
 
 # Both map axes carry the same label. Naming a direction in an axis label puts
-# the word on the edge it sits against — "north" down the left-hand spine — and
+# the word on the edge it sits against ("north" down the left-hand spine), and
 # the compass marks state the orientation anyway.
 const AXIS_LABEL = "Distance from the stack [km]"
 
@@ -91,9 +91,9 @@ end
 Long-term dilution factor over a square receptor grid centred on the stack.
 
 The sixteen-fold structure is the wind rose: the field is not circular, because
-the frequency of transport towards each sector is not uniform. This is the
-figure in which the direction convention is visible — reading the rose the
-other way round would reflect the map through the origin.
+the frequency of transport towards each sector is not uniform. The direction
+convention is visible in this figure: reading the rose the other way round would
+reflect the map through the origin.
 """
 function dispersion_field(config; half_width = 15_000.0, n = 221)
     xs = range(-half_width, half_width, length = n)
@@ -121,7 +121,7 @@ function figure_field(config)
     # Colour limits set from the field beyond 1 km. Inside that the elevated
     # plume has not reached the ground and the factor collapses through thirty
     # decades, which would take the whole colour scale and leave the sector
-    # structure — the thing worth seeing — as one flat tone.
+    # structure as one flat tone.
     far = [field[i, j]
            for (i, e) in enumerate(xs), (j, n) in enumerate(xs)
            if
@@ -150,8 +150,7 @@ function figure_field(config)
     text!(ax, 0.4, 0.4; text = "Stack", fontsize = ANNOTATION_SIZE, color = :white)
     compass!(ax)
     # Explicit ticks: the range spans about 1.2 decades, so automatic log ticks
-    # land on fractional exponents like 10^6.75, which are not a thing anyone
-    # reads off a colour bar.
+    # land on fractional exponents like 10^6.75.
     Colorbar(
         fig[1, 2],
         hm,
@@ -271,11 +270,11 @@ end
 
 The instantaneous ground-level plume, as the wind direction sweeps the compass.
 
-This is the figure that shows the direction convention doing its work. The
-bearing is the direction the wind blows **from**, as in a `.met` file, so the
-plume always lies on the opposite side of the stack: at a bearing of 0 — a
-northerly — the plume runs south. Averaging these over a year, weighted by how
-often the wind blows towards each sector, is what the long-term field is.
+The figure shows the direction convention at work. The bearing is the direction
+the wind blows from, as in a `.met` file, so the plume always lies on the
+opposite side of the stack: at a bearing of 0 (a northerly) the plume runs
+south. The long-term field is the average of these over a year, weighted by how
+often the wind blows towards each sector.
 """
 function figure_animation(config; half_width = 20_000.0, n = 141, frames = 72)
     xs = range(-half_width, half_width, length = n)
@@ -333,11 +332,10 @@ function figure_animation(config; half_width = 20_000.0, n = 141, frames = 72)
     # than the page they are shown on: at 2 the five of them come to 21 MB.
     record(fig, path, bearings; framerate = 12, px_per_unit = 1) do β
         compute!(β)
-        # Both halves, deliberately. "Wind from N" alone is correct and reads
-        # backwards at a glance — the plume is on the opposite side to the
-        # direction named — and that ambiguity is what put the 2021 dose field
-        # the wrong way round. The label states the consequence as well as the
-        # convention so it cannot be misread.
+        # The label states the consequence as well as the convention.
+        # "Wind from N" alone is correct but reads backwards at a glance, since
+        # the plume is on the opposite side to the direction named, and that
+        # ambiguity put the 2021 dose field the wrong way round.
         label[] = SWEEP_LABEL[](β)
     end
     return path
@@ -349,9 +347,8 @@ end
 Record a multi-panel sweep of the compass, one panel per entry of `panels`.
 
 Each panel is a `(name, f)` pair where `f(east, north, bearing)` returns the
-ground-level dilution factor in s/m³. Every panel shares one colour scale, which
-is the point: the comparison is quantitative, not a set of separately normalised
-pictures.
+ground-level dilution factor in s/m³. Every panel shares one colour scale, so the
+comparison between panels is quantitative.
 """
 function panel_sweep(
         path,
@@ -374,7 +371,7 @@ function panel_sweep(
     grid_layout = fig[1, 1] = GridLayout()
     rows = cld(length(panels), columns)
     # Ticks stop short of the frame. Labelling the extremes puts the last label
-    # of one panel against the first of the next, which is what "2020" was.
+    # of one panel against the first of the next; that collision read as "2020".
     ticks = ([-10.0, 0.0, 10.0], ["−10", "0", "10"])
     axes = Axis[]
     local hm
@@ -438,7 +435,7 @@ function panel_sweep(
         push!(axes, ax)
     end
 
-    # One label per direction for the whole grid rather than one per panel.
+    # One label per direction for the whole grid.
     Label(grid_layout[rows + 1, 1:columns], AXIS_LABEL)
     Label(grid_layout[1:rows, 0], AXIS_LABEL, rotation = π / 2)
 
@@ -489,10 +486,10 @@ end
 Two cases of the same release and the ratio between them, swept over the
 compass.
 
-The ratio panel is the point. Two dilution fields that differ by a factor of a
-few look almost identical on a colour ramp spanning three decades, so the
-difference is drawn explicitly on a diverging scale centred on 1, where anything
-away from white is a real change and the colour bar reads as a factor.
+Two dilution fields that differ by a factor of a few look almost identical on a
+colour ramp spanning three decades, so the ratio panel draws the difference
+explicitly on a diverging scale centred on 1, where anything away from white is a
+real change and the colour bar reads as a factor.
 """
 function comparison_sweep(
         path,
@@ -647,12 +644,11 @@ end
 The same release with and without a building beside the stack, in the worst
 case: one tall enough to swallow the plume entirely.
 
-The wake criterion is a threshold, not a gradient. A stack clearing two and a
-half building heights escapes untouched; one leaving *below* the building top is
-entrained into the aerodynamic cavity and released at ground level. A 60 m
-building next to this 50.3 m stack is on the far side of that threshold, so the
-effective release height goes from 50.3 m to **zero** and the comparison shows
-the whole effect rather than a fraction of it.
+The wake criterion is a threshold. A stack clearing two and a half building
+heights escapes untouched; one leaving below the building top is entrained into
+the aerodynamic cavity and released at ground level. A 60 m building next to this
+50.3 m stack is on the far side of that threshold, so the effective release height
+goes from 50.3 m to zero and the comparison shows the whole effect.
 """
 function figure_buildings(config)
     source, air = config.site.source, config.site.atmosphere
@@ -713,8 +709,8 @@ end
 The same release with and without depletion by decay, deposition and washout.
 
 Depletion is a multiplicative factor below one that grows with distance, so on a
-three-decade colour ramp the two fields look the same. The ratio panel is what
-shows it.
+three-decade colour ramp the two fields look the same. The ratio panel shows the
+difference.
 """
 function figure_depletion(config)
     site, nuclide = config.site, config.nuclide
@@ -735,7 +731,7 @@ function figure_depletion(config)
         ),
         ("Depleted", depleted);
         half_width = 20_000.0,
-        # Depletion over 20 km is a matter of per cent, not of factors.
+        # Depletion over 20 km is a matter of per cent.
         ratio_span = 1.5,
         ratio_ticks = [0.7, 0.8, 0.9, 1.0, 1.1, 1.25, 1.4],
     )

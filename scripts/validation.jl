@@ -9,7 +9,7 @@
 #
 # These are for inspection. Where the package asserts an identity in the test
 # suite the curves must lie on top of one another, and where it only claims a
-# bracket the figure is what shows how wide the bracket is.
+# bracket the figure shows how wide the bracket is.
 
 include(joinpath(@__DIR__, "activate.jl"))
 

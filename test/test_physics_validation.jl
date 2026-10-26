@@ -1,7 +1,6 @@
 # Physics validation: the solver is checked against the analytic properties
-# of the Gaussian plume rather than only against itself. These are the
-# statements that would fail first if a normalisation, a reflection term or
-# a sector width were wrong.
+# of the Gaussian plume. These are the statements that would fail first if a
+# normalisation, a reflection term or a sector width were wrong.
 @testset "Physics validation" begin
     stack = StackSource(;
         height = 50.3,
@@ -18,10 +17,10 @@
         surface = SURFACE_AGRICULTURAL,
         roughness = ROUGHNESS_PASTURE,
     )
-    # Unbounded on purpose. The crosswind integral, the sector average and
-    # the Σ_z = H/√2 maximum are all properties of the *unbounded* Gaussian;
-    # under a lid the plume is confined and they no longer hold as written.
-    # The lid has its own conservation test below.
+    # The site is unbounded on purpose. The crosswind integral, the sector
+    # average and the Σ_z = H/√2 maximum are all properties of the unbounded
+    # Gaussian; under a lid the plume is confined and they no longer hold as
+    # written. The lid has its own conservation test below.
     site = Site(; source = stack, atmosphere = air, mixing = MIXING_UNBOUNDED)
     distances = (500.0, 2000.0, 10_000.0)
 
@@ -77,10 +76,9 @@
     end
 
     # The ground-level centreline maximum falls at Σ_z = H/√2. That is exact
-    # only under the assumptions of its derivation — H fixed and Σ_y ∝ Σ_z —
-    # so it is asserted there. In the real field it lands within 6 %, and the
-    # residual is Σ_y/Σ_z drifting by about a quarter across the peak region,
-    # not an error.
+    # only under the assumptions of its derivation (H fixed and Σ_y ∝ Σ_z),
+    # so it is asserted there. In the real field it lands within 6 %; the
+    # residual is Σ_y/Σ_z drifting by about a quarter across the peak region.
     @testset "ground-level maximum" begin
         for H in (50.0, 100.0, 200.0), u in (2.0, 5.0)
 

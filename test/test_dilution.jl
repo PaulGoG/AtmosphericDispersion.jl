@@ -84,7 +84,7 @@
         @test first(values) > 0
 
         # The two conventions give fields that are exact mirror images,
-        # sector by sector. This is the defect, isolated.
+        # sector by sector. This test isolates the defect.
         f = [
             0.07849,
             0.07849,
@@ -135,7 +135,7 @@
     @testset "long term is the rose-weighted extended regime" begin
         # With every hour spent in one class, the long-term factor on a
         # sector axis is the extended factor times the frequency of
-        # transport towards that sector — identically, whatever the vertical
+        # transport towards that sector, identically for any vertical
         # profile. It fails if the two regimes treat the mixing lid
         # differently, which they once did: the lid reached the extended
         # regime and the depletion integral but not the long-term sum.
