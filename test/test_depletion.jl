@@ -40,8 +40,9 @@
     end
 
     @testset "dry depletion" begin
+        x_floor = AtmosphericDispersion.DEPLETION_INTEGRAL_FLOOR
         for class in PASQUILL_CLASSES
-            @test depletion_integral(DEPLETION_INTEGRAL_FLOOR, site, class) == 0
+            @test depletion_integral(x_floor, site, class) == 0
             @test depletion_integral(0.5, site, class) == 0
             # The integral accumulates with distance.
             I = [depletion_integral(x, site, class) for x in (10.0, 1e3, 1e4, 1e5)]

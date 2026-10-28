@@ -25,7 +25,8 @@ Lower limit in metres of the dry-depletion integral.
 
 The integrand carries a `1/σ_z` that diverges as the source is approached, so
 the integral is started a short distance downwind. The 2021 code used the same
-one-metre floor.
+one-metre floor. A numerical control rather than part of the model, so it is
+not exported.
 """
 const DEPLETION_INTEGRAL_FLOOR = 1.0
 

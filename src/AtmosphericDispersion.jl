@@ -200,8 +200,6 @@ export AbstractSite,
        release_height,
        transport_wind_speed,
        stable_rise_wind_speed,
-       STABLE_RISE_TOLERANCE,
-       STABLE_RISE_MAX_ITERATIONS,
        effective_height,
        corrected_lateral_dispersion,
        corrected_vertical_dispersion,
@@ -230,8 +228,7 @@ export WashoutEvent,
        depletion_integral,
        dry_depletion_factor,
        wet_depletion_factor,
-       depletion_factor,
-       DEPLETION_INTEGRAL_FLOOR
+       depletion_factor
 
 # dilution.jl
 export plume_frame,

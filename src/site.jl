@@ -181,6 +181,7 @@ end
 
 Relative change of the stable final rise between two iterations below which
 [`stable_rise_wind_speed`](@ref) takes the rise and its mean wind as solved.
+Not exported.
 """
 const STABLE_RISE_TOLERANCE = 1e-12
 
@@ -189,7 +190,8 @@ const STABLE_RISE_TOLERANCE = 1e-12
 
 Iterations [`stable_rise_wind_speed`](@ref) allows the rise and its mean wind
 to converge in before it gives up. The map contracts strongly, since the rise
-varies as the inverse cube root of the wind, and a handful suffice.
+varies as the inverse cube root of the wind, and a handful suffice. Not
+exported.
 """
 const STABLE_RISE_MAX_ITERATIONS = 100
 
