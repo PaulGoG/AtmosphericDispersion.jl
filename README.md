@@ -400,7 +400,7 @@ are in [CHANGELOG.md](CHANGELOG.md).
   author  = {Gogîță, Paul-Adrian},
   title   = {AtmosphericDispersion.jl: Gaussian-plume atmospheric dispersion of stack releases},
   year    = {2026},
-  version = {0.3.0},
+  version = {1.0.0},
   url     = {https://github.com/PaulGoG/AtmosphericDispersion.jl}
 }
 ```

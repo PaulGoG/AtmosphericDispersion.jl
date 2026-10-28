@@ -4,10 +4,26 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0] - 2026-10-28
+
+The package is feature-complete, and this release fixes its public interface.
+One change breaks code that used it: three numerical controls are no longer
+exported. No result changes.
+
+### Added
+
+- A PrecompileTools workload, a configured run and the manual's worked run,
+  compiled into the package image. The first long-term field of a session,
+  configuration loading included, takes 0.04 s after `using` instead of 3.8 s.
 
 ### Changed
 
+- `STABLE_RISE_TOLERANCE`, `STABLE_RISE_MAX_ITERATIONS` and
+  `DEPLETION_INTEGRAL_FLOOR` are no longer exported. They govern the
+  convergence of the stable rise and the lower limit of the depletion
+  quadrature, not the model, and code that reads them qualifies the name, as in
+  `AtmosphericDispersion.DEPLETION_INTEGRAL_FLOOR`. The model thresholds
+  `MECHANISM_BALANCE_TOLERANCE` and `WAKE_WIND_THRESHOLD` remain exported.
 - `Site` solves the wind of the stable final rise once per stability class
   when it is constructed, where `stable_rise_wind_speed` used to iterate the
   fixed point on every call, including at every node of the depletion
@@ -16,6 +32,9 @@ follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
   changes.
 - The manual, the README, the docstrings and the comments are written as
   plain prose; no number or claim moves, with one exception below.
+- The README and the manual state the maintenance status and what lies outside
+  the scope of the package: a stability category G, a Prairie Grass benchmark,
+  and fumigation.
 
 ### Fixed
 
