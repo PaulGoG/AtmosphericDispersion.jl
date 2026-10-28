@@ -63,6 +63,16 @@ blowing-towards internally, so the formulae cannot be fed the wrong sense.
 Getting this wrong rotates the whole field by half a turn while leaving every
 magnitude and sum rule intact.
 
+## Status
+
+The package is feature-complete and in maintenance mode: bugs are fixed,
+disagreements with a published source corrected, and new Julia and dependency
+releases followed, but no new features are planned. The exported interface is
+stable from 1.0.0 under semantic versioning. Names documented here but not
+exported, such as the convergence controls of the stable rise, are not part of
+it. A stability category G, a Prairie Grass benchmark and fumigation are
+outside the scope; the README gives the reasons.
+
 ## The module
 
 ```@docs

@@ -266,8 +266,13 @@ Build it locally with `julia docs/make.jl`.
 
 ## Status
 
-The solver is complete, configuration-driven, and validated as above. What each
-component follows:
+The package is feature-complete and in maintenance mode. I fix bugs, correct
+anything that disagrees with its published source, and keep it working on new
+Julia releases and dependency versions, but I do not plan new features. Reports
+of either kind are welcome as issues. The public interface is stable from 1.0.0
+and follows semantic versioning.
+
+What each component follows:
 
 | Component | Follows |
 |---|---|
@@ -279,16 +284,20 @@ component follows:
 | Dilution | instantaneous, sector-averaged with the constant of RG 1.111 or SRS-19, and long term over the rose |
 | Depletion and deposition | decay, dry deposition, NSR-23 Table 7 washout with Slinn's J^0.75 law and Ogram's snow scavenging of HTO; dry and wet deposition; Safety Series 57 or Maxwell–Anspaugh resuspension |
 | `Site` and `PrescribedPlume` | the per-run precomputation, and a plume whose height, wind or σ a published benchmark states |
-| Quality | Aqua, JET and ExplicitImports in the suite; 6906 assertions; CI on the LTS, the current and the pre-release Julia; the manual built with its doctests |
+| Quality | Aqua, JET and ExplicitImports in the suite; 6906 assertions; CI on the LTS and the current Julia, rerun monthly without a commit; the manual built with its doctests |
 
-Not yet carried:
+Outside the scope of the package:
 
-- A stability category G, which XOQDOQ and HPA-RPD-058 both carry and this
-  package does not
-- The Prairie Grass crosswind-integrated concentrations, whose disputed
-  roughness length sits directly under Hosker's correction
-- Fumigation of a plume that has risen above the lid, which neither lid rule
-  models
+- Stability category G. Briggs (1973) and Hosker (1974) define σ for classes A
+  to F only, and XOQDOQ forms its G from the F and E curves (`σ_F²/σ_E`) rather
+  than from data.
+- The Prairie Grass crosswind-integrated concentrations as a benchmark. The
+  roughness length of the site is disputed between 0.006 and 0.03 m and enters
+  directly through Hosker's correction, so the comparison would test the choice
+  of z₀ more than the model.
+- Fumigation of a plume that has risen above the lid. It depends on how the
+  mixed layer grows into the plume over time, which a steady-state Gaussian
+  plume does not describe, and neither lid rule models it.
 
 The wind rose of the reference case is not a measured rose for a site: the
 frequencies came from meteorological data for the Pitești fuel plant and the
