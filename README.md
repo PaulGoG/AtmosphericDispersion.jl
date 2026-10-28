@@ -339,7 +339,8 @@ the configuration says so.
 │   ├── nuclides.jl         species: decay constant and deposition velocity
 │   ├── depletion.jl        decay, dry deposition and washout
 │   ├── deposition.jl       ground deposition and resuspension
-│   └── config.jl           TOML loader, validated key by key
+│   ├── config.jl           TOML loader, validated key by key
+│   └── precompile.jl       PrecompileTools workload: a configured run
 ├── test/
 │   ├── Project.toml
 │   ├── activate.jl

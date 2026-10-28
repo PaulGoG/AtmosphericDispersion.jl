@@ -13,6 +13,7 @@ and right in every other respect.
 """
 module AtmosphericDispersion
 
+using PrecompileTools: @compile_workload, @setup_workload
 using QuadGK: quadgk
 using TOML: TOML
 
@@ -249,5 +250,7 @@ export dry_deposition,
 
 # config.jl
 export ConfigurationError, RunConfiguration, load_configuration, configuration_from
+
+include("precompile.jl")
 
 end
