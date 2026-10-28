@@ -44,6 +44,12 @@ jobs:
       - uses: julia-actions/cache@v3
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
+        with:
+          # On a Dependabot branch the action tests only the newest version each
+          # [compat] entry admits. The newest JET and PrecompileTools no longer
+          # install on Julia 1.10, so on the LTS that check cannot pass; the
+          # current-release job keeps it.
+          force_latest_compatible_version: ${{ matrix.version == 'lts' && 'false' || 'auto' }}
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v7
         with:
