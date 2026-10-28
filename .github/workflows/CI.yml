@@ -6,6 +6,10 @@ on:
     tags: ['*']
   pull_request:
   workflow_dispatch:
+  # The package is in maintenance mode, so commits are rare; a monthly run
+  # catches breakage from new Julia and dependency releases between them.
+  schedule:
+    - cron: '17 5 1 * *'
 concurrency:
   # Skip intermediate builds: always.
   # Cancel intermediate builds: only if it is a pull request build.
@@ -16,10 +20,6 @@ jobs:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
-    # The pre-release Julia is informational: the static-analysis tooling
-    # (JET) trails new minor versions by months, and the package supports the
-    # LTS and the current release.
-    continue-on-error: ${{ matrix.version == 'pre' }}
     permissions:
       actions: write # needed to allow julia-actions/cache to proactively delete old caches that it has created
       contents: read
@@ -28,11 +28,9 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          # The [compat] floor in Project.toml, the current release, and the
-          # next one.
+          # The [compat] floor in Project.toml and the current release.
           - 'lts'
           - '1'
-          - 'pre'
         os:
           - ubuntu-latest
         arch:

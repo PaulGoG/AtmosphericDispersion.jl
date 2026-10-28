@@ -3,14 +3,14 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
   - package-ecosystem: "julia"
     directories:
       - "/"
       - "/docs"
       - "/test"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     # Standard libraries are versioned with Julia itself, so a [compat] entry
     # on one is not a requirement that can be bumped.
     ignore:
