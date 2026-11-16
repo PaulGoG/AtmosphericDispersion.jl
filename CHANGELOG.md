@@ -4,6 +4,48 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Corrections from an independent review of the physics against the literature.
+No result of the reference case changes.
+
+### Added
+
+- A "Known limitations" page in the manual and a section in the README: what
+  the review found and has not been corrected, with the size of each effect.
+  The largest are the stability parameter formed from one lapse rate for all
+  six Pasquill classes, and washout that does not depend on travel time.
+
+### Fixed
+
+- A per-sector stability matrix is rotated with the frequencies when the wind
+  rose is given as blowing-from. It was stored as given, so
+  `stability_fraction` returned the stability of the wind from a sector where
+  it is documented as that of the wind towards it. A six-element stability
+  vector, the only form the configuration loader passes, was not affected.
+- `bearing` returns zero, not 2π, for a point a rounding error west of north.
+- The configuration loader rejects `atmosphere.reference_speed = 0`, which it
+  accepted before the run failed in the plume rise.
+- Statements in the manual and the docstrings that did not match their source
+  or the code: the 800 m mixing depth is the long-range recommendation of
+  HPA-RPD-058 §3.2.2.2.4; the roughness correction has 24 coefficients, and the
+  1.9 % and 3.6 % effect of the normative's two misprints holds at 100 m; rain
+  scavenges faster than snow only in the tritium and iodine row of the washout
+  table; the Maxwell–Anspaugh resuspension model changes the slow term as well
+  and lies above Safety Series 57 from about 905 days; `β_j = 1/3 + u/w₀` is
+  EPA ISC3 Eq. (1-27); SRS-19 Eq. (6) broadens σ_z only; the release height,
+  not the effective height, is zero for a release entrained into a cavity.
+- The deposition velocity of HTO is compared with Lee et al. (2012,
+  doi:10.2172/1038895), who recommend zero for safety analyses; the
+  comparison with uncited values is removed.
+
+### Changed
+
+- The formatting check runs as its own workflow, and JET runs on the current
+  Julia release only.
+- The README, the manual, the docstrings and the comments are reworded in
+  literal terms.
+
 ## [1.0.0] - 2026-10-28
 
 The package is feature-complete, and this release fixes its public interface.
