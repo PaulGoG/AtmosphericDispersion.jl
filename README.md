@@ -9,7 +9,7 @@
 [![Format](https://github.com/PaulGoG/AtmosphericDispersion.jl/actions/workflows/Format.yml/badge.svg?branch=main)](https://github.com/PaulGoG/AtmosphericDispersion.jl/actions/workflows/Format.yml?query=branch%3Amain)
 [![Julia](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2FPaulGoG%2FAtmosphericDispersion.jl%2Fmain%2FProject.toml&query=%24.compat.julia&label=julia&color=9558b2)](https://julialang.org/downloads/)
 
-`atmospheric-dispersion` `gaussian-plume` `radiological-assessment` `dose-assessment` `nuclear-safety` `air-quality` `computational-physics` `julia`
+`julia` `julia-package` `computational-physics` `scientific-computing` `physics-simulation` `research-software` `atmospheric-dispersion` `radiological-assessment`
 
 Gaussian-plume atmospheric dispersion of radioactive stack releases: dilution
 factor, time-integrated air concentration, dry and wet ground deposition, and
@@ -287,7 +287,7 @@ What each component follows:
 | Dilution | instantaneous, sector-averaged with the constant of RG 1.111 or SRS-19, and long term over the rose |
 | Depletion and deposition | decay, dry deposition, NSR-23 Table 7 washout with Slinn's J^0.75 law and Ogram's snow scavenging of HTO; dry and wet deposition; Safety Series 57 or Maxwell–Anspaugh resuspension |
 | `Site` and `PrescribedPlume` | the per-run precomputation, and a plume whose height, wind or σ a published benchmark states |
-| Quality | Aqua, ExplicitImports and, on the current Julia, JET in the suite; 6933 assertions; CI on the LTS and the current Julia, rerun monthly without a commit; the manual built with its doctests |
+| Quality | Aqua, ExplicitImports and, on the current Julia, JET in the suite; 6932 assertions; CI on the LTS and the current Julia, rerun monthly without a commit; the manual built with its doctests |
 
 Outside the scope of the package:
 

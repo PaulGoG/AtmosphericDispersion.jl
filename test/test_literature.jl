@@ -315,10 +315,10 @@
         @test ht.low == 0.04e-2
         @test ht.high == 0.05e-2
 
-        # The lower HTO bound is close to what other sources put it at:
-        # the MACCS2 default 0.5 cm/s, the Savannah River measurement 0.42,
-        # the upper end of the AECL range, 0.444.
-        for v in (0.5e-2, 0.42e-2, 0.444e-2)
+        # The range contains the 0.5 cm/s of the MACCS2 guidance and the
+        # daylight average of 0.42 cm/s over forest at the Savannah River Site,
+        # both as reported by Lee et al. (2012), doi:10.2172/1038895.
+        for v in (0.5e-2, 0.42e-2)
             @test hto.low ≤ v ≤ hto.high
         end
     end

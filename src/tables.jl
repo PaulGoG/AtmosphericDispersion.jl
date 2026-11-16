@@ -321,7 +321,8 @@ function eimutis_konicek_vertical_coefficients(class::PasquillClass, x::Real)
     return _EIMUTIS_KONICEK_VERTICAL[classindex(class)][range]
 end
 
-# Table 4: exponent of the power-law wind profile, indexed [surface, class].
+# NSR-23 Table 4, which cites IAEA Safety Series 57: exponent of the power-law
+# wind profile, indexed [surface, class].
 const _PROFILE_EXPONENT = (
     (0.03, 0.05, 0.06, 0.08, 0.10, 0.12),   # water
     (0.10, 0.15, 0.20, 0.25, 0.35, 0.40),   # agricultural
@@ -383,7 +384,9 @@ scavenging of tritiated water is stated explicitly rather than inherited. See
 end
 
 # NSR-23 Table 7, both rows, at PRECIPITATION_RATES. Indexed
-# [species][precipitation][rate].
+# [species][precipitation][rate]. The normative prints the lower snow value of
+# the tritium row at 0.5 mm/h as "< 10⁻⁷"; 5 × 10⁻⁸, half of the next column, is
+# the value the 2021 code carried.
 const _WASHOUT = (
     (   # tritium and iodine
         (   # rain

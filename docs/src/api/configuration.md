@@ -92,8 +92,9 @@ default, or `other` for every other radionuclide. See [`WashoutSpecies`](@ref).
 ## The `[buildings]` table
 
 `wake_coefficient` is `C` in `√(σ² + C A/π)`. The default of 1 is IAEA SRS-19
-Eq. (6) and AVV [AVV2012](@cite) Eqs. (4.31)/(4.32); NSR-23 uses 1.5
-([`NSR23_WAKE_COEFFICIENT`](@ref)). Zero disables the correction.
+Eq. (6) and AVV [AVV2012](@cite) Eqs. (4.31)/(4.32); NSR-23 gives 0.5 to 2.0,
+and the 2021 code used 1.5 ([`NSR23_WAKE_COEFFICIENT`](@ref)). Zero disables
+the broadening.
 
 ## The `[wind_rose]` table
 

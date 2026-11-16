@@ -71,13 +71,13 @@ velocities to zero gives the conservative air concentration.
 
 ## Buildings
 
-The rules below are those of the normative as the 2021 code implemented them.
-
 - The equivalent building is a mean over the buildings near the stack, weighted
-  by inverse distance. A small structure close to the stack therefore lowers
-  the equivalent height of a large one further away: a 3 m shed at 5 m reduces
-  a 60 m building at 50 m to an equivalent 8.2 m, and the release is no longer
-  entrained. IAEA SRS-19 §3.3 takes the building that most influences the flow.
+  by inverse distance, as the 2021 code formed it. A small structure close to
+  the stack therefore lowers the equivalent height of a large one further away:
+  a 3 m shed at 5 m reduces a 60 m building at 50 m to an equivalent 8.2 m, and
+  the release is no longer entrained. NSR-23 takes the nearest building in the
+  vicinity of the source, and IAEA SRS-19 §3.3 the building that most
+  influences the flow.
 - A release entrained into the cavity leaves from ground level but still
   receives the full plume rise, computed with the wind at 10 m. For a 60 m
   building 25 m from the reference stack the effective height in class D is

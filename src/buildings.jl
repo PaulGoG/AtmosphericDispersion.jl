@@ -47,9 +47,10 @@ height is still lowered by [`wake_height`](@ref).
 The default is one, which IAEA Safety Reports Series No. 19 [IAEA2001](@cite)
 Eq. (6) writes as `Σ_z = (σ_z² + A_B/π)^(1/2)`, for the vertical parameter
 only, and the German AVV zu §47 StrlSchV [AVV2012](@cite) Eqs. (4.31)/(4.32)
-as `√(σ² + I_G²/π)`. This package broadens both parameters. The 2021 thesis
-code used 1.5, following the Romanian normative it was written against, and no
-source outside that normative was found for it; NRC Regulatory Guide 1.111
+as `√(σ² + I_G²/π)`. This package broadens both parameters, as CNCAN NSR-23
+[CNCAN2004](@cite) Eq. (9) does. NSR-23 gives `C` between 0.5 and 2.0 and
+recommends the value within that interval which gives the largest dilution
+factor; the 2021 thesis code used 1.5. NRC Regulatory Guide 1.111
 [NRC1977](@cite) Eq. (9) is a third convention again, applying 0.5 to the building
 height rather than its area.
 
@@ -60,8 +61,9 @@ const DEFAULT_WAKE_COEFFICIENT = 1.0
 """
     NSR23_WAKE_COEFFICIENT
 
-The wake coefficient of the Romanian normative the 2021 thesis followed, kept so
-its results can be reproduced. See [`DEFAULT_WAKE_COEFFICIENT`](@ref).
+The wake coefficient of the 2021 thesis code, kept so that its results can be
+reproduced. It lies inside the interval 0.5–2.0 that CNCAN NSR-23 gives; see
+[`DEFAULT_WAKE_COEFFICIENT`](@ref).
 """
 const NSR23_WAKE_COEFFICIENT = 1.5
 

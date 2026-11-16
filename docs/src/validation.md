@@ -373,9 +373,7 @@ tropopause be taken at 12–15 km.
 The lower bound is close to measured values. [Lee2012](@citet) report a daylight
 average of about 0.42 cm/s over forest at the Savannah River Site, within a
 published range of 0.07 to 2.8 cm/s, and 0.5 cm/s was the value of the MACCS2
-guidance their report re-examines. A range of 0.392–0.444 cm/s attributed to
-AECL, whose lower end is 2 % below the norm's 0.4, is asserted in the suite but
-I have no reference for it.
+guidance their report re-examines.
 
 A deposition velocity above zero for HTO is a deliberate divergence, and it is
 not the conservative choice for the air concentration. IAEA SRS-19 §3.9,
@@ -449,9 +447,10 @@ NUREG/CR-7270).
 
 The building-wake coefficient defaults to 1.0, which is IAEA SRS-19
 Eq. (6), `Σ_z = (σ_z² + A_B/π)^(1/2)`, and the German AVV Eqs. (4.31)/(4.32),
-`√(σ² + I_G²/π)`. NSR-23 used 1.5 and no source outside it was found;
-`NSR23_WAKE_COEFFICIENT` restores it. RG 1.111 Eq. (9) is a third convention
-again, applying 0.5 to the building height rather than its area.
+`√(σ² + I_G²/π)`. NSR-23 Eq. (9) gives `C` between 0.5 and 2.0 and
+recommends the value that gives the largest dilution factor; the 2021 code
+used 1.5, which `NSR23_WAKE_COEFFICIENT` restores. RG 1.111 Eq. (9) is a third
+convention again, applying 0.5 to the building height rather than its area.
 
 Snow washout of tritiated water is selectable, as described under the washout
 table above: `[model] washout = "hto"` replaces the upper snow coefficient of
