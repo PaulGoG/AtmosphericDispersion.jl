@@ -369,25 +369,37 @@ At four rates the measurement, which the normative does not cite, agrees within
 `exp(−Λt)` with `t` "the period of time during which the radioactive material
 is subjected to the process". The 2021 code took `t` as the duration of the
 precipitation, the same at every distance. Material scavenged on its way to a
-receptor is scavenged for its travel time `x/u`, but not for longer than the
-precipitation lasts, and only material released while it falls is scavenged
-at all. The package therefore takes the share `f = min(t_w/T_R, 1)` of a
-release of duration `T_R` to travel through precipitation lasting `t_w`, and
-the factor becomes `1 − f + f exp(−Λ_L min(x/u, t_w))`. A precipitation that
-lasts the whole release gives the familiar `exp(−Λ_L x/u)`; none gives one.
-The bound is that of material released as the precipitation begins; material
-released later leaves it sooner, and material released earlier and still in
-transit is caught by it, which this form neglects.
+receptor is scavenged for its travel time `x/u`, and only material released
+while it rains is scavenged at all, so the package takes the share
+`f = min(t_w/T_R, 1)` of a release of duration `T_R` to travel through rain
+lasting `t_w`, and the factor becomes `1 − f + f exp(−Λ_L x/u)`. A
+precipitation that lasts the whole release gives the familiar `exp(−Λ_L x/u)`;
+none gives one.
+
+The form takes the precipitation to stay on the material released into it for
+the whole travel time, which holds when it lasts longer than `x/u`. The tests
+check it against an average over parcels released uniformly through the
+release, each exposed for the overlap of its transit with a precipitation
+fixed over the site: with 10⁶ s of precipitation in a 10⁷ s release the two
+agree to the edge effect, of order `(x/u)/t_w`. A shorter precipitation has no
+single answer, because the result depends on when it falls. For
+`Λ_L = 10⁻³ s⁻¹`, 900 s of it in a 3600 s release and `x/u = 3333 s`, the
+surviving fraction is 0.92 if it falls at the start of the release and 0.47 at
+the end, and the form gives 0.76. Capping the exposure at `t_w` is no bound
+either (0.85 in that case), so the package keeps the form and
+`load_configuration` warns when the receptor grid reaches beyond the distance
+`u t_w`.
 
 Wet deposition, NSR-23 Eq. (38), is the high coefficient times the column
 depleted with the low one. Integrated over the ground, that deposits `Λ_H/Λ_L`
 times what the column loses, 20 for tritium in rain at 1 mm/h, and more than
 the release itself once the travel time exceeds about `1/Λ_H`. The package depletes
-the deposited column with the coefficient it deposits with and ends the
-deposit at `u t_w`, where that material leaves the precipitation, so the
-deposit out to `x` is `f A (1 − exp(−Λ_H min(x/u, t_w)))` before decay and
-never exceeds the activity released into the precipitation. The tests assert
-that integral.
+the deposited column with the coefficient it deposits with, so the deposit
+out to `x` is `f A (1 − exp(−Λ_H x/u))` before decay and never exceeds the
+activity released into the precipitation. The tests assert that integral. A
+short precipitation fixed over the site also catches material already in
+transit when it begins, and can then deposit up to `(t_w + x/u)/T_R` of the
+release.
 
 ### The tritium deposition velocities
 

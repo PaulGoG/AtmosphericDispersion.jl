@@ -111,10 +111,12 @@ to D take no stable limit whatever its value; see
 
 `washout_duration` is how long it rains or snows during the release. That
 share of the release, `min(washout_duration/release.duration, 1)`, is
-scavenged for its travel time to each receptor, up to `washout_duration`, and
-the rest is not; zero, the
-reference value, turns washout and wet deposition off. See
-[`WashoutEvent`](@ref).
+scavenged for its travel time to each receptor, and the rest is not; zero, the
+reference value, turns washout and wet deposition off. The form assumes the
+precipitation lasts at least the travel time; when `washout_duration` is
+shorter than the time the slowest class takes to reach `grid.extent`, the
+loader warns that the result beyond `u × washout_duration` depends on when the
+precipitation falls. See [`WashoutEvent`](@ref).
 
 ## The `[wind_rose]` table
 

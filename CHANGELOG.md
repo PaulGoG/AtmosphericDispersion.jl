@@ -25,17 +25,18 @@ reference case change, through the first item only.
   and the class D ground-level maximum moves from 1.58 × 10⁻⁶ s m⁻³ at 2.15 km
   to 9.9 × 10⁻⁷ at 2.85 km.
 - Washout acts for the travel time `x/u`, which is NSR-23's "period of time
-  during which the radioactive material is subjected to the process", up to
-  the duration `t_w` of the precipitation, on the share `min(t_w/T_R, 1)` of
-  the release that falls in it. Earlier versions scavenged the whole release
-  for `t_w`, the same at every distance. `WashoutEvent` takes
+  during which the radioactive material is subjected to the process", on the
+  share `min(t_w/T_R, 1)` of the release that falls in the precipitation.
+  Earlier versions scavenged the whole release for the duration `t_w` of the
+  precipitation, the same at every distance. The form holds for precipitation
+  lasting longer than the travel time; for a shorter one the result depends on
+  when it falls, and the loader warns. `WashoutEvent` takes
   `release_duration`, which the loader sets from `[release] duration`. A call
   `WashoutEvent(; duration)` without it now means precipitation throughout the
   release; pass `release_duration` for a shorter event. With `duration = 0`
   there is no wet deposition either.
 - Wet deposition depletes its own column with the high coefficient it deposits
-  with, scales with the same share and ends where the material released into
-  the precipitation leaves it, at `u t_w`. The deposit over the ground cannot
+  with and scales with the same share, so the deposit over the ground cannot
   exceed the activity released into the precipitation and vanishes without
   precipitation. NSR-23 Eqs. (38)–(39), which earlier versions followed,
   deposited up to 1.8 times the release within 20 km.
@@ -65,6 +66,9 @@ reference case change, through the first item only.
 - `stability_parameter(site, class)` and `STABLE_CLASSES`;
   `precipitation_fraction`; `MAXIMUM_WAKE_BROADENING`,
   `EIMUTIS_KONICEK_CEILING` and `MINIMUM_WIND_SPEED`.
+- `load_configuration` warns when `washout_duration` is shorter than the time
+  the slowest class takes to reach `grid.extent`. Washout and release
+  durations must be finite, in the configuration and in `WashoutEvent`.
 
 ### Not changed
 

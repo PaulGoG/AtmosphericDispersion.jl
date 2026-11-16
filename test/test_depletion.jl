@@ -127,18 +127,10 @@
         @test precipitation_fraction(quarter) == 0.25
         @test precipitation_fraction(dry) == 0
         @test wet_depletion_factor(x, u, whole) ≈ exp(-Λ * x / u)
+        @test wet_depletion_factor(x, u, quarter) ≈ 0.75 + 0.25 * exp(-Λ * x / u)
         @test wet_depletion_factor(x, u, dry) == 1
-        # The quarter-hour of rain cannot scavenge for the 1000 s of travel:
-        # what was released into it is under rain for 900 s at most.
-        @test wet_depletion_factor(x, u, quarter) ≈ 0.75 + 0.25 * exp(-Λ * 900)
-        @test wet_depletion_factor(4800.0, u, quarter) ≈ 0.75 + 0.25 * exp(-Λ * 800)
-        # Continuous at x = u t_w, and constant beyond.
-        @test wet_depletion_factor(5400.0, u, quarter) ≈
-              wet_depletion_factor(5400.0 + 1e-6, u, quarter)
-        @test wet_depletion_factor(5e4, u, quarter) ==
-              wet_depletion_factor(6000.0, u, quarter)
-        # Far out, precipitation through the whole release gives the 2021 form.
-        @test wet_depletion_factor(1e7, u, whole) ≈ wet_depletion_factor(whole)
+        # Far out, everything released into the precipitation has been removed.
+        @test wet_depletion_factor(1e12, u, quarter) ≈ 0.75
         # At the source nothing has been scavenged yet, however long it rains.
         @test wet_depletion_factor(0.0, u, whole) == 1
         # Rain longer than the release covers all of it.
@@ -146,6 +138,37 @@
             WashoutEvent(; duration = 7200.0, release_duration = 3600.0),) == 1
         @test_throws ArgumentError WashoutEvent(; duration = 10.0, release_duration = 0.0)
         @test_throws ArgumentError WashoutEvent(; duration = 10.0, release_duration = -1.0)
+        # Infinite durations would make the share Inf/Inf.
+        @test_throws ArgumentError WashoutEvent(; duration = Inf)
+        @test_throws ArgumentError WashoutEvent(; duration = 10.0, release_duration = Inf)
+    end
+
+    # The form takes the material released into the precipitation to stay in it
+    # for its whole travel time. Against an average over parcels released
+    # uniformly through the release, each exposed for the overlap of its transit
+    # with a precipitation fixed over the site, it holds when the precipitation
+    # outlasts the travel and not otherwise.
+    @testset "against a Lagrangian average over the release" begin
+        Λ, u, x = 1e-3, 6.0, 2e4    # other nuclides, snow at 5 mm/h, low; x/u = 3333 s
+        function lagrangian(T_R, t_s, t_w)
+            τx = x / u
+            exposure(τ) = max(0.0, min(τ + τx, t_s + t_w) - max(τ, t_s))
+            nodes = sort(clamp.([0.0, t_s - τx, t_s, t_s + t_w - τx, t_s + t_w, T_R], 0, T_R))
+            total, _ = quadgk(τ -> exp(-Λ * exposure(τ)), unique(nodes)...; rtol = 1e-10)
+            return total / T_R
+        end
+        snow(t_w, T_R) = WashoutEvent(;
+            duration = t_w, release_duration = T_R,
+            precipitation = PRECIPITATION_SNOW, rate = 5.0,)
+        form(t_w, T_R) = wet_depletion_factor(x, u, snow(t_w, T_R), WASHOUT_OTHER_NUCLIDES)
+        # Precipitation of 10⁶ s within a release of 10⁷ s: the form within the
+        # edge effect of order (x/u)/t_w.
+        @test form(1e6, 1e7) ≈ lagrangian(1e7, 4e6, 1e6) rtol = 1e-3
+        # 900 s within 3600 s: the start and the end of the release bracket it.
+        start, finish = lagrangian(3600.0, 0.0, 900.0), lagrangian(3600.0, 2700.0, 900.0)
+        @test start ≈ 0.915 atol = 0.001
+        @test finish ≈ 0.474 atol = 0.001
+        @test finish < form(900.0, 3600.0) < start
     end
 
     @testset "composition" begin

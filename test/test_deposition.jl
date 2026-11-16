@@ -188,37 +188,22 @@
             sectors = SectorGrid(8),
         ) ≈ ω / 2 rtol = 1e-6
         # The deposit over the ground is the activity released in the
-        # precipitation less what is still airborne when it leaves the
-        # precipitation, f A (1 − exp(−Λ min(X/u, t_w))) for a species that
-        # does not decay; 6 × 10⁻⁴ s⁻¹ at 5 mm/h. X/u is 3339 s, so the
-        # 900 s event stops scavenging at u t_w = 5.4 km. The 2021 form
-        # deposited 1.8 times the release within 20 km.
+        # precipitation less what is still airborne at the edge,
+        # f A (1 − exp(−Λ X/u)) for a species that does not decay; 6 × 10⁻⁴ s⁻¹
+        # at 5 mm/h. The 2021 form deposited 1.8 times the release within 20 km.
         stable = Nuclide(;
             name = "stable", decay_constant = 0.0,
             deposition_velocity = DepositionVelocity(0.0, 0.0),)
         X = 20_000.0
         for (duration, f) in ((3600.0, 1.0), (900.0, 0.25), (0.0, 0.0))
             event = WashoutEvent(; duration, release_duration = 3600.0, rate = 5.0)
-            # Split the quadrature at the edge of the deposit.
-            limits = 0 < u * duration < X ? (0.0, u * duration, X) : (0.0, X)
             total, _ = quadgk(
                 r -> wet_deposition_sector(
                          r, site, PASQUILL_D, stable; activity = 1.0, washout = event,) *
                      sector_width(SectorGrid(16)) * r,
-                limits...; rtol = 1e-10,)
-            @test total ≈ f * (1 - exp(-6e-4 * min(X / u, duration))) rtol=1e-8 atol=1e-14
+                0.0, X; rtol = 1e-10,)
+            @test total ≈ f * (1 - exp(-6e-4 * X / u)) rtol=1e-8 atol=1e-14
         end
-        # Nothing is deposited beyond the reach of the precipitation, in the
-        # sector form and on the axis of a single plume.
-        short = WashoutEvent(; duration = 900.0, release_duration = 3600.0, rate = 5.0)
-        @test wet_deposition_sector(
-            1.01 * u * 900, site, PASQUILL_D, stable; activity = 1.0, washout = short,) == 0
-        @test wet_deposition_sector(
-            0.99 * u * 900, site, PASQUILL_D, stable; activity = 1.0, washout = short,) > 0
-        @test wet_deposition(0.0, -1.01 * u * 900, site, PASQUILL_D, 0.0, stable;
-            activity = 1.0, washout = short,) == 0
-        @test wet_deposition(0.0, -0.99 * u * 900, site, PASQUILL_D, 0.0, stable;
-            activity = 1.0, washout = short,) > 0
     end
 
     @testset "resuspension" begin

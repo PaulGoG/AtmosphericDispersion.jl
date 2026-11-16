@@ -120,11 +120,13 @@ are taken from. The intensity must be one of [`PRECIPITATION_RATES`](@ref), the
 washout table being defined only there.
 
 The precipitation is taken to cover the whole path of the material released
-while it lasts, the fraction `min(duration/release_duration, 1)` of the
-release. That material is scavenged for its travel time to the receptor, but
-for no longer than the precipitation lasts; the rest of the release is not
-scavenged. See [`wet_depletion_factor`](@ref) and [`wet_deposition`](@ref).
-The default `release_duration` makes the event last the whole release.
+while it falls, the fraction `min(duration/release_duration, 1)` of the
+release: that material is scavenged for its whole travel time to the receptor,
+the rest not at all. This holds for a precipitation that lasts longer than the
+travel time, or travels with the material; for a shorter one the result
+depends on when it falls, as [`wet_depletion_factor`](@ref) quantifies. See
+also [`wet_deposition`](@ref). The default `release_duration` makes the event
+last the whole release. Both durations must be finite.
 
 Which row of the table applies is a property of the released species, so it is
 stored in the [`Nuclide`](@ref).
@@ -143,10 +145,13 @@ struct WashoutEvent
             rate::Real = first(PRECIPITATION_RATES),
             model::WashoutModel = WASHOUT_NORMATIVE,
     )
-        duration ≥ 0 ||
-            throw(ArgumentError("washout duration cannot be negative, got $duration s"))
-        release_duration ≥ 0 || throw(
-            ArgumentError("release duration cannot be negative, got $release_duration s"),
+        0 ≤ duration < Inf || throw(
+            ArgumentError("washout duration must be finite and non-negative, got $duration s"),
+        )
+        0 ≤ release_duration < Inf || throw(
+            ArgumentError(
+            "release duration must be finite and non-negative, got $release_duration s",
+        ),
         )
         duration > 0 && release_duration == 0 &&
             throw(
@@ -188,26 +193,32 @@ washout_coefficients(
 Surviving airborne fraction of the release at downwind distance `x` metres,
 transported at `u` m/s, under the washout `event`,
 
-    1 − f + f exp(−Λ min(x/u, t_w))
+    1 − f + f exp(−Λ x/u)
 
-with `f` the [`precipitation_fraction`](@ref) and `t_w` the duration of the
-event. The material released during the precipitation has been scavenged for
-its travel time `x/u`, which is the time of CNCAN NSR-23 [CNCAN2004](@cite)
-Eq. (35), "the period of time during which the radioactive material is
-subjected to the process", and of HPA-RPD-058 [SmithSimmonds2009](@cite)
-Eq. (3.13), but for no longer than `t_w`, since no material is under
-precipitation for longer than it lasts. The rest of the release travels in
-dry air.
+with `f` the [`precipitation_fraction`](@ref) of the event. The material
+released during the precipitation has been scavenged for its travel time
+`x/u`, which is the time of CNCAN NSR-23 [CNCAN2004](@cite) Eq. (35), "the
+period of time during which the radioactive material is subjected to the
+process", and of HPA-RPD-058 [SmithSimmonds2009](@cite) Eq. (3.13); the rest of
+the release travels in dry air.
+
+The form assumes that the precipitation stays on the material released into it
+for its whole travel time, which holds when it lasts longer than `x/u`. For a
+shorter precipitation fixed over the site the surviving fraction depends on
+when it falls, and no single value bounds it: for `Λ = 10⁻³ s⁻¹`, 900 s of
+precipitation in a 3600 s release and `x/u = 3333 s`, it is 0.92 if the
+precipitation falls at the start of the release and 0.47 if at the end, against
+0.76 from this form. [`load_configuration`](@ref) warns when the receptor grid
+reaches beyond that travel time.
 
 The low washout coefficient is used, for the same reason the low deposition
 velocity is: it removes the least material and so is conservative for the
 airborne concentration. The high coefficient drives the ground deposition
 instead; see [`wet_deposition`](@ref).
 
-The two-argument form is `exp(−Λ t_w)` for material that stays in the
-precipitation for the whole duration of the event, as the 2021 code applied it
-at every distance; it is the far-field value of the four-argument form for a
-precipitation lasting the whole release.
+The two-argument form is `exp(−Λ t_w)`, the whole event applied to the whole
+release at every distance, as the 2021 code applied it; it is kept to
+reproduce those results.
 """
 function wet_depletion_factor(
         x::Real,
@@ -218,13 +229,8 @@ function wet_depletion_factor(
     x ≥ 0 || throw(DomainError(x, "travel distance cannot be negative"))
     u > 0 || throw(DomainError(u, "transport speed must be positive"))
     f = precipitation_fraction(event)
-    Λ = washout_coefficients(event, species).low
-    return 1 - f + f * exp(-Λ * scavenging_time(x, u, event))
+    return 1 - f + f * exp(-washout_coefficients(event, species).low * x / u)
 end
-
-# Time the material released into the precipitation spends in it on its way to
-# `x`: the travel time, bounded by the duration of the event.
-scavenging_time(x::Real, u::Real, event::WashoutEvent) = min(x / u, event.duration)
 
 wet_depletion_factor(
     event::WashoutEvent,

@@ -23,6 +23,18 @@ two budgets are separate: material that wet deposition removes with the high
 coefficient is still in the air that feeds dry deposition, so with
 precipitation the two deposits together can exceed what the plume loses.
 
+## Washout of a short precipitation
+
+Washout and wet deposition take the material released into the precipitation
+to stay in it for its whole travel time, which holds for precipitation that
+lasts longer than the travel time to the receptor. For a shorter precipitation
+fixed over the site the result depends on when it falls, which a configuration
+does not state: for `Λ = 10⁻³ s⁻¹`, 900 s of precipitation in a 3600 s
+release and 20 km at 6 m/s, the surviving fraction lies between 0.47 and 0.92
+by timing, against 0.76 from the form, and the wet deposit can exceed the share
+`t_w/T_R` of the release. `load_configuration` warns when the receptor grid
+reaches that range.
+
 ## Dry deposition of tritiated water
 
 A deposition velocity above zero depletes the plume and lowers the air

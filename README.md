@@ -287,9 +287,9 @@ What each component follows:
 | Buildings | the tallest building near the stack; the displacement, wake and cavity zones of SRS-19 §3.3; wake broadening with the SRS-19 and AVV coefficient, limited to √3 as in XOQDOQ; the two cavity forms of §3.6 |
 | Mixing layer | the image sum of HPA-RPD-058 §3.2.2.1 to double precision, its Table 3.5(a) depths; a plume above the lid held at it (NRPB-R157) or leaving the layer (EPA ISC3) |
 | Dilution | instantaneous, sector-averaged with the constant of RG 1.111 or SRS-19, and long term over the rose |
-| Depletion and deposition | decay, dry deposition, NSR-23 Table 7 washout with Slinn's J^0.75 law and Ogram's snow scavenging of HTO, acting for the travel time, up to the duration of the precipitation, on the share of the release in it; dry and wet deposition, the wet deposit bounded by that share; Safety Series 57 or Maxwell–Anspaugh resuspension |
+| Depletion and deposition | decay, dry deposition, NSR-23 Table 7 washout with Slinn's J^0.75 law and Ogram's snow scavenging of HTO, acting for the travel time on the share of the release in the precipitation; dry and wet deposition, the wet deposit bounded by that share; Safety Series 57 or Maxwell–Anspaugh resuspension |
 | `Site` and `PrescribedPlume` | the per-run precomputation, and a plume whose height, wind or σ a published benchmark states |
-| Quality | Aqua, ExplicitImports and, on the current Julia, JET in the suite; 6968 assertions; CI on the LTS and the current Julia, rerun monthly without a commit; the manual built with its doctests |
+| Quality | Aqua, ExplicitImports and, on the current Julia, JET in the suite; 6977 assertions; CI on the LTS and the current Julia, rerun monthly without a commit; the manual built with its doctests |
 
 Outside the scope of the package:
 
@@ -322,6 +322,8 @@ the numbers.
   twice what dry deposition takes from the plume, and with precipitation the
   two deposits together can exceed what the plume loses. Wet deposition alone
   depletes its own column and is bounded.
+- Washout assumes the precipitation lasts longer than the travel time; for a
+  shorter one the result depends on when it falls, and the loader warns.
 - A deposition velocity above zero for HTO lowers the air concentration; with
   re-emission, zero is the conservative choice (Lee et al. 2012,
   doi:10.2172/1038895).

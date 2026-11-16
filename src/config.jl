@@ -69,6 +69,11 @@ function _nonnegative(value::Real, path::AbstractString)
     return value
 end
 
+function _finite(value::Real, path::AbstractString)
+    isfinite(value) || _fail(path, "must be finite, got $value")
+    return value
+end
+
 function _choice(value::AbstractString, options::AbstractDict, path::AbstractString)
     haskey(options, value) && return options[value]
     choices = join(sort(collect(keys(options))), ", ")
@@ -283,7 +288,10 @@ function configuration_from(root::AbstractDict)
     release = _table(root, "release", "")
     _reject_unknown(release, _RELEASE_KEYS, "release")
     activity = _nonnegative(_value(release, "activity", Float64, "release"), "release.activity")
-    release_duration = _positive(_value(release, "duration", Float64, "release"), "release.duration")
+    release_duration = _finite(
+        _positive(_value(release, "duration", Float64, "release"), "release.duration"),
+        "release.duration",
+    )
 
     precip = get(root, "precipitation", Dict{String,Any}())
     precip isa AbstractDict ||
@@ -302,8 +310,11 @@ function configuration_from(root::AbstractDict)
             "the washout table is defined at $rates mm/h, got $rate",
         )
     end
-    washout = _nonnegative(
-        _value(precip, "washout_duration", Float64, "precipitation"; default = 0.0),
+    washout = _finite(
+        _nonnegative(
+            _value(precip, "washout_duration", Float64, "precipitation"; default = 0.0),
+            "precipitation.washout_duration",
+        ),
         "precipitation.washout_duration",
     )
 
@@ -317,6 +328,7 @@ function configuration_from(root::AbstractDict)
 
     event = WashoutEvent(;
         duration = washout, release_duration, precipitation, rate, model = washout_model,)
+    _check_washout_reach(site, event, extent)
 
     return RunConfiguration(
         site,
@@ -362,6 +374,22 @@ function _check_validity(
               ". Set model.extrapolation = \"allow\" to accept this silently"
     policy == "refuse" && _fail(first(paths), message)
     @warn message
+    return nothing
+end
+
+# Washout assumes that the material released into the precipitation stays in it
+# for its whole travel time; a shorter precipitation makes the result depend on
+# when it falls, which the configuration does not say.
+function _check_washout_reach(site::Site, event::WashoutEvent, extent::Real)
+    iszero(event.duration) && return nothing
+    slowest = minimum(c -> transport_wind_speed(site, c), PASQUILL_CLASSES)
+    travel = extent / slowest
+    travel > event.duration || return nothing
+    @warn "precipitation.washout_duration = $(event.duration) s is shorter than the " *
+          "$(round(Int, travel)) s the slowest class takes to reach grid.extent; " *
+          "washout and wet deposition take the material released into the precipitation " *
+          "to stay in it for its whole travel time, and beyond $(round(Int, slowest * event.duration)) m " *
+          "the result depends on when the precipitation falls"
     return nothing
 end
 

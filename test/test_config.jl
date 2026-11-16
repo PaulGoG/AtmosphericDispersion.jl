@@ -358,3 +358,32 @@ end
         t["model"]["dispersion"] = "eimutis_konicek"
     end))
 end
+
+@testset "Configuration: precipitation" begin
+    reference = joinpath(@__DIR__, "..", "config", "reference.toml")
+    withkey(f) = (t = TOML.parsefile(reference); f(t); t)
+    failure(t) =
+        try
+            configuration_from(t)
+            nothing
+        catch e
+            e
+        end
+    # The loader passes the release duration to the event: an hour of rain in
+    # the year-long reference release is that share of it.
+    c = @test_logs (:warn, r"washout_duration") configuration_from(
+        withkey(t -> (t["precipitation"]["washout_duration"] = 3600.0)),)
+    @test precipitation_fraction(c.washout) ≈ 3600 / 31_557_600
+    # Durations must be finite.
+    for (table, key) in (("precipitation", "washout_duration"), ("release", "duration"))
+        err = failure(withkey(t -> (t[table][key] = Inf)))
+        @test err isa ConfigurationError
+        @test err.path == "$table.$key"
+        @test occursin("finite", err.message)
+    end
+    # Precipitation shorter than the travel time to the edge of the grid is
+    # reported, as above; none, or a long one, is not.
+    @test_logs configuration_from(withkey(identity))
+    @test_logs configuration_from(
+        withkey(t -> (t["precipitation"]["washout_duration"] = 86_400.0)),)
+end
