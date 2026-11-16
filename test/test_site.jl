@@ -155,9 +155,12 @@ end
 
             σy = lateral_dispersion(x, class)
             σz = vertical_dispersion(x, class, roughness)
-            # The site's own plume is still within reach of the wake here.
-            @test effective_height(x, built, class) < 2.5h
-            @test corrected_vertical_dispersion(x, built, class) > σz
+            # The site's own plume is still within reach of the wake in the
+            # stable classes, whose rise is the lowest.
+            if class in STABLE_CLASSES
+                @test effective_height(x, built, class) < 2.5h
+                @test corrected_vertical_dispersion(x, built, class) > σz
+            end
             @test corrected_vertical_dispersion(x, clear, class) == σz
             @test corrected_lateral_dispersion(x, clear, class) == σy
             @test corrected_vertical_dispersion(x, inside, class) ==
@@ -178,7 +181,18 @@ end
     @test site.stable_rise_wind === WIND_MEAN_OVER_RISE
     c, F, S = BRIGGS_RISE.stable_final, site.buoyancy, site.stability
     z₀ = max(release_height(site), REFERENCE_HEIGHT)
+    # The stable limits apply in E and F only: in A to D the mean is not
+    # formed and the plume takes the neutral limit.
     for class in PASQUILL_CLASSES
+        class in STABLE_CLASSES && continue
+        @test stability_parameter(site, class) == 0
+        @test stable_rise_wind_speed(site, class) == transport_wind_speed(site, class)
+        u = transport_wind_speed(site, class)
+        x₀ = buoyancy_transition_distance(F)
+        @test plume_rise(1e5, site, class) ≈ 1.6 * F^(1 / 3) * (3.5 * x₀)^(2 / 3) / u
+    end
+    for class in STABLE_CLASSES
+        @test stability_parameter(site, class) == S
         u = transport_wind_speed(site, class)
         ū = stable_rise_wind_speed(site, class)
         @test stable_rise_wind_speed(at_release, class) == u
@@ -191,10 +205,10 @@ end
         # A faster wind cannot raise the plume.
         @test effective_height(1e5, site, class) ≤ effective_height(1e5, at_release, class)
     end
-    # In class D of the reference case the stable limit binds, and the mean
+    # In class F of the reference case the stable limit binds, and the mean
     # wind lowers it.
-    @test effective_height(1e5, site, PASQUILL_D) <
-          effective_height(1e5, at_release, PASQUILL_D)
+    @test effective_height(1e5, site, PASQUILL_F) <
+          effective_height(1e5, at_release, PASQUILL_F)
 
     # No stable rise to average over: unstable air, or a plume without buoyancy.
     unstable = Site(;
@@ -208,12 +222,18 @@ end
               transport_wind_speed(unstable, class)
         @test stable_rise_wind_speed(jet, class) == transport_wind_speed(jet, class)
     end
-    # Calm air: the transport wind is zero and comes back untouched.
+    # Calm air: every wind of the site is held at 1 m/s (EPA ISC3 §1.1.3),
+    # where the neutral rise, which varies as 1/u, would otherwise be
+    # unbounded.
     calm = Site(;
         source = REFERENCE_STACK,
         atmosphere = reference_atmosphere(; reference_speed = 0.0),
     )
-    @test stable_rise_wind_speed(calm, PASQUILL_D) == 0
+    for class in PASQUILL_CLASSES
+        @test transport_wind_speed(calm, class) == MINIMUM_WIND_SPEED
+        @test stable_rise_wind_speed(calm, class) == MINIMUM_WIND_SPEED
+        @test isfinite(effective_height(1e5, calm, class))
+    end
 end
 
 @testset "The dispersion scheme of a site" begin

@@ -115,7 +115,7 @@ const _MODEL_KEYS = (
     "extrapolation",
 )
 const _MIXING_KEYS = ("scheme", "above_lid", "uniform_depth", "depths")
-const _BUILDINGS_KEYS = ("wake_coefficient", "building")
+const _BUILDINGS_KEYS = ("wake_coefficient", "broadening_limit", "building")
 const _BUILDING_KEYS = ("east", "north", "height", "frontal_area")
 const _NUCLIDE_KEYS = (
     "name",
@@ -315,7 +315,8 @@ function configuration_from(root::AbstractDict)
         _fail("grid.spacing", "must be smaller than grid.extent ($extent m), got $spacing")
     _check_validity(dispersion, spacing, extent, extrapolation)
 
-    event = WashoutEvent(; duration = washout, precipitation, rate, model = washout_model)
+    event = WashoutEvent(;
+        duration = washout, release_duration, precipitation, rate, model = washout_model,)
 
     return RunConfiguration(
         site,
@@ -478,6 +479,9 @@ function _buildings_from(t::AbstractDict)
         ),
         "buildings.wake_coefficient",
     )
+    limit = _value(
+        t, "broadening_limit", Float64, "buildings"; default = MAXIMUM_WAKE_BROADENING,)
+    limit ≥ 1 || _fail("buildings.broadening_limit", "cannot be below 1, got $limit")
     entries = get(t, "building", Any[])
     entries isa AbstractVector ||
         _fail("buildings.building", "expected an array of tables, got $(typeof(entries))")
@@ -499,7 +503,8 @@ function _buildings_from(t::AbstractDict)
             ),
         )
     end
-    return BuildingEnvelope(buildings; wake_coefficient = coefficient)
+    return BuildingEnvelope(
+        buildings; wake_coefficient = coefficient, broadening_limit = limit,)
 end
 
 function _nuclide_from(t::AbstractDict)

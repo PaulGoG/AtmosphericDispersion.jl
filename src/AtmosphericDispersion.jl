@@ -55,6 +55,7 @@ export PasquillClass,
        PASQUILL_E,
        PASQUILL_F,
        PASQUILL_CLASSES,
+       STABLE_CLASSES,
        pasquill,
        letter,
        classindex
@@ -112,7 +113,8 @@ export DispersionScheme,
        eimutis_konicek_lateral_coefficient,
        eimutis_konicek_vertical_coefficients,
        EIMUTIS_KONICEK_LATERAL_EXPONENT,
-       EIMUTIS_KONICEK_RANGES
+       EIMUTIS_KONICEK_RANGES,
+       EIMUTIS_KONICEK_CEILING
 export WashoutModel,
        WASHOUT_NORMATIVE,
        WASHOUT_HTO,
@@ -194,7 +196,8 @@ export Building,
        CAVITY_EXTENT_FACTOR,
        WAKE_INFLUENCE_RADII,
        DEFAULT_WAKE_COEFFICIENT,
-       NSR23_WAKE_COEFFICIENT
+       NSR23_WAKE_COEFFICIENT,
+       MAXIMUM_WAKE_BROADENING
 
 # site.jl
 export AbstractSite,
@@ -211,7 +214,8 @@ export AbstractSite,
        effective_height,
        corrected_lateral_dispersion,
        corrected_vertical_dispersion,
-       WAKE_WIND_THRESHOLD
+       WAKE_WIND_THRESHOLD,
+       MINIMUM_WIND_SPEED
 
 # nuclides.jl
 export DepositionVelocity,
@@ -222,6 +226,7 @@ export DepositionVelocity,
 
 # depletion.jl
 export WashoutEvent,
+       precipitation_fraction,
        decay_factor,
        depletion_integral,
        dry_depletion_factor,

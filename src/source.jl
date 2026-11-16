@@ -83,11 +83,11 @@ Ambient state the plume disperses into.
     2021 code did with a single strongly stable gradient applied to every class,
     makes the unstable classes internally inconsistent.
 
-    A [`Site`](@ref) holds one `Atmosphere` and so one lapse rate for all six
-    classes, and the long-term sum runs over them: with a positive lapse rate
-    the stable limits of the plume rise act in classes A to D as well. This is a
-    known limitation; EPA ISC3 [EPA1995](@cite) §1.1.4.6 applies the stability
-    parameter in the stable classes only.
+    A [`Site`](@ref) holds one `Atmosphere` and so one lapse rate, and applies
+    the stability parameter formed from it in the stable classes E and F only;
+    see [`stability_parameter(site, class)`](@ref
+    stability_parameter(::Site, ::PasquillClass)). The lapse rate of an
+    `Atmosphere` is therefore that of the stable classes.
 """
 struct Atmosphere
     reference_speed::Float64
@@ -176,7 +176,9 @@ Atmospheric stability parameter `S` in s⁻²,
 
 the squared Brunt–Väisälä frequency of the ambient stratification. Positive in
 stably stratified air, zero at the dry adiabatic lapse rate, negative in
-unstable air.
+unstable air. A [`Site`](@ref) applies it in the stable classes only; see
+[`stability_parameter(site, class)`](@ref
+stability_parameter(::Site, ::PasquillClass)).
 
 The specific heat entering through `g/c_p` is that of the ambient air, which is
 what makes that term the dry adiabatic lapse rate. The 2021 code used the

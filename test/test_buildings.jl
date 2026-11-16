@@ -18,15 +18,26 @@
         @test equivalent_height(BuildingEnvelope([near, far])) == 20.0
     end
 
-    @testset "contributions are weighted by inverse distance" begin
+    @testset "the tallest building in the vicinity governs" begin
         a = Building(; east = 10.0, north = 0.0, height = 30.0, frontal_area = 100.0)
         b = Building(; east = 80.0, north = 0.0, height = 30.0, frontal_area = 900.0)
         e = BuildingEnvelope([a, b])
-        # Equal heights, so the weighted height is that height regardless.
-        @test equivalent_height(e) ≈ 30.0
-        # The nearer, smaller building dominates the area.
-        @test equivalent_area(e) ≈ (100 / 10 + 900 / 80) / (1 / 10 + 1 / 80)
-        @test equivalent_area(e) < 900
+        # Equal heights: the larger frontal area governs.
+        @test equivalent_height(e) == 30.0
+        @test equivalent_area(e) == 900.0
+        # A shed beside the stack does not cancel the wake of a reactor
+        # building further out, which the 2021 inverse-distance mean did
+        # (an equivalent 8.2 m).
+        shed = Building(; east = 5.0, north = 0.0, height = 3.0, frontal_area = 10.0)
+        reactor = Building(; east = 50.0, north = 0.0, height = 60.0, frontal_area = 3000.0)
+        both = BuildingEnvelope([shed, reactor])
+        @test equivalent_height(both) == 60.0
+        @test equivalent_area(both) == 3000.0
+        @test release_height(Site(; source = REFERENCE_STACK, atmosphere = REFERENCE_AIR,
+            buildings = both,)) == 0
+        # Outside three of its own heights a building plays no part.
+        far = Building(; east = 200.0, north = 0.0, height = 60.0, frontal_area = 3000.0)
+        @test equivalent_height(BuildingEnvelope([shed, far])) == 3.0
         @test_throws ArgumentError BuildingEnvelope([
             Building(; east = 0.0, north = 0.0, height = 5.0, frontal_area = 1.0),
         ])

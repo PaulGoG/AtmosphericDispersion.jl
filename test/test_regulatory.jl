@@ -79,11 +79,12 @@
         end
     end
 
-    # Table II: the same at H = 0 with Σ_z = (σ_z² + A_B/π)^(1/2), Eq. (6).
+    # Table II: the same at H = 0 with Σ_z = (σ_z² + A_B/π)^(1/2), Eq. (6),
+    # which SRS-19 does not limit.
     function B(x, A)
-        envelope = BuildingEnvelope([
-            Building(; east = 10.0, north = 0.0, height = 10.0, frontal_area = A),
-        ])
+        envelope = BuildingEnvelope(
+            [Building(; east = 10.0, north = 0.0, height = 10.0, frontal_area = A)];
+            broadening_limit = Inf,)
         built = Site(;
             source = stack,
             atmosphere = air,

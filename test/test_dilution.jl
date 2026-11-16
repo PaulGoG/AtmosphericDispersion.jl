@@ -60,8 +60,9 @@
         # Uniform across the sector, zero outside it.
         onaxis = dilution_extended(0.0, -1000.0, site, PASQUILL_D, 0.0)
         @test onaxis > 0
-        inside = dilution_extended(90.0, -1000.0, site, PASQUILL_D, 0.0)
-        @test inside ≈ onaxis        # crosswind-uniform within the sector
+        # Uniform along the arc, at the radial distance.
+        inside = dilution_extended(1000sind(10), -1000cosd(10), site, PASQUILL_D, 0.0)
+        @test inside ≈ onaxis rtol = 1e-12
         @test dilution_extended(1000.0, 0.0, site, PASQUILL_D, 0.0) == 0   # 90° off
         @test dilution_extended(0.0, 1000.0, site, PASQUILL_D, 0.0) == 0   # upwind
         # A wider sector spreads the same material further, so dilutes more.

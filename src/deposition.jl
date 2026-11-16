@@ -11,7 +11,9 @@ Both take the high member of their bracketing pair (the high deposition
 velocity and the high washout coefficient) because more deposited material is
 the conservative assumption for the ground-shine and ingestion pathways.
 Depletion of the airborne plume takes the low members, for the opposite reason.
-See `DepositionVelocity`.
+See `DepositionVelocity`. Wet deposition depletes its own plume with the same
+high coefficient, so that the activity it deposits cannot exceed the activity
+released during the precipitation.
 =#
 
 """
@@ -35,20 +37,25 @@ end
 Wet deposition per unit ground area in Bq/m² beneath a plume of a single
 direction,
 
-    ω_w = Λ A D exp(−y²/2Σ_y²) / (√(2π) Σ_y u)
+    ω_w = Λ f A D exp(−Λ x/u) exp(−y²/2Σ_y²) / (√(2π) Σ_y u)
 
 where `Λ` is the high washout coefficient of the [`WashoutEvent`](@ref)
-`washout` for the nuclide's species, `A` the released activity in Bq and `D`
-the surviving fraction after decay and washout.
+`washout` for the nuclide's species, `f` its [`precipitation_fraction`](@ref),
+`A` the released activity in Bq and `D` the surviving fraction after decay. The
+column is depleted by the same `Λ` over the travel time `x/u`, so that the
+deposit integrated over the ground is `f A (1 − exp(−Λ x/u))` out to `x` (with
+no decay), never more than the activity released during the precipitation, and
+nothing for an event of zero duration.
+
+CNCAN NSR-23 [CNCAN2004](@cite) Eq. (38) multiplies the high coefficient by the
+whole release depleted with the low coefficient over the duration of the event,
+which the 2021 code followed; that deposit does not vanish without
+precipitation and its integral over the ground can exceed the release.
 
 The denominator is `√(2π) Σ_y u`, which is what integrating the Gaussian plume
 over the whole vertical column leaves. The 2021 code wrote `√2 π Σ_y u`; the
 ratio of the two is exactly `√π`, so that expression understated wet deposition
 by a factor of 1.772.
-
-`A` is the whole released activity, whatever the duration of the event: the
-deposit does not vanish for an event of zero duration, and its integral over
-the ground is not bounded by the release. This is a known limitation.
 """
 function wet_deposition(
         east::Real,
@@ -70,10 +77,9 @@ function wet_deposition(
     u > 0 || return 0.0
     Σy = corrected_lateral_dispersion(x, site, class; release_duration)
 
-    surviving = decay_factor(x, u, nuclide) *
-                wet_depletion_factor(washout, nuclide.washout_species)
-
-    return Λ * activity * surviving * exp(-y^2 / (2Σy^2)) / (sqrt(2π) * Σy * u)
+    column = precipitation_fraction(washout) * activity * decay_factor(x, u, nuclide) *
+             exp(-Λ * x / u)
+    return Λ * column * exp(-y^2 / (2Σy^2)) / (sqrt(2π) * Σy * u)
 end
 
 """
@@ -83,11 +89,12 @@ end
 Wet deposition per unit ground area in Bq/m² at radial distance `r` metres,
 averaged over a sector,
 
-    ω_w = Λ A D / (u θ_L r)
+    ω_w = Λ f A D exp(−Λ r/u) / (u θ_L r)
 
-the column activity spread over the arc the sector subtends at that distance.
-As in [`wet_deposition`](@ref), `A` is the whole released activity whatever the
-duration of the event, a known limitation.
+the column activity spread over the arc the sector subtends at that distance,
+with `f`, `D` and the depletion of the column as in [`wet_deposition`](@ref).
+NSR-23 Eq. (39) is the same form with the whole release, depleted over the
+duration of the event.
 """
 function wet_deposition_sector(
         r::Real,
@@ -105,10 +112,9 @@ function wet_deposition_sector(
     u = transport_wind_speed(site, class)
     u > 0 || return 0.0
 
-    surviving = decay_factor(r, u, nuclide) *
-                wet_depletion_factor(washout, nuclide.washout_species)
-
-    return Λ * activity * surviving / (u * sector_width(sectors) * r)
+    column = precipitation_fraction(washout) * activity * decay_factor(r, u, nuclide) *
+             exp(-Λ * r / u)
+    return Λ * column / (u * sector_width(sectors) * r)
 end
 
 """

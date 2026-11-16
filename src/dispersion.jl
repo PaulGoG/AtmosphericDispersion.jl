@@ -164,12 +164,14 @@ end
 
 Lateral dispersion parameter `σ_y` in metres at downwind distance `x` metres
 from the fit of [EimutisKonicek1972](@citet) to the Pasquill–Gifford curves,
-`σ_y = a x^0.9031`; see [`eimutis_konicek_lateral_coefficient`](@ref). This is
-the `σ_y` of NRC XOQDOQ [Sagendorf1982](@cite) and PAVAN [Bander1982](@cite).
+`σ_y = a x^0.9031`, limited to [`EIMUTIS_KONICEK_CEILING`](@ref); see
+[`eimutis_konicek_lateral_coefficient`](@ref). This is the `σ_y` of NRC XOQDOQ
+[Sagendorf1982](@cite) and PAVAN [Bander1982](@cite).
 """
 function eimutis_konicek_lateral_dispersion(x::Real, class::PasquillClass)
     x ≥ 0 || throw(DomainError(x, "downwind distance cannot be negative"))
-    return eimutis_konicek_lateral_coefficient(class) * x^EIMUTIS_KONICEK_LATERAL_EXPONENT
+    σ = eimutis_konicek_lateral_coefficient(class) * x^EIMUTIS_KONICEK_LATERAL_EXPONENT
+    return min(σ, EIMUTIS_KONICEK_CEILING)
 end
 
 """
@@ -178,14 +180,15 @@ end
 Vertical dispersion parameter `σ_z` in metres at downwind distance `x` metres
 from the fit of [EimutisKonicek1972](@citet) to the Pasquill–Gifford curves,
 `σ_z = a x^b + c` with one set of coefficients on each of three ranges of
-distance; see [`eimutis_konicek_vertical_coefficients`](@ref).
+distance, limited to [`EIMUTIS_KONICEK_CEILING`](@ref); see
+[`eimutis_konicek_vertical_coefficients`](@ref).
 """
 function eimutis_konicek_vertical_dispersion(x::Real, class::PasquillClass)
     x > 0 || throw(
         DomainError(x, "the vertical dispersion parameter is defined downwind of the source"),
     )
     c = eimutis_konicek_vertical_coefficients(class, x)
-    return c.a * x^c.b + c.c
+    return min(c.a * x^c.b + c.c, EIMUTIS_KONICEK_CEILING)
 end
 
 """
@@ -341,10 +344,9 @@ the ranges quoted for its two parameters; the ends are included.
     not use `σ_y`, so for them the bound is that of the pairing and not of the
     quantity evaluated.
   - The Eimutis–Konicek fit reproduces the Pasquill–Gifford curves, which
-    [Turner1970](@citet) draws from 100 m to 100 km: `(100, 100_000)`. XOQDOQ
-    [Sagendorf1982](@cite) and PAVAN [Bander1982](@cite) limit both parameters
-    to 1000 m, which this package does not: `σ_z` of class A exceeds that
-    beyond 1.5 km.
+    [Turner1970](@citet) draws from 100 m to 100 km: `(100, 100_000)`. Both
+    parameters are limited to [`EIMUTIS_KONICEK_CEILING`](@ref), as in XOQDOQ
+    and PAVAN; `σ_z` of class A reaches it at 1.5 km.
 
 The evaluation itself does not enforce the range. The configuration loader
 applies the policy of `[model] extrapolation` to the receptor grid, and

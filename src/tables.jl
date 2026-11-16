@@ -267,6 +267,17 @@ coefficients to the next: below 100 m, from 100 m to 1 km, and beyond.
 """
 const EIMUTIS_KONICEK_RANGES = (100.0, 1000.0)
 
+"""
+    EIMUTIS_KONICEK_CEILING
+
+Upper limit in metres of both Eimutis–Konicek dispersion parameters, 1000 m.
+NRC XOQDOQ [Sagendorf1982](@cite) §4.6 and PAVAN [Bander1982](@cite) limit
+`σ_y` and `σ_z` to it in subroutine POLYN, "a conservative mixing limit".
+Without it the fit for class A gives a `σ_z` of 4.6 km at 3 km and 7 × 10⁶ m at
+100 km.
+"""
+const EIMUTIS_KONICEK_CEILING = 1000.0
+
 const _EIMUTIS_KONICEK_VERTICAL = (
     (   # A
         PowerLawCoefficients(0.192, 0.936, 0.0),

@@ -31,7 +31,10 @@ The field is the Gaussian plume with total reflection at the ground,
 
 with `x` the downwind and `y` the crosswind coordinate obtained by rotating the
 receptor into the plume frame. Upwind of the source the factor is zero, since
-the model has no upwind diffusion.
+the model has no upwind diffusion. CNCAN NSR-23 [CNCAN2004](@cite) §1 advises
+against this form for a wind below 2 m/s at the release height, where the
+direction wanders within minutes, and recommends the sector-averaged
+[`dilution_extended`](@ref) for short releases in light wind.
 """
 function dilution_instantaneous(
         east::Real,
@@ -88,10 +91,13 @@ Ground-level dilution factor χ/Q in s/m³ for a release long enough that the
 wind direction meanders across a sector but short enough that it does not
 sample the rose,
 
-    χ/Q = √(2/π) exp(−H²/2Σ_z²) / (Σ_z u x θ_L)
+    χ/Q = √(2/π) exp(−H²/2Σ_z²) / (Σ_z u r θ_L)
 
-uniform in the crosswind direction within the sector centred on the plume axis,
-and zero outside it.
+uniform along the arc of radius `r` within the sector centred on the plume
+axis, and zero outside it. Every quantity is evaluated at the radial distance
+`r`, as in [`dilution_long_term`](@ref); the 2021 code and the first releases
+of this package took the distance along the axis, which made the field uniform
+along a chord instead and 2 % higher at the edge of a sector at 10 km.
 
 `wind_bearing` is the direction the wind blows **from**, radians clockwise from
 north. `sectors` sets the sector width and defaults to the sixteen cardinal
@@ -111,17 +117,20 @@ function dilution_extended(
     x > 0 || return 0.0
     θ_L = sector_width(sectors)
     abs(y / x) ≤ tan(θ_L / 2) || return 0.0
+    # Uniform along the arc: every quantity at the radial distance, as in the
+    # long-term form, so that the two agree off the axis as well.
+    r = hypot(x, y)
 
-    H = effective_height(x, site, class)
-    Σz = corrected_vertical_dispersion(x, site, class)
+    H = effective_height(r, site, class)
+    Σz = corrected_vertical_dispersion(r, site, class)
     u = transport_wind_speed(site, class)
     u > 0 || return 0.0
 
-    D = _depletion(x, site, class, nuclide, washout)
+    D = _depletion(r, site, class, nuclide, washout)
     # The crosswind-integrated vertical factor, spread over the arc the sector
     # subtends. Without a lid this is √(2/π)exp(−H²/2Σ_z²)/Σ_z exactly.
     vertical = crosswind_integrated_factor(H, Σz, mixing_layer(site), class)
-    return D * vertical / (u * x * θ_L)
+    return D * vertical / (u * r * θ_L)
 end
 
 """

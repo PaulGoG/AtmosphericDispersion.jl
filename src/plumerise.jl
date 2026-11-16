@@ -250,9 +250,14 @@ Rise in metres from the semi-empirical law combining momentum and buoyancy,
 
     Δh = 3^(1/3) [ Fₘ x / ((1/3 + u/w₀)² u²) + F x² / (c u³) ]^(1/3)
 
-capped at the sum of the two final rises. Used where neither mechanism
+capped at the larger of the two final rises. Used where neither mechanism
 dominates the other. `stable_wind` is passed to [`final_buoyant_rise`](@ref)
-for the cap.
+for the cap. CNCAN NSR-23 [CNCAN2004](@cite) §6.3(e): "contributions to the
+overelevation of the pollutant track must not be summed up"; capping at the
+larger final rise keeps the far-field rise continuous at the edge of
+[`MECHANISM_BALANCE_TOLERANCE`](@ref), where the law of the larger mechanism
+takes over. The 2021 code capped at the sum, which nearly doubled the rise
+inside the band.
 
 `c` is `rise.combined_buoyancy`. With Briggs' `c = 2β² = 0.72` the expression
 reduces, as `Fₘ → 0`, to the two-thirds law `1.6 F^(1/3) x^(2/3) / u` that
@@ -272,8 +277,10 @@ function combined_rise(
     x ≥ 0 || throw(DomainError(x, "downwind distance cannot be negative"))
     u > 0 || throw(DomainError(u, "wind speed at the release height must be positive"))
     w₀ > 0 || throw(DomainError(w₀, "exit velocity must be positive for the combined law"))
-    final = final_momentum_rise(Fₘ, w₀, D, u, S, rise) +
-            final_buoyant_rise(F, u, S, rise; stable_wind)
+    final = max(
+        final_momentum_rise(Fₘ, w₀, D, u, S, rise),
+        final_buoyant_rise(F, u, S, rise; stable_wind),
+    )
     transitional = 3^(1 / 3) *
                    (Fₘ * x / ((1 / 3 + u / w₀)^2 * u^2) +
                     F * x^2 / (rise.combined_buoyancy * u^3))^(

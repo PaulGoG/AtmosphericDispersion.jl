@@ -26,6 +26,17 @@ const PASQUILL_CLASSES = (
     PASQUILL_A, PASQUILL_B, PASQUILL_C, PASQUILL_D, PASQUILL_E, PASQUILL_F,)
 
 """
+    STABLE_CLASSES
+
+The stable Pasquill classes, E and F: the classes in which the stable limits of
+the plume rise apply. CNCAN NSR-23 [CNCAN2004](@cite) Eq. (18) gives the stable
+final rise "under atmospheric stability conditions" and Eq. (19), the neutral
+limit, for neutral and unstable air; EPA ISC3 [EPA1995](@cite) §1.1.4.6 forms
+its stability parameter for these two classes only.
+"""
+const STABLE_CLASSES = (PASQUILL_E, PASQUILL_F)
+
+"""
     pasquill(c)
 
 The Pasquill class named by the letter `c`, given as a `Char` or a

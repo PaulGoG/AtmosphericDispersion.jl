@@ -102,6 +102,10 @@
                 "buildings.wake_coefficient",
             ),
             (
+                t -> (t["buildings"]["broadening_limit"] = 0.5),
+                "buildings.broadening_limit",
+            ),
+            (
                 t -> (t["precipitation"]["washout_duration"] = -1.0),
                 "precipitation.washout_duration",
             ),

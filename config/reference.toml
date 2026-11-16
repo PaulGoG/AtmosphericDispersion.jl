@@ -11,7 +11,7 @@ exit_temperature = 324.0  # temperature of the emitted gas, K; > 0
 reference_speed = 4.0     # wind speed at 10 m, m/s; > 0
 temperature = 287.0       # ambient air temperature, K; > 0
 density = 1.2             # ambient air density, kg/m^3; > 0
-lapse_rate = 0.02         # vertical temperature gradient dT/dz, K/m; finite
+lapse_rate = 0.02         # dT/dz of the stable classes E and F, K/m; finite
 specific_heat = 1005.0    # isobaric specific heat of ambient air, J/(kg K); > 0
 surface = "agricultural"  # wind-profile surface; one of: water | agricultural | forest_urban
 roughness = "pasture"     # roughness class; one of: grassland_water | arable | pasture | rural | forest_urban | metropolis
@@ -32,6 +32,7 @@ above_lid = "rise_inhibited"  # plume above the lid; one of: rise_inhibited | fu
 
 [buildings]
 wake_coefficient = 1.0    # wake broadening coefficient C in sqrt(sigma^2 + C A/pi); >= 0, 0 disables
+broadening_limit = 1.7320508075688772  # largest widening factor of a dispersion parameter, sqrt(3); >= 1, inf for none
 # Repeat [[buildings.building]] for each structure; omit the block for none.
 # [[buildings.building]]
 # east = 30.0             # displacement from the stack, m
@@ -66,7 +67,7 @@ duration = 31557600.0     # release duration, s; > 0
 [precipitation]
 type = "rain"             # one of: rain | snow
 rate = 1.0                # intensity, mm/h; one of: 0.5 | 1.0 | 3.0 | 5.0
-washout_duration = 0.0    # duration of the washout event, s; >= 0
+washout_duration = 0.0    # duration of the precipitation during the release, s; >= 0
 
 [grid]
 extent = 20000.0          # half-width of the receptor grid, m; > 0

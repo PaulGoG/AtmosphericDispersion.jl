@@ -109,13 +109,22 @@ function dry_depletion_factor(
 end
 
 """
-    WashoutEvent(; duration, precipitation = PRECIPITATION_RAIN,
+    WashoutEvent(; duration, release_duration = duration,
+                 precipitation = PRECIPITATION_RAIN,
                  rate = first(PRECIPITATION_RATES), model = WASHOUT_NORMATIVE)
 
-A precipitation event scavenging the plume: its `precipitation` type, its
-intensity `rate` in mm/h, its `duration` in seconds, and the
-[`WashoutModel`](@ref) its coefficients are taken from. The intensity must be one
-of [`PRECIPITATION_RATES`](@ref), the washout table being defined only there.
+Precipitation scavenging the plume: its `precipitation` type, its intensity
+`rate` in mm/h, its `duration` in seconds during a release of
+`release_duration` seconds, and the [`WashoutModel`](@ref) its coefficients
+are taken from. The intensity must be one of [`PRECIPITATION_RATES`](@ref), the
+washout table being defined only there.
+
+The precipitation is taken to cover the whole path of the material released
+while it lasts, the fraction `min(duration/release_duration, 1)` of the
+release; that material is scavenged for its travel time to the receptor, the
+rest not at all. See [`wet_depletion_factor`](@ref) and
+[`wet_deposition`](@ref). The default `release_duration` makes the event last
+the whole release.
 
 Which row of the table applies is a property of the released species, so it is
 stored in the [`Nuclide`](@ref).
@@ -124,24 +133,42 @@ struct WashoutEvent
     precipitation::PrecipitationType
     rate::Float64
     duration::Float64
+    fraction::Float64
     model::WashoutModel
 
     function WashoutEvent(;
             duration::Real,
+            release_duration::Real = duration,
             precipitation::PrecipitationType = PRECIPITATION_RAIN,
             rate::Real = first(PRECIPITATION_RATES),
             model::WashoutModel = WASHOUT_NORMATIVE,
     )
         duration ≥ 0 ||
             throw(ArgumentError("washout duration cannot be negative, got $duration s"))
+        release_duration ≥ 0 || throw(
+            ArgumentError("release duration cannot be negative, got $release_duration s"),
+        )
+        duration > 0 && release_duration == 0 &&
+            throw(
+                ArgumentError("a washout event of positive duration needs a release duration"),
+            )
         float(rate) in PRECIPITATION_RATES || throw(
             ArgumentError(
             "the washout table is defined at intensities $(PRECIPITATION_RATES) mm/h, got $rate",
         ),
         )
-        return new(precipitation, Float64(rate), Float64(duration), model)
+        fraction = duration == 0 ? 0.0 : min(Float64(duration) / release_duration, 1.0)
+        return new(precipitation, Float64(rate), Float64(duration), fraction, model)
     end
 end
+
+"""
+    precipitation_fraction(event)
+
+Fraction of the release that falls in the precipitation of the
+[`WashoutEvent`](@ref), `min(duration/release_duration, 1)`.
+"""
+precipitation_fraction(event::WashoutEvent) = event.fraction
 
 """
     washout_coefficients(event, species = WASHOUT_TRITIUM_IODINE)
@@ -155,21 +182,42 @@ washout_coefficients(
 ) = washout_coefficients(event.precipitation, event.rate, event.model, species)
 
 """
+    wet_depletion_factor(x, u, event, species = WASHOUT_TRITIUM_IODINE)
     wet_depletion_factor(event, species = WASHOUT_TRITIUM_IODINE)
 
-Surviving airborne fraction after the washout `event`, `exp(−Λ t)`, with `t`
-the duration of the event.
+Surviving airborne fraction of the release at downwind distance `x` metres,
+transported at `u` m/s, under the washout `event`,
+
+    1 − f + f exp(−Λ x/u)
+
+with `f` the [`precipitation_fraction`](@ref) of the event. The material
+released during the precipitation has been scavenged for its travel time
+`x/u`, which is the time of CNCAN NSR-23 [CNCAN2004](@cite) Eq. (35), "the
+period of time during which the radioactive material is subjected to the
+process", and of HPA-RPD-058 [SmithSimmonds2009](@cite) Eq. (3.13); the rest of
+the release travels in dry air.
 
 The low washout coefficient is used, for the same reason the low deposition
 velocity is: it removes the least material and so is conservative for the
 airborne concentration. The high coefficient drives the ground deposition
-instead.
+instead; see [`wet_deposition`](@ref).
 
-The factor does not depend on distance. Material at distance `x` has been in
-the rain for at most the travel time `x/u`, the time of HPA-RPD-058
-[SmithSimmonds2009](@cite) Eq. (3.13), so for `x < u t` the plume is depleted
-too much; this is a known limitation.
+The two-argument form is `exp(−Λ t)` for material that stays in the
+precipitation for the whole duration `t` of the event, as the 2021 code applied
+it at every distance.
 """
+function wet_depletion_factor(
+        x::Real,
+        u::Real,
+        event::WashoutEvent,
+        species::WashoutSpecies = WASHOUT_TRITIUM_IODINE,
+)
+    x ≥ 0 || throw(DomainError(x, "travel distance cannot be negative"))
+    u > 0 || throw(DomainError(u, "transport speed must be positive"))
+    f = precipitation_fraction(event)
+    return 1 - f + f * exp(-washout_coefficients(event, species).low * x / u)
+end
+
 wet_depletion_factor(
     event::WashoutEvent,
     species::WashoutSpecies = WASHOUT_TRITIUM_IODINE,
@@ -198,6 +246,7 @@ function depletion_factor(
 )
     u = transport_wind_speed(site, class)
     f = decay_factor(x, u, nuclide) * dry_depletion_factor(x, site, class, nuclide)
-    washout === nothing || (f *= wet_depletion_factor(washout, nuclide.washout_species))
+    washout === nothing ||
+        (f *= wet_depletion_factor(x, u, washout, nuclide.washout_species))
     return f
 end

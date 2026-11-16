@@ -117,14 +117,38 @@
         end
     end
 
+    @testset "washout acts for the travel time, on the share of the release in rain" begin
+        u, x = 6.0, 6000.0
+        Λ = 1e-5        # NSR-23 Table 7, tritium and iodine, rain at 1 mm/h, low
+        whole = WashoutEvent(; duration = 3600.0, rate = 1.0)
+        quarter = WashoutEvent(; duration = 900.0, release_duration = 3600.0, rate = 1.0)
+        dry = WashoutEvent(; duration = 0.0, rate = 1.0)
+        @test precipitation_fraction(whole) == 1
+        @test precipitation_fraction(quarter) == 0.25
+        @test precipitation_fraction(dry) == 0
+        @test wet_depletion_factor(x, u, whole) ≈ exp(-Λ * x / u)
+        @test wet_depletion_factor(x, u, quarter) ≈ 0.75 + 0.25 * exp(-Λ * x / u)
+        @test wet_depletion_factor(x, u, dry) == 1
+        # At the source nothing has been scavenged yet, however long it rains.
+        @test wet_depletion_factor(0.0, u, whole) == 1
+        # Rain longer than the release covers all of it.
+        @test precipitation_fraction(
+            WashoutEvent(; duration = 7200.0, release_duration = 3600.0),) == 1
+        @test_throws ArgumentError WashoutEvent(; duration = 10.0, release_duration = 0.0)
+        @test_throws ArgumentError WashoutEvent(; duration = 10.0, release_duration = -1.0)
+    end
+
     @testset "composition" begin
         for class in PASQUILL_CLASSES
             x, t = 1e4, 3600.0
             rain = WashoutEvent(; duration = t, precipitation = PRECIPITATION_RAIN, rate = 1.0)
             u = transport_wind_speed(site, class)
+            # Rain through the whole release: the material is scavenged for
+            # its travel time x/u with the low coefficient of NSR-23 Table 7,
+            # 10⁻⁵ s⁻¹ at 1 mm/h.
             expected = decay_factor(x, u, TRITIATED_WATER) *
                        dry_depletion_factor(x, site, class, TRITIATED_WATER) *
-                       wet_depletion_factor(rain)
+                       exp(-1e-5 * x / u)
             @test depletion_factor(x, site, class, TRITIATED_WATER; washout = rain) ≈
                   expected
             @test 0 < expected ≤ 1

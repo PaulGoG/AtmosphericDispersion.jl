@@ -1,4 +1,16 @@
 """
+    MINIMUM_WIND_SPEED
+
+Lowest wind speed in m/s at the release height, 1 m/s: EPA ISC3
+[EPA1995](@cite) §1.1.3, "the stack height wind speed is not allowed to be less
+than 1.0 m/s". The neutral plume rise varies as `1/u` and the dilution factors
+as `1/u`, so neither has a calm limit. [`transport_wind_speed`](@ref), the
+wind of the stable rise and the wind of the downwash test are held at this
+value from below; a [`PrescribedPlume`](@ref) takes its wind as given.
+"""
+const MINIMUM_WIND_SPEED = 1.0
+
+"""
     WAKE_WIND_THRESHOLD
 
 Wind speed in m/s below which a plume clearing the buildings is taken to escape
@@ -34,8 +46,7 @@ the plume is drawn into the lee of the stack and the effective release height
 drops by `2 (1.5 − w₀/u) D`.
 """
 function downwash_height(source::StackSource, atmosphere::Atmosphere)
-    u = mean_wind_speed(atmosphere, source.height)
-    u > 0 || return source.height
+    u = max(mean_wind_speed(atmosphere, source.height), MINIMUM_WIND_SPEED)
     w₀ = source.exit_velocity
     w₀ < 1.5u || return source.height
     return source.height - 2 * (1.5 - w₀ / u) * source.diameter
@@ -91,7 +102,9 @@ stable final rise.
 
 The release height, the buoyancy and momentum fluxes, the stability parameter
 and the wind of the stable final rise in each class are all independent of
-receptor position, so they are computed once here. The 2021 code recomputed
+receptor position, so they are computed once here. The stability parameter of
+the atmosphere is applied in the stable classes only; see
+[`stability_parameter(site, class)`](@ref stability_parameter(::Site, ::PasquillClass)). The 2021 code recomputed
 them inside the innermost loop, repeating the building reduction and the
 downwash correction, the latter costing six wind-profile evaluations, at each
 grid point of each field.
@@ -124,7 +137,8 @@ struct Site <: AbstractSite
         S = stability_parameter(atmosphere)
         winds = ntuple(
             i -> _stable_rise_wind(
-                atmosphere, release, F, S, rise, stable_rise_wind, PASQUILL_CLASSES[i],),
+                atmosphere, release, F, _class_stability(S, PASQUILL_CLASSES[i]), rise,
+                stable_rise_wind, PASQUILL_CLASSES[i],),
             length(PASQUILL_CLASSES),
         )
         return new(
@@ -143,6 +157,24 @@ struct Site <: AbstractSite
         )
     end
 end
+
+# A to D take the neutral limit alone: a positive S there is set to zero.
+_class_stability(S::Float64, class::PasquillClass) = class in STABLE_CLASSES ? S :
+                                                     min(S, 0.0)
+
+"""
+    stability_parameter(site, class)
+
+The stability parameter in s⁻² that the plume rise of `site` takes in `class`:
+that of the site's atmosphere, [`stability_parameter`](@ref), in the stable
+classes [`STABLE_CLASSES`](@ref), and at most zero in A to D, where the stable
+limits of the rise do not apply and the neutral limit alone does.
+
+The atmosphere has one temperature gradient, which is therefore the gradient
+of the stable classes. The 2021 code applied it in every class, so that a
+strong inversion capped the rise in unstable and neutral air as well.
+"""
+stability_parameter(site::Site, class::PasquillClass) = _class_stability(site.stability, class)
 
 """
     dispersion_scheme(site)
@@ -163,7 +195,8 @@ release_height(site::Site) = site.release_height
 """
     transport_wind_speed(site, class)
 
-Wind speed in m/s carrying the plume, evaluated at the release height.
+Wind speed in m/s carrying the plume, evaluated at the release height and held
+at [`MINIMUM_WIND_SPEED`](@ref) from below.
 
 The power-law profile has no skill below the height its reference is quoted at,
 and returns zero at the ground, so the evaluation height is floored at
@@ -173,7 +206,8 @@ every dilution factor divides by it.
 """
 function transport_wind_speed(site::Site, class::PasquillClass)
     z = max(release_height(site), REFERENCE_HEIGHT)
-    return wind_speed(site.atmosphere.reference_speed, z, site.atmosphere.surface, class)
+    u = wind_speed(site.atmosphere.reference_speed, z, site.atmosphere.surface, class)
+    return max(u, MINIMUM_WIND_SPEED)
 end
 
 """
@@ -211,8 +245,9 @@ reference is quoted at, so the layer starts at [`REFERENCE_HEIGHT`](@ref) where
 the release is lower, as [`transport_wind_speed`](@ref) is floored.
 
 Under `WIND_AT_RELEASE_HEIGHT`, or where there is no stable rise to average
-over (unstable or neutral air, or a plume without buoyancy), it is the
-transport wind.
+over (classes A to D, an atmosphere that is not stably stratified, or a plume
+without buoyancy), it is the transport wind. Both are held at
+[`MINIMUM_WIND_SPEED`](@ref) from below.
 """
 stable_rise_wind_speed(site::Site, class::PasquillClass) = site.stable_rise_winds[classindex(class)]
 
@@ -228,14 +263,20 @@ function _stable_rise_wind(
         class::PasquillClass,
 )
     z₀ = max(release, REFERENCE_HEIGHT)
-    u = wind_speed(atmosphere.reference_speed, z₀, atmosphere.surface, class)
+    u = max(
+        wind_speed(atmosphere.reference_speed, z₀, atmosphere.surface, class),
+        MINIMUM_WIND_SPEED,
+    )
     policy == WIND_AT_RELEASE_HEIGHT && return u
     c = rise.stable_final
     (S > 0 && F > 0 && c > 0 && u > 0) || return u
     Δh = c * (F / (u * S))^(1 / 3)
     for _ in 1:STABLE_RISE_MAX_ITERATIONS
-        ū = layer_mean_wind_speed(
-            atmosphere.reference_speed, z₀, z₀ + Δh, atmosphere.surface, class,)
+        ū = max(
+            layer_mean_wind_speed(
+                atmosphere.reference_speed, z₀, z₀ + Δh, atmosphere.surface, class,),
+            MINIMUM_WIND_SPEED,
+        )
         Δh′ = c * (F / (ū * S))^(1 / 3)
         abs(Δh′ - Δh) ≤ STABLE_RISE_TOLERANCE * Δh′ && return ū
         Δh = Δh′
@@ -250,15 +291,17 @@ end
     plume_rise(x, site, class)
 
 Rise of the plume above its release height, in metres, at downwind distance `x`
-metres, using the transport wind of the given stability class, and for the
-stable final rise the wind of [`stable_rise_wind_speed`](@ref).
+metres, using the transport wind of the given stability class, the stability
+parameter of that class, [`stability_parameter(site, class)`](@ref
+stability_parameter(::Site, ::PasquillClass)), and for the stable final rise
+the wind of [`stable_rise_wind_speed`](@ref).
 """
 function plume_rise(x::Real, site::Site, class::PasquillClass)
     u = transport_wind_speed(site, class)
     stable_wind = stable_rise_wind_speed(site, class)
     w₀, D = site.source.exit_velocity, site.source.diameter
-    return _plume_rise(
-        x, site.buoyancy, site.momentum, site.stability, w₀, D, u, site.rise; stable_wind,)
+    S = stability_parameter(site, class)
+    return _plume_rise(x, site.buoyancy, site.momentum, S, w₀, D, u, site.rise; stable_wind)
 end
 
 """

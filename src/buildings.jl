@@ -68,66 +68,86 @@ reproduced. It lies inside the interval 0.5–2.0 that CNCAN NSR-23 gives; see
 const NSR23_WAKE_COEFFICIENT = 1.5
 
 """
-    BuildingEnvelope(buildings = Building[]; wake_coefficient = DEFAULT_WAKE_COEFFICIENT)
+    MAXIMUM_WAKE_BROADENING
 
-The collective effect of the buildings around a stack, reduced once to a single
-equivalent height and frontal area.
+Largest factor by which the building wake may widen a dispersion parameter, √3.
+NRC XOQDOQ [Sagendorf1982](@cite) Eqs. (8) and (11), after Regulatory Guide
+1.111, take `√3 σ` as the "maximum allowable building-wake dilution", and CNCAN
+NSR-23 [CNCAN2004](@cite) §5 recommends that the reduction of concentration by
+the wake "is not higher than 3". Limiting both parameters to √3 limits the
+reduction of a centreline concentration to 3 and of a sector average to √3.
+"""
+const MAXIMUM_WAKE_BROADENING = sqrt(3.0)
+
+"""
+    BuildingEnvelope(buildings = Building[]; wake_coefficient = DEFAULT_WAKE_COEFFICIENT,
+                     broadening_limit = MAXIMUM_WAKE_BROADENING)
+
+The building that governs the wake of a stack, reduced once to a height and a
+frontal area, and the rules of the wake correction: the coefficient `C` of
+[`wake_broadened`](@ref) and the largest factor `broadening_limit` by which it
+may widen a dispersion parameter (`Inf` for no limit, as in IAEA SRS-19).
 
 Buildings within [`WAKE_INFLUENCE_RADII`](@ref) of their own height from the
-stack contribute; the rest are ignored. Contributions are averaged with weights
-inversely proportional to distance, so nearer structures dominate.
+stack are in its vicinity; the rest are ignored. Of those, the tallest governs,
+and of equally tall ones the one with the larger frontal area. IAEA SRS-19
+[IAEA2001](@cite) §3.3 takes "the building that most influences the resulting
+plume dispersion", noting that a much larger building nearby exerts more
+influence than the one the release comes from; CNCAN NSR-23 [CNCAN2004](@cite)
+§5 takes the nearest building in the vicinity. The 2021 code averaged the
+heights and areas with weights inversely proportional to distance, so that a
+small structure near the stack could cancel the wake of a large one.
 
 The reduction is performed at construction. The 2021 code recomputed it inside
 the dispersion-parameter correction, which is called once per grid point per
 stability class, so the building list, which does not change during a run, was
 rescanned at each evaluation.
 
-An empty envelope has zero equivalent height and area, which makes every
-building correction downstream the identity.
+An empty envelope has zero height and area, which makes every building
+correction downstream the identity.
 """
 struct BuildingEnvelope
     height::Float64
     frontal_area::Float64
     wake_coefficient::Float64
+    broadening_limit::Float64
 
     function BuildingEnvelope(
             buildings::AbstractVector{Building} = Building[];
             wake_coefficient::Real = DEFAULT_WAKE_COEFFICIENT,
+            broadening_limit::Real = MAXIMUM_WAKE_BROADENING,
     )
         wake_coefficient ≥ 0 || throw(
             ArgumentError("the wake coefficient cannot be negative, got $wake_coefficient"),
         )
-        weight = 0.0
-        h = 0.0
-        a = 0.0
+        broadening_limit ≥ 1 || throw(
+            ArgumentError("the broadening limit cannot be below one, got $broadening_limit"),
+        )
+        h, a = 0.0, 0.0
         for b in buildings
             d = distance(b)
             d > 0 || throw(
                 ArgumentError("a building cannot sit at the foot of the stack itself"),
             )
             d ≤ WAKE_INFLUENCE_RADII * b.height || continue
-            w = inv(d)
-            weight += w
-            h += w * b.height
-            a += w * b.frontal_area
+            (b.height, b.frontal_area) > (h, a) && ((h, a) = (b.height, b.frontal_area))
         end
-        iszero(weight) && return new(0.0, 0.0, float(wake_coefficient))
-        return new(h / weight, a / weight, float(wake_coefficient))
+        return new(h, a, float(wake_coefficient), float(broadening_limit))
     end
 end
 
 """
     equivalent_height(envelope)
 
-Weighted equivalent building height, in metres. Zero when no building is close
-enough to influence the plume.
+Height in metres of the building that governs the wake. Zero when no building is
+close enough to influence the plume.
 """
 equivalent_height(envelope::BuildingEnvelope) = envelope.height
 
 """
     equivalent_area(envelope)
 
-Weighted equivalent frontal area, in m².
+Frontal area in m² of the building that governs the wake.
 """
 equivalent_area(envelope::BuildingEnvelope) = envelope.frontal_area
 
@@ -139,16 +159,20 @@ Dispersion parameter in metres, broadened by the building wake.
 A plume released well above the buildings (higher than
 `2.5 × equivalent_height`) is unaffected. One released below their tops is
 fully mixed into the wake and takes the broadened value
-`√(σ² + C A / π)`. Between the two the correction is interpolated linearly in
-release height.
+`min(√(σ² + C A / π), L σ)`, with `L` the `broadening_limit` of the envelope.
+Between the two the correction is interpolated linearly in release height, as
+in CNCAN NSR-23 [CNCAN2004](@cite) Eq. (10).
 
-With an empty envelope this is the identity, since the equivalent height and
-area are then zero.
+With an empty envelope this is the identity, since the height and area are
+then zero.
 """
 function wake_broadened(σ::Real, H::Real, envelope::BuildingEnvelope)
     h = equivalent_height(envelope)
     H ≥ 2.5 * h && return float(σ)
-    broadened = sqrt(σ^2 + envelope.wake_coefficient * equivalent_area(envelope) / π)
+    broadened = min(
+        sqrt(σ^2 + envelope.wake_coefficient * equivalent_area(envelope) / π),
+        envelope.broadening_limit * σ,
+    )
     H < h && return broadened
     return broadened - (H - h) / (1.5 * h) * (broadened - σ)
 end

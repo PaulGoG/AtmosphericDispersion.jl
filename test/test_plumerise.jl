@@ -82,25 +82,6 @@
             hmtranzitie = 1.89 * (w_0^2 * D / (u * (w_0 + 3u)))^(2 / 3) * x^(1 / 3)
             hmtranzitie <= hmfinal ? hmtranzitie : hmfinal
         end
-        original_hmb = function (x, F, Fm, w_0, D, u, S)
-            hmbfinal = original_hm_final(Fm, w_0, D, u, S) + original_hb_final(F, u, S)
-            hmbtranzitie = 3^(1 / 3) *
-                           (Fm * x / ((1 / 3 + u / w_0)^2 * u^2) + F * x^2 / (0.5 * u^3))^(1 /
-                                                                                           3)
-            hmbtranzitie <= hmbfinal ? hmbtranzitie : hmbfinal
-        end
-        original_rise = function (x, F, Fm, w_0, D, u, S)
-            hbfinal = original_hb_final(F, u, S)
-            hmfinal = original_hm_final(Fm, w_0, D, u, S)
-            if abs(hbfinal - hmfinal) * 2 / (hbfinal + hmfinal) <= 0.1
-                return original_hmb(x, F, Fm, w_0, D, u, S)
-            elseif hmfinal > hbfinal
-                return original_hm(x, Fm, w_0, D, u, S)
-            else
-                return original_hb(x, F, u, S)
-            end
-        end
-
         w₀, D = 10.0, 2.33
         for u in (0.5, 1.0, 4.0, 7.3, 15.0), Sv in (1e-4, 8.63e-4, 1e-3, 5e-3)
 
@@ -111,9 +92,31 @@
                 @test buoyant_rise(x, F, u, Sv, NSR23_RISE) == original_hb(x, F, u, Sv)
                 @test momentum_rise(x, Fₘ, w₀, D, u, Sv, NSR23_RISE) ==
                       original_hm(x, Fₘ, w₀, D, u, Sv)
+                # The 2021 transitional law, capped at the larger final rise:
+                # the 2021 code capped at the sum, which NSR-23 §6.3(e)
+                # excludes ("contributions ... must not be summed up").
+                transition = 3^(1 / 3) *
+                             (Fₘ * x / ((1 / 3 + u / w₀)^2 * u^2) +
+                              F * x^2 / (0.5 * u^3))^(1 / 3)
+                larger = max(original_hm_final(Fₘ, w₀, D, u, Sv), original_hb_final(F, u, Sv))
                 @test combined_rise(x, F, Fₘ, w₀, u, Sv, D, NSR23_RISE) ==
-                      original_hmb(x, F, Fₘ, w₀, D, u, Sv)
+                      min(transition, larger)
             end
+        end
+    end
+
+    # Inside the balance band the combined law is capped at the larger final
+    # rise, not at their sum (NSR-23 §6.3(e)), so the far-field rise does not
+    # jump at the edge of the band. Momentum final 12 m; buoyant final 12.57 m
+    # inside the band (4.7 % apart) and 13.50 m outside it (11.8 %).
+    @testset "the combined law is capped at the larger final rise" begin
+        Fm, w, D, u, S = 100.0, 20.0, 1.0, 5.0, -1e-6
+        momentum = final_momentum_rise(Fm, w, D, u, S)
+        @test momentum ≈ 3 * w * D / u
+        for F in (4.20, 4.62)
+            buoyant = final_buoyant_rise(F, u, S)
+            rise = AtmosphericDispersion._plume_rise(1e5, F, Fm, S, w, D, u, BRIGGS_RISE)
+            @test rise ≈ max(momentum, buoyant)
         end
     end
 
@@ -162,8 +165,8 @@ end
     @test buoyant_rise(1e5, F, 4.0, S; stable_wind = 8.0) ==
           final_buoyant_rise(F, 4.0, S; stable_wind = 8.0)
     @test combined_rise(1e5, F, 1e-14, 10.0, 4.0, S, 2.0; stable_wind = 8.0) ≈
-          final_momentum_rise(1e-14, 10.0, 2.0, 4.0, S) +
-          final_buoyant_rise(F, 4.0, S; stable_wind = 8.0)
+          max(final_momentum_rise(1e-14, 10.0, 2.0, 4.0, S),
+        final_buoyant_rise(F, 4.0, S; stable_wind = 8.0),)
     @test plume_rise(1e5, REFERENCE_STACK, REFERENCE_AIR, 4.0; stable_wind = 8.0) <
           plume_rise(1e5, REFERENCE_STACK, REFERENCE_AIR, 4.0)
 end

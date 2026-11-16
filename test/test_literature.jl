@@ -329,14 +329,22 @@
     # Eqs. (4.31)/(4.32) as √(σ² + I_G²/π): a coefficient of one in both.
     @testset "wake coefficient is the published one" begin
         b = Building(; east = 25.0, north = 0.0, height = 60.0, frontal_area = 3600.0)
-        iaea = BuildingEnvelope([b])
-        normative = BuildingEnvelope([b]; wake_coefficient = NSR23_WAKE_COEFFICIENT)
+        iaea = BuildingEnvelope([b]; broadening_limit = Inf)
+        normative = BuildingEnvelope(
+            [b]; wake_coefficient = NSR23_WAKE_COEFFICIENT, broadening_limit = Inf,)
         A = equivalent_area(iaea)
         for σ in (10.0, 50.0, 200.0)
             # released inside the cavity, where the correction is undiluted
             @test wake_broadened(σ, 0.0, iaea) ≈ sqrt(σ^2 + A / π)
             @test wake_broadened(σ, 0.0, normative) ≈ sqrt(σ^2 + 1.5A / π)
         end
+        # XOQDOQ Eqs. (8) and (11) and NSR-23 §5: the wake widens a parameter
+        # by √3 at most, so it reduces a centreline concentration by 3 at most.
+        limited = BuildingEnvelope([b])
+        for σ in (10.0, 50.0, 200.0)
+            @test wake_broadened(σ, 0.0, limited) ≈ min(sqrt(σ^2 + A / π), sqrt(3) * σ)
+        end
+        @test wake_broadened(10.0, 0.0, limited) ≈ sqrt(3) * 10
     end
 
     # Ogram, Precipitation Scavenging of Tritiated Water Vapour (HTO),
@@ -406,11 +414,11 @@
         checked = 0
         for F in (5.0, 50.0, 500.0), u in (2.0, 5.0, 9.0), x in (50.0, 100.0, 300.0)
             two_thirds = 1.6 * F^(1 / 3) * x^(2 / 3) / u
-            # The combined law is capped at the sum of the two final rises,
+            # The combined law is capped at the larger of the two final rises,
             # and the cap differs between the two coefficient sets, so only
             # assert where neither is binding.
-            cap(r) = final_momentum_rise(1e-14, 10.0, 2.0, u, -1e-6, r) +
-                     final_buoyant_rise(F, u, -1e-6, r)
+            cap(r) = max(final_momentum_rise(1e-14, 10.0, 2.0, u, -1e-6, r),
+                final_buoyant_rise(F, u, -1e-6, r),)
             briggs = combined_rise(x, F, 1e-14, 10.0, u, -1e-6, 2.0, BRIGGS_RISE)
             thesis = combined_rise(x, F, 1e-14, 10.0, u, -1e-6, 2.0, NSR23_RISE)
             (briggs < 0.99cap(BRIGGS_RISE) && thesis < 0.99cap(NSR23_RISE)) || continue
@@ -630,14 +638,19 @@ end
         )
         @test EIMUTIS_KONICEK_LATERAL_EXPONENT == 0.9031
         @test EIMUTIS_KONICEK_RANGES == (100.0, 1000.0)
+        # The fit unlimited would give 7 × 10⁶ m for σ_z of class A at 100 km.
+        @test eimutis_konicek_vertical_dispersion(1e5, PASQUILL_A) == 1000
+        @test eimutis_konicek_lateral_dispersion(1e5, PASQUILL_F) == 1000
         for (i, class) in enumerate(PASQUILL_CLASSES)
             @test eimutis_konicek_lateral_coefficient(class) == AY[i]
             for (r, x) in enumerate((50.0, 500.0, 5000.0))
                 k = eimutis_konicek_vertical_coefficients(class, x)
                 @test (k.a, k.b, k.c) == (AZ[r][i], BZ[r][i], CZ[r][i])
+                # Both limited to 1000 m, as in POLYN.
                 @test eimutis_konicek_vertical_dispersion(x, class) ≈
-                      AZ[r][i] * x^BZ[r][i] + CZ[r][i]
-                @test eimutis_konicek_lateral_dispersion(x, class) ≈ AY[i] * x^0.9031
+                      min(AZ[r][i] * x^BZ[r][i] + CZ[r][i], 1000)
+                @test eimutis_konicek_lateral_dispersion(x, class) ≈
+                      min(AY[i] * x^0.9031, 1000)
             end
         end
     end
