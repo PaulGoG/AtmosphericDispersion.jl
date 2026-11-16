@@ -15,6 +15,9 @@
         @test bearing(1, 1) ≈ π / 4            # north-east
         @test bearing(0, 0) == 0
         @test 0 ≤ bearing(-1, -1) < 2π
+        # Just west of north, where the wrapped angle rounds to 2π.
+        @test bearing(-1e-17, 1.0) == 0
+        @test bearing(-1.0f-9, 1.0f0) === 0.0f0
     end
 
     # The 2021 implementation binned by truncating a ratio, which put every

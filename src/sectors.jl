@@ -71,7 +71,9 @@ function bearing(east::Real, north::Real)
     iszero(east) &&
         iszero(north) &&
         return zero(float(promote_type(typeof(east), typeof(north))))
-    return mod2pi(atan(east, north))
+    β = mod2pi(atan(east, north))
+    # mod2pi rounds an angle a fraction of an ulp below zero up to 2π itself.
+    return β < 2π ? β : zero(β)
 end
 
 """
