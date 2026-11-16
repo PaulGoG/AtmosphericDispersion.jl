@@ -17,7 +17,7 @@ low washout coefficient, and deposition the high ones, as NSR-23 Tables 6 and
 the high velocity times an air concentration depleted with the low velocity
 and the low washout coefficient, so the ground receives up to the ratio of the
 two velocities times what dry deposition takes from the plume, 2 for HTO. Wet
-deposition is the largest deposit the precipitation can lay at each receptor,
+deposition is the largest deposit the precipitation can lay at each distance,
 undepleted on the way, so its integral over the ground, `f A Λ_H X/u` out to
 `X`, exceeds the activity released into the precipitation beyond
 `X = u/Λ_H`, 10 km for HTO in rain at 5 mm/h and 6 m/s. The budgets are
@@ -34,10 +34,12 @@ the site the result depends on when it falls, which a configuration does not
 state: for `Λ = 10⁻³ s⁻¹`, 900 s of precipitation in a 3600 s release and
 20 km at 6 m/s, the surviving fraction lies between 0.47 and 0.92 by timing,
 against 0.76 from the form. Where `Λ x/u` is large the precipitation must
-outlast the travel time by far, `t_w ≫ (exp(Λ x/u) − 1)/Λ`, and
-`load_configuration` warns when the receptor grid reaches beyond
-`u ln(1 + Λ t_w)/Λ`. Setting no washout bounds the air concentration for any
-timing. Wet deposition is not affected: it is the bound for any timing.
+outlast the travel time by far, `t_w ≫ (exp(Λ x/u) − 1)/Λ`.
+`load_configuration` warns when a precipitation beginning with the release,
+which leaves the most airborne, would leave more than 10 % more than the form
+at the edge of the receptor grid. Setting no washout bounds the air
+concentration for any timing. Wet deposition is not affected: it is the bound
+for any timing.
 
 ## Dry deposition of tritiated water
 
@@ -65,12 +67,15 @@ These are the rules of NSR-23 §6.2, which the package follows.
   classes, exceeds 5 m/s, so the release height changes discontinuously at
   that wind speed.
 - The `√3` limit on the wake broadening applies to a plume at effective
-  height zero, the ground-level release for which NRC XOQDOQ and NSR-23 §5
-  state it; an elevated plume is broadened without limit, as NSR-23 Eq. (9)
-  prescribes. Near the source, where the wake would widen the parameters by
-  more than `√3`, the ground-level concentration therefore drops between
-  effective height zero and a small one, from the limited to the unlimited
-  broadening.
+  height zero, a release at ground level with no plume rise, the case for
+  which NRC XOQDOQ and NSR-23 §5 state it. A plume with any rise, including one
+  entrained into the cavity and released at ground level, is broadened without
+  limit, as NSR-23 Eq. (9) prescribes, since for it the limit would lower the
+  ground-level concentration. The limit binds while `σ < √(C A/2π)`: for the
+  60 m building of 3600 m² beside the reference stack, out to 0.54 km in class D
+  and 2.6 km in class F. There a stack with the smallest efflux, whose plume
+  rises, gives a lower concentration than one with none, at 200 m by a factor
+  of 2.0 in class D and 5.1 in class F.
 - The vicinity of a building is judged from the point given for it, which
   should be the point of the building nearest the stack; the package carries
   no footprint.

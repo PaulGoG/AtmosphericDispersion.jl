@@ -13,7 +13,7 @@ julia> load_configuration("broken.toml")
 ERROR: ConfigurationError at `grid.spacing`: must be smaller than grid.extent (20000.0 m), got 20000.0
 
 julia> load_configuration("misspelt.toml")
-ERROR: ConfigurationError at `model.mixing_layr`: unknown key; expected one of plume_rise, resuspension, mixing_layer, washout
+ERROR: ConfigurationError at `model.washot`: unknown key; expected one of plume_rise, resuspension, washout, dispersion, stable_rise_wind, extrapolation
 ```
 
 An unread key is an error because it cannot be distinguished from a misspelt
@@ -116,10 +116,10 @@ to D take no stable limit whatever its value; see
 `min(washout_duration/release.duration, 1)`, is scavenged for its travel time
 to each receptor, and the rest is not; zero, the reference value, turns
 washout and wet deposition off. The washout of the airborne plume is the limit
-of a precipitation much longer than the travel time, and the loader warns when
-`grid.extent` lies beyond `u ln(1 + Λ t_w)/Λ` in the slowest class, past which
-the result depends on when the precipitation falls; wet deposition is the bound
-for any timing. See [`wet_depletion_factor`](@ref) and
+of a precipitation much longer than the travel time, and the loader warns when,
+at `grid.extent` in the slowest class, a precipitation beginning with the
+release would leave more than 10 % more airborne than that form; wet deposition
+is the bound for any timing. See [`wet_depletion_factor`](@ref) and
 [`wet_deposition`](@ref).
 
 ## The `[wind_rose]` table

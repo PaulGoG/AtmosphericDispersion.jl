@@ -370,8 +370,9 @@ end
             e
         end
     # The loader passes the release duration to the event: an hour of rain in
-    # the year-long reference release is that share of it.
-    c = @test_logs (:warn, r"washout_duration") configuration_from(
+    # the year-long reference release is that share of it. So small a share
+    # leaves the airborne fraction nearly the same whenever the hour falls.
+    c = @test_logs configuration_from(
         withkey(t -> (t["precipitation"]["washout_duration"] = 3600.0)),)
     @test precipitation_fraction(c.washout) ≈ 3600 / 31_557_600
     # Durations, activity and extent must be finite.
@@ -382,18 +383,24 @@ end
         @test err.path == "$table.$key"
         @test occursin("finite", err.message)
     end
-    # Precipitation that does not reach u ln(1 + Λ t_w)/Λ beyond the edge of
-    # the grid in the slowest class is reported, as above; none, or a long one,
-    # is not. Λ = 10⁻⁵ s⁻¹ (HTO, rain, 1 mm/h) and 4.70 m/s give 16.6 km for an
-    # hour and 293 km for a day.
+    # The loader warns when a precipitation beginning with the release would
+    # leave more than 10 % more airborne at the edge of the grid, in the
+    # slowest class (4254 s to 20 km), than the washout form. None, or a long
+    # one, is not reported, and neither is weak scavenging: an hour of rain on
+    # HTO through a one-hour release (Λ = 10⁻⁵ s⁻¹) changes it by 2.5 %.
     @test_logs configuration_from(withkey(identity))
     @test_logs configuration_from(
         withkey(t -> (t["precipitation"]["washout_duration"] = 86_400.0)),)
-    # Where Λ x/u is large the travel time is not the measure: 10 h of snow at
-    # 5 mm/h on a species of the other row (Λ = 10⁻³ s⁻¹) outlast the 4254 s
-    # to the edge, yet hold only to 17.0 km.
-    @test_logs (:warn, r"17\.0 km") configuration_from(withkey(t -> begin
+    @test_logs configuration_from(withkey(t -> begin
+        t["precipitation"]["washout_duration"] = 3600.0
+        t["release"]["duration"] = 3600.0
+    end))
+    # Where Λ x/u is large outlasting the travel time is not enough: 10 h of
+    # snow at 5 mm/h on a species of the other row (Λ = 10⁻³ s⁻¹) through a
+    # 10 h release leave 0.0399 airborne at 20 km against 0.0142.
+    @test_logs (:warn, r"0\.0399.*0\.0142") configuration_from(withkey(t -> begin
         t["precipitation"]["washout_duration"] = 36_000.0
+        t["release"]["duration"] = 36_000.0
         t["precipitation"]["type"] = "snow"
         t["precipitation"]["rate"] = 5.0
         t["nuclide"]["washout_species"] = "other"
@@ -402,5 +409,6 @@ end
     @test_logs (:warn, r"washout_duration") configuration_from(withkey(t -> begin
         t["grid"]["extent"] = 1e20
         t["precipitation"]["washout_duration"] = 1e19
+        t["release"]["duration"] = 1e19
     end))
 end

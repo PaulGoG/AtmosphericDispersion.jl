@@ -43,22 +43,27 @@ where `Λ` is the high washout coefficient of the [`WashoutEvent`](@ref)
 `A` the released activity in Bq and `D` the surviving fraction after decay. It
 is nothing for an event of zero duration.
 
-This is the largest deposit a precipitation of the event's duration can lay at
-the receptor, whenever and wherever it falls: the activity that passes the
-receptor during the precipitation is at most `f A`, and each becquerel of it
-deposits `Λ/u` per metre of its path. A shower over the receptor alone, which
-scavenges nothing upstream, deposits exactly this. Precipitation over the whole
-path depletes the plume before it arrives, down to `exp(−Λ x/u)` of this value
-for one lasting much longer than the travel time; one that begins over a plume
-already airborne deposits in between, and where `Λ x/u ≫ 1` far more than the
-depleted value. EPA ISC3 [EPA1995](@cite) §1.4 likewise notes that omitting wet
-depletion gives a conservative deposition. Since each receptor takes its own
-worst case, the deposit integrated over the ground, `f A Λ X/u` out to `X`
-(with no decay), exceeds the activity released into the precipitation beyond
-`X = u/Λ`.
+Across the plume this sums to `Λ f A D/u` per metre of path, the largest
+deposit a precipitation of the event's duration can lay there, whenever and
+wherever it falls: the activity that passes during the precipitation is at most
+`f A`, and each becquerel of it deposits `Λ/u` per metre. A shower over the
+receptor alone, which scavenges nothing upstream, deposits that much when
+nothing else depletes the plume. Precipitation over the whole path depletes the
+plume before it arrives, down to `exp(−Λ x/u)` of this value for one lasting
+much longer than the travel time; one that begins over a plume already airborne
+deposits in between, and where `Λ x/u ≫ 1` far more than the depleted value.
+EPA ISC3 [EPA1995](@cite) §1.4 likewise notes that omitting wet depletion gives
+a conservative deposition. Since each receptor takes its own worst case, the
+deposit integrated over the ground, `f A Λ X/u` out to `X` (with no decay),
+exceeds the activity released into the precipitation beyond `X = u/Λ`.
 
 `release_duration` sets the meander of `Σ_y` only, and is independent of the
-release duration of the event.
+release duration of the event. The deposit is laid while the precipitation
+falls, so the plume it sees is the one averaged over `min(t_w, T_R)`; passing
+that duration spreads the bound as a shower over the receptor would. The
+default, ten minutes, takes the narrowest plume, the largest value on its axis
+and smaller ones far from it. [`wet_deposition_sector`](@ref) does not depend on
+the lateral spread.
 
 CNCAN NSR-23 [CNCAN2004](@cite) Eq. (38) multiplies the high coefficient by the
 whole release depleted with the low coefficient over the duration of the event,
@@ -120,6 +125,7 @@ function wet_deposition_sector(
 )
     0 ≤ activity < Inf ||
         throw(DomainError(activity, "released activity must be finite and non-negative"))
+    isfinite(r) || throw(DomainError(r, "distance must be finite"))
     r > 0 || return 0.0
 
     Λ = washout_coefficients(washout, nuclide.washout_species).high

@@ -381,9 +381,9 @@ than the travel time. The tests check it against an average over parcels
 released uniformly through the release, each exposed for the overlap of its
 transit with a precipitation fixed over the site: with 10⁶ s of precipitation
 in a 10⁷ s release the two agree to the edge effect, of order `(x/u)/t_w`. A
-precipitation that begins with the release leaves the scavenged share more
-airborne than the form, by the relative amount
-`((exp(Λ x/u) − 1)/Λ − x/u)/t_w`, so the condition is
+precipitation that begins with the release leaves the most airborne; for
+`x/u ≤ t_w ≤ T_R` its scavenged share survives better than the form by the
+relative amount `((exp(Λ x/u) − 1)/Λ − x/u)/t_w`, so the condition is
 `t_w ≫ (exp(Λ x/u) − 1)/Λ`, which reduces to `t_w ≫ x/u` only while `Λ x/u`
 is small. A shorter precipitation has no single answer, because the result
 depends on when it falls. For `Λ_L = 10⁻³ s⁻¹`, 900 s of it in a 3600 s
@@ -391,21 +391,26 @@ release and `x/u = 3333 s`, the surviving fraction is 0.92 if it falls at the
 start of the release and 0.47 at the end, and the form gives 0.76. Capping the
 exposure at `t_w` is no bound either (0.85 in that case). Omitting washout
 bounds the airborne concentration for any timing, as EPA ISC3
-[EPA1995](@cite) §1.4 and IAEA SRS-19 [IAEA2001](@cite) §3.8 note; the package
-keeps the form, and `load_configuration` warns when the receptor grid reaches
-beyond `u ln(1 + Λ_L t_w)/Λ_L`, the distance at which
-`(exp(Λ_L x/u) − 1)/Λ_L = t_w`.
+[EPA1995](@cite) §1.4 and IAEA SRS-19 [IAEA2001](@cite) §3.8 note. The package
+keeps the form, and `load_configuration` warns when, at the edge of the
+receptor grid in the slowest class, a precipitation beginning with the release
+would leave more than 10 % more airborne than the form. An hour of rain on HTO
+through a one-hour release changes it by 2.5 % at 20 km; ten hours of snow at
+5 mm/h on the other species through a ten-hour release leave 0.040 airborne
+against 0.014.
 
 Wet deposition, NSR-23 Eq. (38), is the high coefficient times the whole
 release depleted with the low one over the duration of the event. It does not
 vanish without precipitation, and one hour of rain at 5 mm/h deposited 1.8
 times the whole release within 20 km, however long the release. The package takes the
 share `f` instead, and does not deplete the column on its way to the receptor:
-`ω_w = Λ_H f A D exp(−y²/2Σ_y²)/(√(2π) Σ_y u)`. That is the largest deposit a
-precipitation of duration `t_w` can lay at the receptor, whenever and wherever
-it falls, since no more than `f A` passes the receptor while it falls and each
-becquerel deposits `Λ_H/u` per metre. A shower over the receptor alone
-deposits exactly that. Precipitation over the whole path depletes the plume
+`ω_w = Λ_H f A D exp(−y²/2Σ_y²)/(√(2π) Σ_y u)`. Across the plume that is
+`Λ_H f A D/u` per metre, the largest deposit a precipitation of duration `t_w`
+can lay at that distance, whenever and wherever it falls, since no more than
+`f A` passes while it falls and each becquerel deposits `Λ_H/u` per metre. A
+shower over the receptor alone deposits that much, spread across the plume
+with the meander of its own duration, which the `release_duration` keyword
+sets. Precipitation over the whole path depletes the plume
 first, to `exp(−Λ_H x/u)` of that value if it lasts long, and one that begins
 over a plume already airborne lies in between. Where `Λ_H x/u ≫ 1` the onset
 dominates: for snow on the other species at 1 mm/h (`Λ_H = 2 × 10⁻² s⁻¹`), 20 km

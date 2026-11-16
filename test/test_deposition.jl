@@ -153,6 +153,15 @@
             -Inf, Inf; rtol = 1e-10,)
         x5, _ = plume_frame(0.0, -5000.0, 0.0)
         @test across ≈ Λ * 0.25 * Q * decay_factor(x5, u, TRITIATED_WATER) / u rtol = 1e-8
+        # A meander of the hour the rain lasts spreads the same deposit wider.
+        wide, _ = quadgk(
+            e -> wet_deposition(e, -5000.0, site, PASQUILL_D, 0.0, TRITIATED_WATER;
+                activity = Q, washout = quarter, release_duration = 900.0,),
+            -Inf, Inf; rtol = 1e-10,)
+        @test wide ≈ across rtol = 1e-8
+        @test_throws DomainError wet_deposition(
+            0.0, -1000.0, site, PASQUILL_D, 0.0, TRITIATED_WATER;
+            activity = Q, washout = quarter, release_duration = Inf,)
     end
 
     @testset "sector-averaged wet deposition" begin
@@ -174,6 +183,8 @@
             activity = Q,
             washout = rain(1.0),
         ) == 0
+        @test_throws DomainError wet_deposition_sector(
+            Inf, site, PASQUILL_D, TRITIATED_WATER; activity = Q, washout = rain(1.0),)
         # Spread over an arc that grows with distance, so falls as 1/r, and
         # decays over the extra travel time.
         u = transport_wind_speed(site, PASQUILL_D)

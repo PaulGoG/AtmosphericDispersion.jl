@@ -331,7 +331,7 @@ function configuration_from(root::AbstractDict)
 
     event = WashoutEvent(;
         duration = washout, release_duration, precipitation, rate, model = washout_model,)
-    _check_washout_reach(site, event, nuclide.washout_species, extent)
+    _check_washout_reach(site, event, nuclide.washout_species, release_duration, extent)
 
     return RunConfiguration(
         site,
@@ -380,27 +380,34 @@ function _check_validity(
     return nothing
 end
 
+# Largest relative excess of the airborne fraction over the washout form that the
+# timing of the precipitation may cause before the loader warns.
+const _WASHOUT_TIMING_TOLERANCE = 0.1
+
 # Washout of the airborne plume is the limit of a precipitation much longer than
-# the travel time. Beyond u ln(1 + Λ t_w)/Λ, where (exp(Λ x/u) − 1)/Λ reaches t_w,
-# the result depends on when the precipitation falls, which the configuration does
-# not say; see wet_depletion_factor.
+# the travel time, and the configuration does not say when the precipitation falls.
+# Warn when one beginning with the release, which leaves the most airborne, would
+# leave more than the tolerance above the form at grid.extent in the slowest class;
+# see wet_depletion_factor.
 function _check_washout_reach(
         site::Site,
         event::WashoutEvent,
         species::WashoutSpecies,
+        release_duration::Real,
         extent::Real,
 )
     iszero(event.duration) && return nothing
     Λ = washout_coefficients(event, species).low
-    iszero(Λ) && return nothing
     slowest = minimum(c -> transport_wind_speed(site, c), PASQUILL_CLASSES)
-    reach = slowest * log1p(Λ * event.duration) / Λ
-    extent > reach || return nothing
+    τx = extent / slowest
+    form = wet_depletion_factor(extent, slowest, event, species)
+    early = _airborne_after_early_precipitation(τx, Λ, event.duration, release_duration)
+    early > (1 + _WASHOUT_TIMING_TOLERANCE) * form || return nothing
     @warn "precipitation.washout_duration = $(event.duration) s: washout takes the " *
-          "precipitation to last much longer than the travel time, which holds within " *
-          "$(round(reach / 1000; sigdigits = 3)) km of the stack in the slowest class, " *
-          "short of grid.extent ($extent m); beyond it the airborne fraction depends on " *
-          "when the precipitation falls"
+          "precipitation to cover the path for much longer than the travel time; one " *
+          "beginning with the release would leave $(round(early; sigdigits = 3)) of " *
+          "the release airborne at grid.extent ($extent m) in the slowest class, " *
+          "against $(round(form; sigdigits = 3)) from that form"
     return nothing
 end
 

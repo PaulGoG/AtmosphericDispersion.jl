@@ -40,9 +40,17 @@
         # Outside three of its own heights a building plays no part.
         far = Building(; east = 200.0, north = 0.0, height = 60.0, frontal_area = 3000.0)
         @test equivalent_height(BuildingEnvelope([shed, far])) == 3.0
-        # At three of its own heights it is still in the vicinity.
+        # NSR-23 §5: in the vicinity when "smaller than 3 times" its height.
         edge = Building(; east = 180.0, north = 0.0, height = 60.0, frontal_area = 3000.0)
-        @test equivalent_height(BuildingEnvelope([edge])) == 60.0
+        inside = Building(; east = 179.0, north = 0.0, height = 60.0, frontal_area = 3000.0)
+        @test equivalent_height(BuildingEnvelope([edge])) == 0
+        @test equivalent_height(BuildingEnvelope([inside])) == 60.0
+        # Equally tall and equally far: the larger frontal area, in either order.
+        p = Building(; east = 20.0, north = 0.0, height = 30.0, frontal_area = 100.0)
+        q = Building(; east = -20.0, north = 0.0, height = 30.0, frontal_area = 900.0)
+        @test equivalent_area(BuildingEnvelope([p, q])) == 900.0
+        @test equivalent_area(BuildingEnvelope([q, p])) == 900.0
+        @test_throws ArgumentError BuildingEnvelope([p]; wake_coefficient = Inf)
         # A stack on the building, as in SRS-19 Example IV-3.
         roof = Building(; east = 0.0, north = 0.0, height = 30.0, frontal_area = 5000.0)
         @test equivalent_height(BuildingEnvelope([roof])) == 30.0

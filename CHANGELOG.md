@@ -43,16 +43,18 @@ reference case change, through the first item only.
   precipitation.
 - The building that sets the wake is the tallest within three of its own
   heights of the stack, as SRS-19 §3.3 takes the building that most influences
-  the dispersion, and of equally tall ones the nearest, as NSR-23 §5 does.
+  the dispersion, and of equally tall ones the nearest, as NSR-23 §5 does; a
+  building counts when it is nearer than three of its heights, NSR-23's
+  "smaller than 3 times".
   Earlier versions averaged every building with weights inversely
   proportional to distance, so a low structure beside the stack could cancel
   the wake of a tall one. A stack may now stand on its building.
-- The wake widens a dispersion parameter of a ground-level release by `√3`
-  at most. That is the sector form of NRC XOQDOQ, Eq. (11), and keeps a
-  centreline value within the factor of 3 that XOQDOQ Eq. (8) and NSR-23 §5
-  allow a ground-level release, more strictly than their product bound where
-  σ_y and σ_z widen unequally. An elevated plume is broadened without limit,
-  as before. `[buildings] broadening_limit` sets it, and `inf` gives the
+- The wake widens a dispersion parameter of a release at ground level with no
+  plume rise by `√3` at most. That is the sector form of NRC XOQDOQ, Eq. (11),
+  and keeps a centreline value within the factor of 3 that XOQDOQ Eq. (8) and
+  NSR-23 §5 allow a ground-level release, more strictly than their product
+  bound where σ_y and σ_z widen unequally. A plume that rises is broadened
+  without limit, as before. `[buildings] broadening_limit` sets it, and `inf` gives the
   unlimited form of SRS-19.
 - The Eimutis–Konicek σ_y and σ_z are limited to 1000 m, as in subroutine
   POLYN of XOQDOQ (§4.21) and PAVAN (§4.16).
@@ -70,9 +72,9 @@ reference case change, through the first item only.
 - `stability_parameter(site, class)` and `STABLE_CLASSES`;
   `precipitation_fraction`; `MAXIMUM_WAKE_BROADENING`,
   `EIMUTIS_KONICEK_CEILING` and `MINIMUM_WIND_SPEED`.
-- `load_configuration` warns when `grid.extent` lies beyond
-  `u ln(1 + Λ t_w)/Λ` in the slowest class, past which washout depends on when
-  the precipitation falls. Durations, the released activity, the grid extent
+- `load_configuration` warns when a precipitation beginning with the release
+  would leave more than 10 % more airborne at `grid.extent`, in the slowest
+  class, than the washout form. Durations, the released activity, the grid extent
   and the building entries must be finite, in the configuration, in
   `WashoutEvent` and in `Building`.
 

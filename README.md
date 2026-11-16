@@ -284,12 +284,12 @@ What each component follows:
 | Sector geometry and wind rose | sectors centred on the cardinal directions; the direction convention is a required argument |
 | Dispersion parameters | Briggs (1973) open country and urban; Hosker (1974) with the roughness correction, the normative's default; Eimutis and Konicek (1972), limited to 1000 m as in XOQDOQ; each with the range it was fitted over |
 | Plume rise | Briggs, momentum and buoyancy; the stable limits in the stable classes E and F, with the final rise on the mean wind over the rise; the wind held at 1 m/s from below; the XOQDOQ and NSR-23 constants selectable |
-| Buildings | the tallest building near the stack; the displacement, wake and cavity zones of SRS-19 §3.3; wake broadening with the SRS-19 and AVV coefficient, limited to √3 for a ground-level release as in XOQDOQ; the two cavity forms of §3.6 |
+| Buildings | the tallest building near the stack; the displacement, wake and cavity zones of SRS-19 §3.3; wake broadening with the SRS-19 and AVV coefficient, limited to √3 for a release at ground level with no plume rise, as in XOQDOQ; the two cavity forms of §3.6 |
 | Mixing layer | the image sum of HPA-RPD-058 §3.2.2.1 to double precision, its Table 3.5(a) depths; a plume above the lid held at it (NRPB-R157) or leaving the layer (EPA ISC3) |
 | Dilution | instantaneous, sector-averaged with the constant of RG 1.111 or SRS-19, and long term over the rose |
 | Depletion and deposition | decay, dry deposition, NSR-23 Table 7 washout with Slinn's J^0.75 law and Ogram's snow scavenging of HTO, acting for the travel time on the share of the release in the precipitation; dry and wet deposition, the wet deposit the largest that share can lay at each receptor; Safety Series 57 or Maxwell–Anspaugh resuspension |
 | `Site` and `PrescribedPlume` | the per-run precomputation, and a plume whose height, wind or σ a published benchmark states |
-| Quality | Aqua, ExplicitImports and, on the current Julia, JET in the suite; 7082 assertions; CI on the LTS and the current Julia, rerun monthly without a commit; the manual built with its doctests |
+| Quality | Aqua, ExplicitImports and, on the current Julia, JET in the suite; 7099 assertions; CI on the LTS and the current Julia, rerun monthly without a commit; the manual built with its doctests |
 
 Outside the scope of the package:
 
@@ -332,7 +332,9 @@ the numbers.
   doi:10.2172/1038895).
 - The building rules of the normative: a release entrained into the cavity is
   released at ground level and still receives the full plume rise, and the
-  entrainment test is discontinuous at its 5 m/s threshold.
+  entrainment test is discontinuous at its 5 m/s threshold. The √3 limit of a
+  ground-level release no longer applies once the plume rises at all, so near
+  the building the concentration drops between no efflux and the smallest.
 - The stable classes E and F share one temperature gradient.
 
 ## Full tree

@@ -41,7 +41,9 @@ distance(b::Building) = hypot(b.east, b.north)
     WAKE_INFLUENCE_RADII
 
 Multiple of a building's own height within which it is taken to influence the
-plume; buildings further from the stack are ignored.
+plume: CNCAN NSR-23 [CNCAN2004](@cite) §5 counts a building whose distance from
+the source is "smaller than 3 times" its height. Buildings at that distance or
+further are ignored.
 """
 const WAKE_INFLUENCE_RADII = 3.0
 
@@ -110,7 +112,8 @@ as in IAEA SRS-19).
 
 Buildings within [`WAKE_INFLUENCE_RADII`](@ref) of their own height from the
 stack are in its vicinity; the rest are ignored. Of those, the tallest governs,
-and of equally tall ones the nearest. IAEA SRS-19 [IAEA2001](@cite) §3.3 takes
+of equally tall ones the nearest, and of those the one with the larger frontal
+area. IAEA SRS-19 [IAEA2001](@cite) §3.3 takes
 "the building that most influences the resulting plume dispersion", noting that
 a much larger building nearby exerts more influence than the one the release
 comes from; CNCAN NSR-23 [CNCAN2004](@cite) §5 takes the nearest building in
@@ -137,8 +140,10 @@ struct BuildingEnvelope
             wake_coefficient::Real = DEFAULT_WAKE_COEFFICIENT,
             broadening_limit::Real = MAXIMUM_WAKE_BROADENING,
     )
-        wake_coefficient ≥ 0 || throw(
-            ArgumentError("the wake coefficient cannot be negative, got $wake_coefficient"),
+        0 ≤ wake_coefficient < Inf || throw(
+            ArgumentError(
+            "the wake coefficient must be finite and non-negative, got $wake_coefficient",
+        ),
         )
         broadening_limit ≥ 1 || throw(
             ArgumentError("the broadening limit cannot be below one, got $broadening_limit"),
@@ -146,8 +151,8 @@ struct BuildingEnvelope
         h, a, nearest = 0.0, 0.0, Inf
         for b in buildings
             d = distance(b)
-            b.height > 0 && d ≤ WAKE_INFLUENCE_RADII * b.height || continue
-            (b.height, -d) > (h, -nearest) &&
+            d < WAKE_INFLUENCE_RADII * b.height || continue
+            (b.height, -d, b.frontal_area) > (h, -nearest, a) &&
                 ((h, a, nearest) = (b.height, b.frontal_area, d))
         end
         return new(h, a, float(wake_coefficient), float(broadening_limit))

@@ -106,8 +106,8 @@ gives the exponent as about 0.2 between 3 min and 1 h and 0.25 to 0.3 between
 1 h and 100 h; the normative's 0.2 is applied at every duration.
 """
 function meander_broadened(σy::Real, release_duration::Real)
-    release_duration > 0 ||
-        throw(DomainError(release_duration, "release duration must be positive"))
+    0 < release_duration < Inf ||
+        throw(DomainError(release_duration, "release duration must be positive and finite"))
     release_duration ≤ SHORT_RELEASE_REFERENCE && return float(σy)
     return σy * (release_duration / SHORT_RELEASE_REFERENCE)^0.2
 end

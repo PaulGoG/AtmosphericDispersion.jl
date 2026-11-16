@@ -171,6 +171,32 @@
         @test finish < form(900.0, 3600.0) < start
     end
 
+    # The loader's measure of the timing: the airborne fraction when the
+    # precipitation begins with the release, against the same Lagrangian
+    # average, including precipitation that outlasts the release. For
+    # x/u ≤ t_w ≤ T_R the scavenged share survives better than exp(−Λx/u) by
+    # ((exp(Λx/u) − 1)/Λ − x/u)/t_w.
+    @testset "the airborne fraction of a precipitation beginning with the release" begin
+        early = AtmosphericDispersion._airborne_after_early_precipitation
+        function lagrangian(τx, Λ, T_R, t_w)
+            exposure(τ) = max(0.0, min(τ + τx, t_w) - τ)
+            nodes = unique(sort(clamp.([0.0, t_w - τx, t_w, T_R], 0, T_R)))
+            return quadgk(τ -> exp(-Λ * exposure(τ)), nodes...; rtol = 1e-12)[1] / T_R
+        end
+        τx = 2e4 / 4.7013
+        for (Λ, T_R, t_w) in ((1e-3, 3600.0, 900.0), (1e-3, 36_000.0, 36_000.0),
+            (1e-3, 3000.0, 6000.0), (1e-3, 3000.0, 8000.0),
+            (1e-5, 3600.0, 3600.0), (3e-4, 1e5, 2e4), (0.0, 3600.0, 900.0))
+            @test early(τx, Λ, t_w, T_R) ≈ lagrangian(τx, Λ, T_R, t_w) rtol = 1e-10
+        end
+        f, k = 2e4 / 1e5, 3e-4 * τx
+        excess = (early(τx, 3e-4, 2e4, 1e5) - (1 - f)) / (f * exp(-k)) - 1
+        @test excess ≈ (expm1(k) / 3e-4 - τx) / 2e4 rtol = 1e-10
+        # Precipitation lasting the release and the whole travel after it
+        # scavenges every parcel for x/u: the form exactly.
+        @test early(τx, 1e-3, 3000.0 + τx, 3000.0) ≈ exp(-1e-3 * τx) rtol = 1e-12
+    end
+
     @testset "composition" begin
         for class in PASQUILL_CLASSES
             x, t = 1e4, 3600.0

@@ -203,19 +203,20 @@ process", and of HPA-RPD-058 [SmithSimmonds2009](@cite) Eq. (3.13); the rest of
 the release travels in dry air.
 
 The form is the limit of a precipitation that covers the path for much longer
-than the travel time. One fixed over the site that begins with the release, and
-lasts `t_w ≥ x/u`, leaves more airborne: the surviving fraction of the
-scavenged share exceeds `exp(−Λ x/u)` by the relative amount
-`((exp(Λ x/u) − 1)/Λ − x/u)/t_w`, which is small only while
-`t_w ≫ (exp(Λ x/u) − 1)/Λ`, or `t_w ≫ x/u` where `Λ x/u ≪ 1`. One that begins
-while earlier material is airborne removes more. For `Λ = 10⁻³ s⁻¹`, 900 s of
+than the travel time. One fixed over the site that begins with the release
+leaves the most airborne: each parcel is scavenged only until it arrives or the
+precipitation stops. For `x/u ≤ t_w ≤ T_R` its scavenged share survives better
+than `exp(−Λ x/u)` by the relative amount `((exp(Λ x/u) − 1)/Λ − x/u)/t_w`,
+which is small only while `t_w ≫ (exp(Λ x/u) − 1)/Λ`, or `t_w ≫ x/u` where
+`Λ x/u ≪ 1`. Beginning later in the release, while earlier material is
+airborne, it removes more than that. For `Λ = 10⁻³ s⁻¹`, 900 s of
 precipitation in a 3600 s release and `x/u = 3333 s`, the surviving fraction is
 0.92 if the precipitation falls at the start of the release and 0.47 if at the
 end, against 0.76 from this form. Omitting washout bounds the airborne
 concentration for any timing, as EPA ISC3 [EPA1995](@cite) §1.4 and IAEA
-SRS-19 [IAEA2001](@cite) §3.8 note. [`load_configuration`](@ref) warns when the
-receptor grid reaches beyond `u ln(1 + Λ t_w)/Λ`, the distance at which
-`(exp(Λ x/u) − 1)/Λ = t_w`.
+SRS-19 [IAEA2001](@cite) §3.8 note. [`load_configuration`](@ref) warns when,
+at the edge of the receptor grid, a precipitation beginning with the release
+would leave more than 10 % more airborne than this form.
 
 The low washout coefficient is used, for the same reason the low deposition
 velocity is: it removes the least material and so is conservative for the
@@ -242,6 +243,21 @@ wet_depletion_factor(
     event::WashoutEvent,
     species::WashoutSpecies = WASHOUT_TRITIUM_IODINE,
 ) = exp(-washout_coefficients(event, species).low * event.duration)
+
+# Airborne fraction after a travel time τx when a precipitation of coefficient Λ and
+# duration t_w begins with a release of duration T_R, fixed over the path: the parcel
+# released at τ is scavenged for min(τx, t_w − τ), the time until it arrives or the
+# precipitation stops. With s = t_w − τ the release spans s ∈ [t_w − T_R, t_w]; the
+# parcels with s < 0 leave after the precipitation and are not scavenged. The release
+# average is the most a precipitation lying within the release can leave airborne,
+# against the 1 − f + f exp(−Λ τx) of wet_depletion_factor.
+function _airborne_after_early_precipitation(τx::Real, Λ::Real, t_w::Real, T_R::Real)
+    a, b = max(0.0, t_w - T_R), float(t_w)
+    c = min(b, τx)          # exposure grows with s up to τx, then stays there
+    rising = a < c ? (iszero(Λ) ? c - a : exp(-Λ * a) * -expm1(-Λ * (c - a)) / Λ) : 0.0
+    flat = max(0.0, b - max(a, τx)) * exp(-Λ * τx)
+    return (rising + flat + max(0.0, T_R - t_w)) / T_R
+end
 
 """
     depletion_factor(x, site, class, nuclide; washout = nothing)

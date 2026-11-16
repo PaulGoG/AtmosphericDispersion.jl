@@ -36,7 +36,8 @@ layer.
   - `FULL_PENETRATION` — EPA ISC3 [EPA1995](@cite): "if the effective stack height exceeds the
     mixing height, the plume is assumed to fully penetrate the elevated
     inversion and the ground-level concentration is set equal to zero." Nothing
-    reaches the layer, so nothing deposits from it either.
+    reaches the layer, so nothing deposits dry from it; wet deposition scavenges
+    the whole column, above the lid or not, as ISC3 §1.4 also assumes.
 """
 @enum LidRule begin
     RISE_INHIBITED = 1
