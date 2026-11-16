@@ -99,20 +99,6 @@ export VerticalShapeCoefficients,
        WashoutCoefficients,
        washout_coefficients,
        PRECIPITATION_RATES
-
-# mixing.jl
-export MixingLayer,
-       LidRule,
-       RISE_INHIBITED,
-       FULL_PENETRATION,
-       MIXING_TABULATED,
-       MIXING_UNBOUNDED,
-       mixing_depth,
-       vertical_factor,
-       crosswind_integrated_factor,
-       RECOMMENDED_MIXING_DEPTH
-
-# dispersion.jl
 export DispersionScheme,
        DISPERSION_HOSKER,
        DISPERSION_BRIGGS_OPEN_COUNTRY,
@@ -127,6 +113,27 @@ export DispersionScheme,
        eimutis_konicek_vertical_coefficients,
        EIMUTIS_KONICEK_LATERAL_EXPONENT,
        EIMUTIS_KONICEK_RANGES
+export WashoutModel,
+       WASHOUT_NORMATIVE,
+       WASHOUT_HTO,
+       ogram_snow_washout,
+       WashoutSpecies,
+       WASHOUT_TRITIUM_IODINE,
+       WASHOUT_OTHER_NUCLIDES
+
+# mixing.jl
+export MixingLayer,
+       LidRule,
+       RISE_INHIBITED,
+       FULL_PENETRATION,
+       MIXING_TABULATED,
+       MIXING_UNBOUNDED,
+       mixing_depth,
+       vertical_factor,
+       crosswind_integrated_factor,
+       RECOMMENDED_MIXING_DEPTH
+
+# dispersion.jl
 export wind_speed,
        layer_mean_wind_speed,
        lateral_dispersion,
@@ -211,17 +218,7 @@ export DepositionVelocity,
        Nuclide,
        TRITIATED_WATER,
        TRITIUM_GAS,
-       TRITIUM_DECAY_CONSTANT,
-       ResuspensionModel,
-       RESUSPENSION_IAEA_SS57,
-       RESUSPENSION_MAXWELL_ANSPAUGH,
-       WashoutModel,
-       WASHOUT_NORMATIVE,
-       WASHOUT_HTO,
-       ogram_snow_washout,
-       WashoutSpecies,
-       WASHOUT_TRITIUM_IODINE,
-       WASHOUT_OTHER_NUCLIDES
+       TRITIUM_DECAY_CONSTANT
 
 # depletion.jl
 export WashoutEvent,
@@ -245,6 +242,9 @@ export plume_frame,
 export dry_deposition,
        wet_deposition,
        wet_deposition_sector,
+       ResuspensionModel,
+       RESUSPENSION_IAEA_SS57,
+       RESUSPENSION_MAXWELL_ANSPAUGH,
        resuspension_factor,
        resuspended_concentration
 
