@@ -3,10 +3,17 @@
     @test check_no_implicit_imports(AtmosphericDispersion) === nothing
     @test check_no_stale_explicit_imports(AtmosphericDispersion) === nothing
     @test check_all_qualified_accesses_via_owners(AtmosphericDispersion) === nothing
-    # Scoped to this package: unscoped, JET walks into QuadGK's generic
-    # Gauss-Kronrod machinery and reports unreachable branches of
-    # LinearAlgebra's norm, which say nothing about the code here.
-    JET.test_package(AtmosphericDispersion; target_modules = (AtmosphericDispersion,))
+    # JET is coupled to the compiler, and each of its release series supports a
+    # few Julia minors only, so the analysis runs on the current release of the
+    # CI matrix and is skipped on the LTS.
+    if VERSION ≥ v"1.12"
+        # Scoped to this package: unscoped, JET walks into QuadGK's generic
+        # Gauss-Kronrod machinery and reports unreachable branches of
+        # LinearAlgebra's norm, which say nothing about the code here.
+        JET.test_package(AtmosphericDispersion; target_modules = (AtmosphericDispersion,))
+    else
+        @info "JET analysis skipped on Julia $VERSION"
+    end
 end
 
 # Guard the boundary that report is really about: the quadrature call must
