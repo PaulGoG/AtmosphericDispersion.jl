@@ -67,9 +67,9 @@ end
 
 # HPA-RPD-058 Table 3.3, second panel; identical in NRPB-R91 Table 3.
 #
-# NSR-23 Table 2 prints 1.58 and 2.08 for the first two, which is what the 2021
-# code faithfully carried. The error is the normative's, not the thesis's: it
-# attributes its Table 2 to CAN/CSA-N288.2-M91 and UNSCEAR 2000, and somewhere
+# NSR-23 Table 2 prints 1.58 and 2.08 for the first two, and the 2021 code used
+# these values. The error is the normative's, not the thesis's: it attributes
+# its Table 2 to CAN/CSA-N288.2-M91 and UNSCEAR 2000, and somewhere
 # in that chain Hosker's 1.56 and 2.02 became 1.58 and 2.08. Following the
 # published values makes σ_z smaller by 1.9 % over grassland and water and 3.6 %
 # over arable land.
@@ -245,7 +245,7 @@ end
 
 # Eimutis and Konicek (1972), Atmospheric Environment 6, 859–863, as carried in
 # the DATA statements of subroutine POLYN of NRC XOQDOQ (NUREG/CR-2919) and of
-# PAVAN (NUREG/CR-2858), which agree digit for digit. σ_y = a x^0.9031 at every
+# PAVAN (NUREG/CR-2858), which agree exactly. σ_y = a x^0.9031 at every
 # distance; σ_z = a x^b + c on three ranges of distance, and the three pieces of
 # each class join to within a per cent at 100 m and 1 km.
 const _EIMUTIS_KONICEK_LATERAL = (0.3658, 0.2751, 0.2089, 0.1471, 0.1046, 0.0722)
@@ -356,8 +356,7 @@ end
     PRECIPITATION_RATES
 
 The precipitation intensities in mm/h at which the washout coefficients are
-tabulated. [`washout_coefficients`](@ref) is defined at these values and
-nowhere else.
+tabulated. [`washout_coefficients`](@ref) is defined only at these values.
 """
 const PRECIPITATION_RATES = (0.5, 1.0, 3.0, 5.0)
 
@@ -432,12 +431,13 @@ Which scavenging scheme to use.
         Λ_s = 1.2×10⁻⁴ R^0.33 + 3.0×10⁻⁴ R^0.64   s⁻¹,  R in mm/h
 
     Snow scavenging of tritiated water is isotopic exchange at the crystal
-    surface, not impaction, so the particle suppression is the wrong physics for
-    it. Ogram measures scavenging about three orders of magnitude above the
+    surface, not impaction, so the particle suppression does not apply to it.
+    Ogram measures scavenging about three orders of magnitude above the
     normative snow column, and calls the correlation an approximate upper limit.
 
-The reference case of this package is HTO, so the two differ for it by a factor
-of roughly a thousand in snow. They are identical in rain.
+The reference case of this package is HTO, for which the two models are
+identical in rain and differ in the upper snow coefficient by a factor of
+roughly a thousand.
 """
 @enum WashoutModel begin
     WASHOUT_NORMATIVE = 1

@@ -10,7 +10,7 @@ const STANDARD_GRAVITY = 9.80665
 
 Isobaric specific heat capacity of dry air, 1005 J/(kg·K).
 
-This is the value the atmospheric stability parameter needs: the term `g/c_p`
+This is the value used in the atmospheric stability parameter: the term `g/c_p`
 in it is the dry adiabatic lapse rate, a property of the ambient air the plume
 rises through, not of the gas leaving the stack.
 """
@@ -175,7 +175,7 @@ The specific heat entering through `g/c_p` is that of the ambient air, which is
 what makes that term the dry adiabatic lapse rate. The 2021 code used the
 specific heat of the emitted water vapour here, 1871 J/(kg·K) instead of about
 1005, which halves the adiabatic correction and shifts `S` by some fifteen per
-cent for the gradient it ran with.
+cent at the temperature gradient used in that code.
 """
 function stability_parameter(atmosphere::Atmosphere)
     return STANDARD_GRAVITY / atmosphere.temperature *

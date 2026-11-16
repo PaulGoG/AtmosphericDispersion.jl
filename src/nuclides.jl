@@ -3,10 +3,10 @@
 
 Bracketing dry deposition velocities in m/s for a nuclide over a given surface.
 
-The two are used in opposite places. Depletion of the airborne plume takes
-`low`, because removing less material leaves more in the air and overestimates
-the inhalation pathway. Ground deposition takes `high`, because depositing more
-material overestimates the ground-shine and ingestion pathways.
+Depletion of the airborne plume takes `low`, because removing less material
+leaves more in the air and overestimates the inhalation pathway. Ground
+deposition takes `high`, because depositing more material overestimates the
+ground-shine and ingestion pathways.
 """
 struct DepositionVelocity
     low::Float64
@@ -80,12 +80,12 @@ attach the condition that the tropopause be taken at 12–15 km. The lower bound
 agrees with the values in common use elsewhere: the MACCS2 default of 0.5,
 0.42 measured at the Savannah River Site, and 0.392–0.444 from AECL.
 
-That HTO deposits at all is a deliberate divergence from other guidance. IAEA
+Non-zero HTO deposition is a deliberate divergence from other guidance. IAEA
 SRS-19 [IAEA2001](@cite) §3.9, EUR 15760 [Simmonds1995](@cite) §3.2 and
 HPA-RPD-058 [SmithSimmonds2009](@cite) §3.2.2.3 each assign tritium a deposition
 velocity of zero and handle it by specific activity instead. This package
-follows the normative the work was done under; set the velocities to zero to
-follow the others.
+follows the normative the work was done under; setting the velocities to zero
+reproduces the others.
 """
 const TRITIATED_WATER = Nuclide(;
     name = "HTO",
@@ -98,8 +98,8 @@ const TRITIATED_WATER = Nuclide(;
 
 Tritium as HT, an order of magnitude less depositing than [`TRITIATED_WATER`](@ref).
 
-Deposition velocity 0.04–0.05 × 10⁻² m/s, the same source, which puts HT an
-order of magnitude below HTO under the same conditions.
+Deposition velocity 0.04–0.05 × 10⁻² m/s under the same conditions, from the
+same source.
 """
 const TRITIUM_GAS = Nuclide(;
     name = "HT",

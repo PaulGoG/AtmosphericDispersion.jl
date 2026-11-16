@@ -5,9 +5,9 @@ Which of the two mutually inverse readings a tabulated wind direction carries.
 Subtypes are [`BlowingFrom`](@ref) and [`BlowingToward`](@ref).
 
 The distinction is a 180° rotation of the entire rose. Getting it wrong rotates
-a long-term dispersion field by half a turn while leaving every magnitude, every
-sum rule and every unit intact, so nothing downstream can detect the error. The
-convention is therefore a required argument of the [`WindRose`](@ref) constructor.
+a long-term dispersion field by half a turn but leaves magnitudes, sum rules and
+units unchanged, so no downstream check can detect the error. The convention is
+therefore a required argument of the [`WindRose`](@ref) constructor.
 """
 abstract type WindDirectionConvention end
 
@@ -23,9 +23,9 @@ struct BlowingFrom <: WindDirectionConvention end
 """
     BlowingToward()
 
-The direction a wind is blowing *towards*. This is the sense the long-term
-sector-averaged dispersion formula needs, because its directional weight asks
-how often the plume reaches the receptor's sector.
+The direction a wind is blowing *towards*. This is the sense used by the
+long-term sector-averaged dispersion formula, whose directional weight is the
+frequency with which the plume reaches the receptor's sector.
 """
 struct BlowingToward <: WindDirectionConvention end
 
@@ -45,10 +45,9 @@ to be the same in every sector, or an `nsectors(grid) × 6` matrix whose rows
 each sum to one. Row `k` belongs to sector `k` in the sense of `convention`, as
 `frequencies[k]` does, and column `i` corresponds to `PASQUILL_CLASSES[i]`.
 
-Whatever convention the input carries, a `WindRose` stores blowing-towards
-frequencies internally, so the formulae that consume it cannot be fed the wrong
-sense. Query either reading with [`frequency_toward`](@ref) and
-[`frequency_from`](@ref).
+A `WindRose` stores blowing-towards frequencies internally, whichever convention
+the input follows, so the formulae that use it always receive that sense.
+[`frequency_toward`](@ref) and [`frequency_from`](@ref) return the two readings.
 
 # Examples
 

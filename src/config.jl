@@ -1,13 +1,13 @@
 #=
 Configuration.
 
-A run is described by a TOML file. The loader enforces exactly what the file's
-comments promise (presence, type, enumerated choice, numerical bound, and that
-no key is present which the loader does not read), and every failure names the
-key it failed on, by its full dotted path, so that a rejected file says what to
-change rather than where the parser happened to stop. An unread key is an error
-because it is otherwise indistinguishable from a misspelt one, which would fall
-back to its default without a word.
+A run is described by a TOML file. The loader enforces exactly the constraints
+the file's comments document (presence, type, enumerated choice, numerical
+bound, and that no key is present which the loader does not read), and each
+failure names the offending key by its full dotted path, so that the error
+message identifies what to change rather than where the parser happened to
+stop. An unread key is an error because it is otherwise indistinguishable from
+a misspelt one, which would silently fall back to its default.
 
 A pipeline must be unable to start from a configuration it cannot honour, so
 the checks run at load and construct the solver types immediately: anything the
@@ -216,7 +216,7 @@ Read and validate a run configuration from the TOML file at `path`.
 
 Throws a [`ConfigurationError`](@ref) naming the offending key on the first
 constraint that fails, and an `ArgumentError` from the solver constructors for
-anything they reject in turn.
+anything they reject.
 """
 function load_configuration(path::AbstractString)
     isfile(path) || throw(ArgumentError("no configuration file at $path"))
@@ -332,8 +332,8 @@ end
 
 # The receptor grid runs from `spacing` to `extent`; where either end lies
 # outside the validity range of the dispersion scheme, the run extrapolates the
-# published formulae, and `model.extrapolation` says whether that is refused,
-# announced or accepted.
+# published formulae, and `model.extrapolation` selects whether that raises an
+# error, emits a warning or is accepted.
 function _check_validity(
         scheme::DispersionScheme,
         spacing::Real,
@@ -376,7 +376,7 @@ function _mixing_from(t::AbstractDict)
         _LID_CHOICES,
         "mixing_layer.above_lid",
     )
-    # A key the chosen scheme does not read is refused, like any other unread key.
+    # A key the chosen scheme does not read is rejected, like any other unread key.
     for (key, owner) in (("uniform_depth", "uniform"), ("depths", "custom"))
         haskey(t, key) &&
             scheme != owner &&

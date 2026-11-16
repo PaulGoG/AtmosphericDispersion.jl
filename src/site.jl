@@ -11,8 +11,8 @@ const WAKE_WIND_THRESHOLD = 5.0
 
 Wind speed at height `z` metres averaged over the six Pasquill classes.
 
-The stack-downwash and building-wake corrections are geometric: they ask whether
-the efflux can overcome the wind at the stack top, independently of the
+The stack-downwash and building-wake corrections are geometric: they test
+whether the efflux can overcome the wind at the stack top, independently of the
 stratification, and therefore take this class-averaged speed rather than a
 class-specific one.
 """
@@ -29,9 +29,9 @@ end
 
 Stack height in metres corrected for aerodynamic downwash at the stack itself.
 
-Where the efflux velocity fails to clear about one and a half times the wind
-speed, the plume is drawn into the lee of the stack and the effective release
-height drops by `2 (1.5 − w₀/u) D`.
+Where the efflux velocity is below about one and a half times the wind speed,
+the plume is drawn into the lee of the stack and the effective release height
+drops by `2 (1.5 − w₀/u) D`.
 """
 function downwash_height(source::StackSource, atmosphere::Atmosphere)
     u = mean_wind_speed(atmosphere, source.height)
@@ -48,9 +48,9 @@ Release height in metres after both the stack downwash and entrainment into the
 aerodynamic cavity of nearby buildings.
 
 A plume leaving below the building tops is taken into the cavity and released
-at ground level. One clearing two and a half times the building height escapes
-untouched, as does one in wind below [`WAKE_WIND_THRESHOLD`](@ref), too weak to
-drive the entrainment. Between those the release height is reduced by
+at ground level. One leaving above two and a half times the building height
+is unaffected, as is one in wind below [`WAKE_WIND_THRESHOLD`](@ref), too weak
+to drive the entrainment. Between those the release height is reduced by
 `1.5 H_b − 0.6 H₁`.
 """
 function wake_height(
@@ -69,8 +69,8 @@ end
 """
     AbstractSite
 
-What the dilution, depletion and deposition functions ask of a release: its
-[`effective_height`](@ref), [`transport_wind_speed`](@ref),
+The quantities the dilution, depletion and deposition functions require of a
+release: its [`effective_height`](@ref), [`transport_wind_speed`](@ref),
 [`corrected_lateral_dispersion`](@ref), [`corrected_vertical_dispersion`](@ref)
 and [`mixing_layer`](@ref). [`Site`](@ref) derives them from a stack and its
 surroundings; [`PrescribedPlume`](@ref) takes them as given.
@@ -92,9 +92,9 @@ stable final rise.
 The release height, the buoyancy and momentum fluxes, the stability parameter
 and the wind of the stable final rise in each class are all independent of
 receptor position, so they are computed once here. The 2021 code recomputed
-them inside the innermost loop: the building reduction and the downwash
-correction, the latter six wind-profile evaluations deep, were repeated for
-every point of every field.
+them inside the innermost loop, repeating the building reduction and the
+downwash correction, the latter costing six wind-profile evaluations, at each
+grid point of each field.
 """
 struct Site <: AbstractSite
     source::StackSource
@@ -189,8 +189,8 @@ const STABLE_RISE_TOLERANCE = 1e-12
     STABLE_RISE_MAX_ITERATIONS
 
 Iterations [`stable_rise_wind_speed`](@ref) allows the rise and its mean wind
-to converge in before it gives up. The map contracts strongly, since the rise
-varies as the inverse cube root of the wind, and a handful suffice. Not
+to converge in before it throws an error. The map contracts strongly, since the
+rise varies as the inverse cube root of the wind, and a handful suffice. Not
 exported.
 """
 const STABLE_RISE_MAX_ITERATIONS = 100
@@ -203,9 +203,9 @@ the given stability class, solved once when the site is constructed.
 
 Under `WIND_MEAN_OVER_RISE` it is the mean of the wind profile between
 the release height and the top of the stable rise, `Δh = c [F/(ūS)]^(1/3)`,
-which depends on that mean in turn: the two are solved together by iterating
+which itself depends on that mean: the two are solved together by iterating
 from the rise at the release-height wind, each pass averaging the profile over
-the current rise and re-evaluating it, until the rise settles to
+the current rise and re-evaluating it, until the rise converges to within
 [`STABLE_RISE_TOLERANCE`](@ref). The profile has no skill below the height its
 reference is quoted at, so the layer starts at [`REFERENCE_HEIGHT`](@ref) where
 the release is lower, as [`transport_wind_speed`](@ref) is floored.

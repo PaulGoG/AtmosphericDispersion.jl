@@ -33,7 +33,7 @@ distance(b::Building) = hypot(b.east, b.north)
     WAKE_INFLUENCE_RADII
 
 Multiple of a building's own height within which it is taken to influence the
-plume. A building further from the stack than this plays no part.
+plume; buildings further from the stack are ignored.
 """
 const WAKE_INFLUENCE_RADII = 3.0
 
@@ -41,7 +41,8 @@ const WAKE_INFLUENCE_RADII = 3.0
     DEFAULT_WAKE_COEFFICIENT
 
 Coefficient `C` of the wake broadening of the dispersion parameters,
-`√(σ² + C A/π)`. Setting it to zero disables the building correction entirely.
+`√(σ² + C A/π)`. Setting it to zero disables the wake broadening; the release
+height is still lowered by [`wake_height`](@ref).
 
 The default is one, which IAEA Safety Reports Series No. 19 [IAEA2001](@cite)
 Eq. (6) writes as `Σ_z = (σ_z² + A_B/π)^(1/2)` and the German AVV zu §47
@@ -75,8 +76,8 @@ inversely proportional to distance, so nearer structures dominate.
 
 The reduction is performed at construction. The 2021 code recomputed it inside
 the dispersion-parameter correction, which is called once per grid point per
-stability class, so the whole building list was rescanned for every evaluation
-of a field that never changes.
+stability class, so the building list, which does not change during a run, was
+rescanned at each evaluation.
 
 An empty envelope has zero equivalent height and area, which makes every
 building correction downstream the identity.
@@ -138,8 +139,8 @@ fully mixed into the wake and takes the broadened value
 `√(σ² + C A / π)`. Between the two the correction is interpolated linearly in
 release height.
 
-With an empty envelope this is the identity, since every release height clears
-a ceiling of zero.
+With an empty envelope this is the identity, since the equivalent height and
+area are then zero.
 """
 function wake_broadened(σ::Real, H::Real, envelope::BuildingEnvelope)
     h = equivalent_height(envelope)
@@ -152,7 +153,7 @@ end
 """
     BuildingZone
 
-Where a receptor sits relative to the building that most disturbs the flow,
+Where a receptor lies relative to the building that most disturbs the flow,
 after IAEA Safety Reports Series No. 19 [IAEA2001](@cite) §3.3, which bounds
 the three zones by the release height `H`, the building height `H_B`, its
 frontal area `A_B` and the downwind distance `x`:

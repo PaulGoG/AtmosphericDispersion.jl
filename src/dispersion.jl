@@ -326,7 +326,7 @@ end
 
 The range of downwind distance in metres, `(lower, upper)`, over which the
 parameters of a [`DispersionScheme`](@ref) were fitted, as the intersection of
-what its two parameters state; the ends are included.
+the ranges quoted for its two parameters; the ends are included.
 
   - Briggs quotes his formulae, open country and urban alike, for
     `10² < x < 10⁴ m` (Handbook Table 4.5 [Hanna1982](@cite)):
@@ -339,8 +339,8 @@ what its two parameters state; the ends are included.
   - The Eimutis–Konicek fit reproduces the Pasquill–Gifford curves, which
     [Turner1970](@citet) draws from 100 m to 100 km: `(100, 100_000)`.
 
-The evaluation itself refuses no distance. The configuration loader applies
-the policy of `[model] extrapolation` to the receptor grid, and
+The evaluation itself does not enforce the range. The configuration loader
+applies the policy of `[model] extrapolation` to the receptor grid, and
 [`within_validity`](@ref) tests a single distance.
 """
 function validity_range(scheme::DispersionScheme)

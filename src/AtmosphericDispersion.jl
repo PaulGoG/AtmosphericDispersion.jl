@@ -6,10 +6,10 @@ statistics, plume rise, Briggs dispersion parameters, depletion and ground
 deposition.
 
 The public interface is organised around explicit input types rather than loose
-numbers. The quantities this model consumes carry conventions that their
-magnitudes do not reveal: a wind direction read in the wrong sense, or a sector
-index counted the wrong way round, gives a result that is wrong by a rotation
-and right in every other respect.
+numbers. The quantities this model consumes follow conventions that cannot be
+inferred from their values: a wind direction read in the wrong sense, or a
+sector index counted the wrong way round, gives a result that is correct except
+for a rotation.
 """
 module AtmosphericDispersion
 

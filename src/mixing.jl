@@ -51,7 +51,8 @@ Depth of the mixing layer in metres for each Pasquill class A to F, and the
 single `depth` applies to every class.
 
 The depth is a site measurement. Where it has not been measured,
-[`MIXING_TABULATED`](@ref) carries typical values; where it has, pass them:
+[`MIXING_TABULATED`](@ref) carries typical values; where it has, the measured
+depths are passed:
 
 ```julia
 MixingLayer((1500.0, 1200.0, 1000.0, 900.0, 300.0, 120.0))
@@ -130,7 +131,7 @@ const _REPRESENTATION_CROSSOVER = 0.7
 #
 #     (1/A) [1 + 2 Σ_k exp(−k²π²Σ_z²/2A²) cos(kπz/A) cos(kπH/A)]
 #
-# which converges fast exactly there and whose leading term is the uniform
+# which converges fast in that regime and whose leading term is the uniform
 # profile 1/A of Eq. (3.5). Each is used on its own side of the crossover, to
 # double precision: the neglected image terms are below exp(−50) and the
 # neglected harmonics below exp(−38).

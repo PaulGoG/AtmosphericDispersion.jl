@@ -11,11 +11,10 @@ Multiplication corrects the 2021 code, which added the wet and dry factors:
 
     χ = χ/Q · Q · DEC · (DEP_w + DEP_d)
 
-Adding survival fractions has no limit that makes sense. Switch the rain off
-and switch the deposition velocity off, so that nothing is removed at all, and
-each factor tends to one while their sum tends to two: the concentration comes
-out twice the undepleted value. See `depletion_factor` for the multiplicative
-form and the suite for the limit that pins it.
+Adding survival fractions fails in the limit of no removal: with no rain and a
+zero deposition velocity each factor tends to one while their sum tends to two,
+and the concentration is twice the undepleted value. See `depletion_factor` for
+the multiplicative form and the test suite for the check of that limit.
 =#
 
 """
@@ -57,7 +56,7 @@ is HPA-RPD-058 [SmithSimmonds2009](@cite) Eq. (3.17); it is [`crosswind_integrat
 along the plume axis.
 
 Evaluated by adaptive Gauss–Kronrod quadrature. The 2021 code used a fifty-point
-trapezoid rule, which is not adaptive and is at its worst in the near field,
+trapezoid rule, which is not adaptive and is least accurate in the near field,
 where the integrand varies fastest.
 """
 function depletion_integral(x::Real, site::AbstractSite, class::PasquillClass)
@@ -77,8 +76,8 @@ function depletion_integral(x::Real, site::AbstractSite, class::PasquillClass)
         H = effective_height(x′, site, class)
         # The same crosswind-integrated vertical factor the dilution kernel
         # uses, so the lid's image terms enter the depletion too. HPA-RPD-058
-        # Eq. (3.17) carries them; without them the plume keeps depositing as
-        # though it could go on diluting upwards for ever.
+        # Eq. (3.17) includes them; without them the deposition is computed as
+        # though the plume could dilute upwards without limit.
         return crosswind_integrated_factor(H, Σz, layer, class)
     end
     value, _ = quadgk(integrand, DEPLETION_INTEGRAL_FLOOR, upper)
@@ -105,7 +104,7 @@ function dry_depletion_factor(
     iszero(v_d) && return 1.0
     u = transport_wind_speed(site, class)
     u > 0 || throw(DomainError(u, "transport speed must be positive"))
-    # The √(2/π) is inside the integrand now, in crosswind_integrated_factor.
+    # The √(2/π) is inside the integrand, in crosswind_integrated_factor.
     return exp(-(v_d / u) * depletion_integral(x, site, class))
 end
 
@@ -118,8 +117,8 @@ intensity `rate` in mm/h, its `duration` in seconds, and the
 [`WashoutModel`](@ref) its coefficients are taken from. The intensity must be one
 of [`PRECIPITATION_RATES`](@ref), the washout table being defined only there.
 
-Which row of the table applies is a property of the released species, so it
-lives on the [`Nuclide`](@ref).
+Which row of the table applies is a property of the released species, so it is
+stored in the [`Nuclide`](@ref).
 """
 struct WashoutEvent
     precipitation::PrecipitationType

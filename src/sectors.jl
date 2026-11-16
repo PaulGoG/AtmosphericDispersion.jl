@@ -65,7 +65,7 @@ clockwise from north, wrapped to `[0, 2π)`.
 
 The arguments are ground-plane displacements in the geographic frame, not the
 plume-aligned frame: `east` is the displacement towards the east, `north`
-towards the north. The origin returns a bearing of zero.
+towards the north. At the origin the bearing is zero.
 """
 function bearing(east::Real, north::Real)
     iszero(east) &&
@@ -90,9 +90,9 @@ directions lie at the centres and are binned exactly for this reason.
 
 On a sector boundary the ratio is a half-integer, the tie rule takes the sector
 of higher bearing, and an ulp of round-off can place it either side. A boundary
-bearing is generally not representable, so this cannot be avoided, and it is
-harmless: the two sectors meeting there are equally defensible. Do not build a
-result on which side a boundary falls.
+bearing is generally not representable, so this cannot be avoided. It is
+harmless, since the two sectors meeting there are equally defensible, but no
+result should depend on the side to which a boundary bearing is assigned.
 """
 function sector_of(grid::SectorGrid, β::Real)
     k = round(Int, β / sector_width(grid), RoundNearestTiesUp)

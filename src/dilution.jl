@@ -12,8 +12,8 @@ outlasts:
                                       averaged over sectors and weighted by
                                       their frequencies
 
-Only the long-term regime touches the wind rose, and so only it is exposed to
-the direction convention.
+Only the long-term regime uses the wind rose, so only it depends on the
+direction convention.
 =#
 
 """
@@ -30,8 +30,8 @@ The field is the Gaussian plume with total reflection at the ground,
     χ/Q = exp(−y²/2Σ_y²) [exp(−(z−H)²/2Σ_z²) + exp(−(z+H)²/2Σ_z²)] / (2π Σ_y Σ_z u)
 
 with `x` the downwind and `y` the crosswind coordinate obtained by rotating the
-receptor into the plume frame. Upwind of the source the factor is zero: this
-model carries no upwind diffusion.
+receptor into the plume frame. Upwind of the source the factor is zero, since
+the model has no upwind diffusion.
 """
 function dilution_instantaneous(
         east::Real,
@@ -138,17 +138,17 @@ summed over the Pasquill classes, with `F_k` the frequency of wind blowing
 spent in class `i`.
 
 That is the form without a mixing lid. Under one, `√(2/π) exp(−H²/2Σ_z²)/Σ_z`
-is replaced class by class with [`crosswind_integrated_factor`](@ref), exactly
-as in [`dilution_extended`](@ref): the long-term factor is the extended one
+is replaced in each class by [`crosswind_integrated_factor`](@ref), as in
+[`dilution_extended`](@ref): the long-term factor is the extended one
 summed over classes and weighted by the rose, and the two must agree on the
 vertical profile.
 
 `D_i` is the depletion factor of class `i`, which is one unless a `nuclide` is
-given. It sits inside the class sum because it depends on the class through
+given. It lies inside the class sum because it depends on the class through
 both the transport speed and the vertical dispersion. The 2021 code instead
 formed a separate depletion term as an unweighted sum of six exponentials, one
-per class, and so returned up to six in the limit of no deposition at all,
-where a surviving fraction must tend to one.
+per class, and so returned up to six in the limit of no deposition, where a
+surviving fraction must tend to one.
 
 `rose` supplies both, in the correct sense whichever convention it was built
 from, because [`WindRose`](@ref) stores blowing-towards frequencies. The sector
@@ -270,7 +270,7 @@ end
 
 # Dispatched rather than branched, so the undepleted path stays free of the
 # nuclide machinery and both paths are type-stable. Washout without a nuclide is
-# refused: the washout row is a property of the species.
+# rejected, since the washout row is a property of the species.
 function _depletion(::Real, ::AbstractSite, ::PasquillClass, ::Nothing, washout)
     washout === nothing ||
         throw(ArgumentError("a washout event needs a nuclide to act on; pass `nuclide`"))

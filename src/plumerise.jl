@@ -88,7 +88,7 @@ Which wind speed enters the stable final rise `c [F/(uS)]^(1/3)`.
     neutral limit and the transitional law take it, and as NRC XOQDOQ
     [Sagendorf1982](@cite) and the 2021 code did.
 
-Only a [`Site`](@ref), which knows the wind profile, can form the mean. The
+Only a [`Site`](@ref), which holds the wind profile, can form the mean. The
 functions that take a scalar wind speed take whichever value they are given,
 through their `stable_wind` keyword.
 """
@@ -322,8 +322,8 @@ the wind speed of the stable final rise, by default the same; see
 
 The dominant mechanism is chosen by comparing the two final rises: where they
 agree to within [`MECHANISM_BALANCE_TOLERANCE`](@ref) in relative terms neither
-dominates and the combined law applies, otherwise the larger mechanism carries
-the plume and its law is used alone. `rise` selects the
+dominates and the combined law applies, otherwise the law of the mechanism with
+the larger final rise is used alone. `rise` selects the
 [`RiseCoefficients`](@ref).
 """
 function plume_rise(
