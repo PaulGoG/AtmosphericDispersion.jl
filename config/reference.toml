@@ -8,7 +8,7 @@ exit_density = 0.6        # density of the emitted gas, kg/m^3; > 0
 exit_temperature = 324.0  # temperature of the emitted gas, K; > 0
 
 [atmosphere]
-reference_speed = 4.0     # wind speed at 10 m, m/s; >= 0
+reference_speed = 4.0     # wind speed at 10 m, m/s; > 0
 temperature = 287.0       # ambient air temperature, K; > 0
 density = 1.2             # ambient air density, kg/m^3; > 0
 lapse_rate = 0.02         # vertical temperature gradient dT/dz, K/m; finite

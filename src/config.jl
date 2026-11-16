@@ -429,7 +429,8 @@ function _atmosphere_from(t::AbstractDict)
     lapse = _value(t, "lapse_rate", Float64, "atmosphere")
     isfinite(lapse) || _fail("atmosphere.lapse_rate", "must be finite, got $lapse")
     return Atmosphere(;
-        reference_speed = _nonnegative(
+        # The Gaussian plume divides by the wind speed and has no calm limit.
+        reference_speed = _positive(
             _value(t, "reference_speed", Float64, "atmosphere"),
             "atmosphere.reference_speed",
         ),

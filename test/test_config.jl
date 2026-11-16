@@ -90,6 +90,7 @@
             (t -> (t["source"]["height"] = 0.0), "source.height"),
             (t -> (t["source"]["diameter"] = -1.0), "source.diameter"),
             (t -> (t["source"]["exit_velocity"] = -1.0), "source.exit_velocity"),
+            (t -> (t["atmosphere"]["reference_speed"] = 0.0), "atmosphere.reference_speed"),
             (t -> (t["atmosphere"]["temperature"] = 0.0), "atmosphere.temperature"),
             (t -> (t["atmosphere"]["density"] = -1.0), "atmosphere.density"),
             (t -> (t["release"]["activity"] = -1.0), "release.activity"),
