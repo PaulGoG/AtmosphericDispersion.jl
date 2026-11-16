@@ -10,9 +10,9 @@ corrections, independent of one another.
 **Sense.** ADMS, and every measured wind rose, gives the direction the wind
 blows *from*. The long-term sector-averaged formula weights by the frequency of
 wind blowing *towards* the receptor's sector. `WindRose` therefore takes the
-convention as a required argument (`BlowingFrom()` or `BlowingToward()`) and
-stores blowing-towards internally, so the formulae cannot be fed the wrong
-sense. There is no default.
+convention as a required argument (`BlowingFrom()` or `BlowingToward()`), with
+no default, and stores blowing-towards internally, so the formulae always
+receive blowing-towards frequencies.
 
 **Frame.** The 2021 code indexed sectors from `atan(y/x)`, counterclockwise from
 east. The compass runs clockwise from north. Mapping a cardinal table onto those
@@ -28,9 +28,9 @@ so a cardinal direction sits as far from a boundary as it can and bins exactly.
 
 The thesis anticipated this last hazard and `Circle_sectors.jl` was written to
 check it, but that script sampled a random point on the circle, which almost
-surely never lands on a boundary, so the test could not detect the failure it
-was written for. All sixteen cardinal directions, and both sides of every
-boundary, are now asserted explicitly.
+surely never lies on a boundary, so the test could not detect the failure it
+was written for. The test suite asserts all sixteen cardinal directions, and
+both sides of every boundary, explicitly.
 
 ## What the convention costs
 
@@ -54,8 +54,8 @@ strongest from N, NNE and E, weakest from SSW and SW. That is the right shape
 for Dobrogea, where the crivăț blows from the north-east, and it is consistent
 with the Cernavodă possibility but does not establish it: the rose is also
 unusually flat for a real site, only 1.7:1 between its strongest and weakest
-sectors, where measured roses are typically more peaked. Treat the absolute
-frequencies as unverified; the convention is not.
+sectors, where measured roses are typically more peaked. The absolute
+frequencies are unverified; the blowing-from convention is established.
 
 ## Depletion composes by multiplication
 
@@ -65,17 +65,17 @@ additively,
 
     χ = χ/Q · Q · DEC · (DEP_w + DEP_d)
 
-Switch the rain off and set the deposition velocity to zero, so nothing is
-removed at all: each factor tends to one, their sum tends to two, and the
-concentration comes out twice the undepleted value. Surviving fractions
-multiply: the processes act in sequence on the same material.
+With the rain switched off and the deposition velocity set to zero, nothing is
+removed: each factor tends to one, their sum tends to two, and the concentration
+is twice the undepleted value. Surviving fractions multiply, because the
+processes act in sequence on the same material.
 
 The long-term dry factor had the same shape of error at larger scale. It summed
 six exponentials, one per stability class, with the frequencies inside the
 exponent and no weighting outside, so in the no-deposition limit it tended to
 six rather than one. Depletion is class-dependent through both the transport
-speed and the vertical dispersion, so it belongs inside the class sum, and that
-is where it now sits.
+speed and the vertical dispersion, so it belongs inside the class sum, where
+the package applies it.
 
 Both limits are asserted in the suite.
 

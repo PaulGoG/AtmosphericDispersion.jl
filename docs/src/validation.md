@@ -20,10 +20,9 @@ speed together.
 
 The governing normative is CNCAN NSR-23 [CNCAN2004](@cite), the Romanian
 nuclear regulator's norm the 2021 thesis was written against. Every
-parameterisation it hands down turns out to be a standard published scheme, and
-where the two disagree this package now follows the international source and
-keeps the normative's value available. Where they are, the identity is
-asserted.
+parameterisation it prescribes is a standard published scheme, and where the
+two disagree this package follows the international source and keeps the
+normative's value available. Where they are, the identity is asserted.
 
 | | Published form | Agreement |
 |---|---|---|
@@ -67,18 +66,18 @@ The Eimutis–Konicek scheme is the analytic fit of [EimutisKonicek1972](@citet)
 to the Pasquill–Gifford curves, `σ_y = a x^0.9031` and `σ_z = a x^b + c` on
 three ranges of distance, which the NRC codes XOQDOQ [Sagendorf1982](@cite)
 and PAVAN [Bander1982](@cite) evaluate. The paper is not open; the 42
-coefficients are those of the two codes' `DATA` statements, which agree digit
-for digit, and are asserted entry by entry. The three pieces of each class join
+coefficients are those of the two codes' `DATA` statements, which are identical,
+and each is asserted individually. The three pieces of each class join
 to within a per cent at 100 m and 1 km.
 
 Every scheme states the range of distance it was fitted over, and the package
-says when a run leaves it. `validity_range` returns the band; a configuration
+checks runs against it. `validity_range` returns the band; a configuration
 whose receptor grid reaches outside it is loaded with a warning, refused, or
 accepted silently as `[model] extrapolation` directs, and `scripts/run.jl`
 reports how many radii extrapolate. The reference configuration's 20 km grid is
 twice the default scheme's band (Gaussian screening to 20 km is ordinary
-regulatory practice, SRS-19 stopping there), and the file says `allow`. The
-four schemes for class D, across their bands, are
+regulatory practice, SRS-19 stopping there), and the file sets `allow`. The
+four schemes for class D, across their bands, are plotted in
 `figures/validation/dispersion_schemes.png`.
 
 ### The vertical dispersion scheme, and two wrong digits
@@ -88,10 +87,10 @@ schemes of F.B. Smith [Smith1973](@cite) and Briggs [Briggs1973](@cite),
 published as IAEA-SM-181/19 in *Physical Behaviour of Radioactive Contaminants
 in the Atmosphere*. The normative reproduces it without attribution. It is
 printed in full in HPA-RPD-058 [SmithSimmonds2009](@cite) Table 3.3 and
-NRPB-R91 [Clarke1979](@cite) Table 3, and both printings agree digit for digit.
+NRPB-R91 [Clarke1979](@cite) Table 3, and the two printings are identical.
 
-Asserting the whole table against those printings found two wrong coefficients
-in the roughness correction:
+Asserting the whole table against those printings, I found two wrong
+coefficients in the roughness correction:
 
 | z₀ | NSR-23 Table 2 | Hosker | effect on σ_z |
 |---|---|---|---|
@@ -99,7 +98,7 @@ in the roughness correction:
 | 0.04 m, arable | 2.08 | 2.02 | 3.6 % too large |
 
 The error is the normative's: NSR-23 prints 1.58 and 2.08, and the 2021 code
-carried them faithfully. NSR-23 attributes its Table 2 to CAN/CSA-N288.2-M91 and
+used them as printed. NSR-23 attributes its Table 2 to CAN/CSA-N288.2-M91 and
 UNSCEAR 2000, so the corruption entered somewhere in that chain rather than at
 either end. This package follows Hosker.
 
@@ -145,12 +144,12 @@ published 0.33 and 0.083, where the uncapped form gives 0.599 and 0.311. What
 happens to a plume above the lid is a separate matter, and one of convention;
 see the mixing layer below.
 
-Reproducing published benchmarks at all needed one thing the package lacked:
-they state the effective release height and the transport wind speed as inputs,
-where the package derives both. `PrescribedPlume` wraps a `Site` and takes them
-as given (the two σ as well, for Turner's problems), bypassing plume rise, the
-wind profile and the dispersion curves. A prescribed σ_z holds at one distance
-only, so the depletion integral refuses it.
+Published benchmarks state the effective release height and the transport wind
+speed as inputs, where the package derives both. To reproduce them,
+`PrescribedPlume` wraps a `Site` and takes those inputs as given (the two σ as
+well, for Turner's problems), bypassing plume rise, the
+wind profile and the dispersion curves. A prescribed σ_z is valid at one
+distance only, so the depletion integral rejects it.
 
 ### The screening tables of SRS-19, and XOQDOQ's own test case
 
@@ -205,18 +204,18 @@ prints exactly twice them.
 
 A plume does not disperse upwards forever. Turbulent mixing is capped by an
 inversion, and once σ_z approaches that depth the plume is trapped between the
-ground and the lid and reflects off both. The package had no lid, and this
-limited agreement with published depletion tables in the far field.
+ground and the lid and reflects off both. Without the lid, agreement with
+published depletion tables in the far field is limited.
 
-It has one now: `HPA-RPD-058` §3.2.2.1 Eq. (3.4), the image sum over virtual
+The lid model is `HPA-RPD-058` §3.2.2.1 Eq. (3.4), the image sum over virtual
 sources at `2sA ± h_e`. The report truncates it at `|s| = 1` and changes to the
 uniform profile `1/A` of Eq. (3.5) once σ_z reaches the depth, noting that the
 series "can be summed to any prescribed accuracy". The package sums it: the
 image series while `Σ_z < 0.7 A`, and above that the cosine series of the same
 function, whose leading term is Eq. (3.5). There is no change of formula, the
 activity between the ground and the lid integrates to one to within 4 × 10⁻¹⁶
-at every σ_z, and the profile tends to `1/A` of its own accord: 1.4 % above it
-at `Σ_z = A`, 5 × 10⁻⁹ at `2A`. The truncated sum stays within 0.06 % of the
+at every σ_z, and the profile tends to `1/A`: 1.4 % above it at `Σ_z = A`,
+5 × 10⁻⁹ at `2A`. The truncated sum stays within 0.06 % of the
 converged one up to `Σ_z = A` and is 3 % low at `1.5 A`.
 
 Depths are Table 3.5(a), which the report attributes to [Clarke1979](@citet)
@@ -268,11 +267,11 @@ treats a plume above the lid in two ways, and the package carries both, as
   equal to zero". ISC3 also takes stable air as unbounded, which is a depth of
   `inf` for classes E and F.
 
-An earlier version of this package ignored the lid where `H > A`, on the
-argument that such a plume is decoupled from the ground until the inversion
-breaks (fumigation, which is not modelled here). That matched neither published
-convention and made the field discontinuous: a plume 0.1 m below a 100 m lid
-gave twice the ground-level concentration of one 0.1 m above it.
+Ignoring the lid where `H > A`, on the argument that such a plume is decoupled
+from the ground until the inversion breaks (fumigation, which is not modelled
+here), matches neither published convention and makes the field discontinuous:
+a plume 0.1 m below a 100 m lid gives twice the ground-level concentration of
+one 0.1 m above it.
 
 In the reference case the choice moves the undepleted long-term χ/Q at 20 km in
 the most exposed sector from 4.3 × 10⁻⁹ s m⁻³ with no lid to 5.2 × 10⁻⁹ with
@@ -285,8 +284,7 @@ kernel's normalisation.
 
 ### The depletion and resuspension parameters
 
-These were the last constants in the package with no attribution, and they now
-have one.
+Each of these constants is traced to a published source below.
 
 **Resuspension.** `K = A exp(−λ₁t) + B exp(−λ₂t)` with
 `A = 10⁻⁵ m⁻¹, B = 10⁻⁹ m⁻¹, λ₁ = 10⁻² d⁻¹, λ₂ = 2 × 10⁻⁵ d⁻¹` is IAEA Safety
@@ -306,8 +304,7 @@ with elapsed time: 1.8× at ten days, 6× at thirty. The difference is recorded
 and the constants are left unchanged.
 
 **Washout.** The table is NSR-23 Table 7, which the normative attributes to
-CAN/CSA-N288.2-M91. It has two species rows and this package originally carried
-only one; both are here now, selected by `WashoutSpecies`:
+CAN/CSA-N288.2-M91. It has two species rows, selected by `WashoutSpecies`:
 
 | at 1 mm/h | rain Λ_L | rain Λ_H | snow Λ_L | snow Λ_H |
 |---|---|---|---|---|
@@ -338,7 +335,7 @@ its own rain values.
 
 Snow scavenging of tritiated water is isotopic exchange at the crystal surface,
 not impaction, so the suppression is the wrong mechanism for it.
-[Ogram1985](@citet) measured it, and the measurement lands almost exactly on
+[Ogram1985](@citet) measured it, and the measurement agrees closely with
 NSR-23's other-nuclides snow lower limit:
 
 | mm/h | Ogram HTO | NSR-23 other-nuclides snow Λ_L | ratio |
@@ -354,12 +351,11 @@ At four rates the measurement, which the normative does not cite, agrees within
 
 ### The tritium deposition velocities
 
-The last parameter in the reference configuration without a citation turned out
-to have one. The notes to NSR-23 Table 6 state the deposition velocity of HTO
-as 0.4–0.8 × 10⁻² m/s and that of HT as an order of magnitude lower,
-0.04–0.05 × 10⁻² m/s, both attributed to experimental measurement by
-[Murphy1993](@citet), under the stated condition that the tropopause be taken
-at 12–15 km. Those are exactly the four numbers the package carries.
+The package uses the deposition velocities in the notes to NSR-23 Table 6,
+which state that of HTO as 0.4–0.8 × 10⁻² m/s and that of HT as an order of
+magnitude lower, 0.04–0.05 × 10⁻² m/s, both attributed to experimental
+measurement by [Murphy1993](@citet), under the stated condition that the
+tropopause be taken at 12–15 km.
 
 The lower bound is close to what others measure: 0.5 cm/s is the MACCS2 default
 and 0.42 the Savannah River Site value, both inside the range. AECL's
@@ -370,14 +366,14 @@ them, which is asserted as such.
 That HTO deposits at all is a deliberate divergence. IAEA SRS-19 §3.9,
 EUR 15760 [Simmonds1995](@cite) §3.2 and HPA-RPD-058 §3.2.2.3 each assign
 tritium a deposition velocity of zero, handling it by specific activity
-instead. This package follows the normative the work was done under and says
-so; setting both velocities to zero follows the others.
+instead. This package follows the normative the work was done under; setting
+both velocities to zero follows the others.
 
 ### Where schemes disagree, the choice is in the configuration
 
 Three plume-rise constants differ between published schemes, and the 2021 code
-took a position on each without recording one. They are now a `RiseCoefficients`
-value selected by `[model] plume_rise`, defaulting to Briggs:
+took a position on each without recording one. Here they form a
+`RiseCoefficients` value selected by `[model] plume_rise`, defaulting to Briggs:
 
 | | Briggs, the default | 2021 code | Also published |
 |---|---|---|---|
@@ -404,8 +400,9 @@ fidelity tests use it, so the 2021 results remain reproducible.
 The reference case does not move: the CANDU stack is buoyancy-dominated
 (55.7 m of buoyant rise against 10.6 m of momentum rise in class D, an
 imbalance far outside the tolerance for the combined law), so it takes the
-pure-buoyancy branch, which none of these constants touch. The correction bites
-on momentum-dominated and balanced releases, where the 13.6 % was.
+pure-buoyancy branch, which none of these constants touch. The correction
+affects momentum-dominated and balanced releases, the regime of the 13.6 %
+overshoot.
 
 Selecting `xoqdoq` does move it: the reference atmosphere is stably stratified,
 so the stable branch is active, and the effective release height at 2 km in
@@ -432,13 +429,13 @@ Resuspension is selectable the same way: `[model] resuspension` takes
 `iaea_ss57` (the default, Safety Series 57) or `maxwell_anspaugh` (2011, also
 NUREG/CR-7270).
 
-The building-wake coefficient now defaults to 1.0, which is IAEA SRS-19
+The building-wake coefficient defaults to 1.0, which is IAEA SRS-19
 Eq. (6), `Σ_z = (σ_z² + A_B/π)^(1/2)`, and the German AVV Eqs. (4.31)/(4.32),
 `√(σ² + I_G²/π)`. NSR-23 used 1.5 and no source outside it was found;
 `NSR23_WAKE_COEFFICIENT` restores it. RG 1.111 Eq. (9) is a third convention
 again, applying 0.5 to the building height rather than its area.
 
-Snow washout is now selectable by species. The normative's snow columns are
+Snow washout is selectable by species. The normative's snow columns are
 the rain columns divided by exactly 100 and 500, a particle-scavenging
 suppression and the right physics for aerosols and reactive gases: IAEA
 TECDOC-379 §3.5.4 gives 5 × 10⁻⁸ s⁻¹ for inorganic iodine in powder snow at
@@ -451,8 +448,8 @@ package is HTO, so the choice matters for it.
 
 This code writes the neutral final rise as `1.6F^(1/3)(3.5x_f)^(2/3)/u`, which
 does not look like the published `21.4F^(3/4)/u`. Substituting `x_f = 14F^(5/8)`
-collapses it: `1.6·49^(2/3) = 21.425`, and `1.6·119^(2/3) = 38.71` for the
-other branch. They are one expression, and the literature rounds the constant.
+reduces it to the published form with the constant `1.6·49^(2/3) = 21.425`,
+which the literature rounds, and `1.6·119^(2/3) = 38.71` for the other branch.
 The tests assert both the algebra and the numbers.
 
 σ_z is Hosker's, as above, carrying an explicit roughness correction that

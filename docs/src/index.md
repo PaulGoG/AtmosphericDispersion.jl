@@ -59,9 +59,9 @@ binning cannot be decided by floating-point round-off.
 The long-term dilution formula weights by the frequency of wind blowing
 *towards* the receptor's sector, which is the opposite reading. [`WindRose`](@ref)
 therefore takes the convention as a required argument and stores
-blowing-towards internally, so the formulae cannot be fed the wrong sense.
-Getting this wrong rotates the whole field by half a turn while leaving every
-magnitude and sum rule intact.
+blowing-towards internally, so the formulae always receive blowing-towards
+frequencies. A reversed convention rotates the whole field by half a turn and
+leaves every magnitude and sum rule intact.
 
 ## Status
 

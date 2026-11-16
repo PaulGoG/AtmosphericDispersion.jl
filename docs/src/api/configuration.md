@@ -16,13 +16,13 @@ julia> load_configuration("misspelt.toml")
 ERROR: ConfigurationError at `model.mixing_layr`: unknown key; expected one of plume_rise, resuspension, mixing_layer, washout
 ```
 
-An unread key is an error because it cannot be told from a misspelt one, and a
-misspelt optional key would otherwise take its default without a word.
+An unread key is an error because it cannot be distinguished from a misspelt
+one, and a misspelt optional key would otherwise take its default without
+warning.
 
 Validation runs at load and constructs the solver types immediately, so
-anything those constructors reject in turn (frequencies that do not sum to
-one, a negative stack height) fails at the same point rather than deep into a
-run.
+anything those constructors reject (frequencies that do not sum to one, a
+negative stack height) fails at load rather than during the run.
 
 `config/reference.toml` is the annotated template: every key, its unit and its
 bounds. The comments there are limited to that; the meaning of each choice is
@@ -46,7 +46,7 @@ optional and defaults to the first value listed.
 | | `eimutis_konicek` | `DISPERSION_EIMUTIS_KONICEK`: the fit of [EimutisKonicek1972](@citet) to the Pasquill–Gifford curves, as NRC XOQDOQ and PAVAN [Bander1982](@cite) evaluate it |
 | `extrapolation` | `warn` | a receptor grid reaching outside the scheme's [`validity_range`](@ref) is loaded with a warning naming the offending end |
 | | `refuse` | the same grid is refused, on `grid.spacing` or `grid.extent` |
-| | `allow` | the grid is accepted silently; the reference configuration says this, its 20 km extent being twice the 10 km band of the default scheme |
+| | `allow` | the grid is accepted silently; the reference configuration sets it, its 20 km extent being twice the 10 km band of the default scheme |
 | `resuspension` | `iaea_ss57` | IAEA Safety Series 57 [IAEA1982](@cite), Eq. (3.14A) |
 | | `maxwell_anspaugh` | [MaxwellAnspaugh2011](@citet); NUREG/CR-7270 [Bixler2022](@cite) |
 | `washout` | `normative` | NSR-23 Table 7 throughout |
@@ -57,7 +57,7 @@ See [`RiseCoefficients`](@ref), [`StableRiseWind`](@ref),
 [`WashoutModel`](@ref) for the physics behind each. The validity range of a
 scheme is the range of distance its parameters were fitted over; every
 Briggs-based scheme is quoted for 100 m to 10 km, the Eimutis–Konicek fit for
-100 m to 100 km. Nothing in the evaluation refuses a distance outside it; the
+100 m to 100 km. The evaluation functions accept a distance outside it; the
 policy applies to the receptor grid at load, and `scripts/run.jl` reports how
 many radii extrapolate.
 
@@ -84,7 +84,7 @@ endpoint it feeds; see [`DepositionVelocity`](@ref). The reference values,
 0.4–0.8 × 10⁻² m/s for HTO, are those of the notes to NSR-23 Table 6,
 attributed there to [Murphy1993](@citet). IAEA SRS-19 [IAEA2001](@cite) §3.9,
 EUR 15760 [Simmonds1995](@cite) §3.2 and HPA-RPD-058 §3.2.2.3 instead assign tritium no
-dry deposition at all; set both velocities to zero to follow them.
+dry deposition; setting both velocities to zero follows them.
 
 `washout_species` selects the row of NSR-23 Table 7: `tritium_iodine`, the
 default, or `other` for every other radionuclide. See [`WashoutSpecies`](@ref).

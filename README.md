@@ -14,11 +14,11 @@
 
 Gaussian-plume atmospheric dispersion of radioactive stack releases: dilution
 factor, time-integrated air concentration, dry and wet ground deposition, and
-resuspension, over Pasquill–Gifford stability classes and a wind rose. Four
-published dispersion schemes, each carrying the range of distance it was fitted
-over; Briggs plume rise; a mixing layer; the building wake and cavity of IAEA
-SRS-19. One TOML file describes a run, and every parameterisation is asserted
-against its published source.
+resuspension, over Pasquill–Gifford stability classes and a wind rose. It
+provides four published dispersion schemes with the distance range each was
+fitted over, Briggs plume rise, a mixing layer, and the building wake and
+cavity of IAEA SRS-19. A run is described by one TOML file, and the test suite
+checks each parameterisation against its published source.
 
 ![The plume as the wind sweeps the compass](figures/plume_sweep.gif)
 
@@ -57,10 +57,10 @@ using Pkg
 Pkg.add(url = "https://github.com/PaulGoG/AtmosphericDispersion.jl")
 ```
 
-In a checkout, each environment carries its own activation script, which
-activates and instantiates it silently, and every runnable script includes the
-one it needs as its first statement, so nothing is run with `--project`. Expect
-the first run of each environment to be slow.
+In a checkout, each environment has an activation script that activates and
+instantiates it, and every runnable script includes the one it needs as its
+first statement, so `--project` is never needed. The first run of each
+environment is slow while it precompiles.
 
 ```bash
 julia -i activate.jl         # REPL in the root environment
@@ -80,14 +80,17 @@ julia -e 'using JuliaFormatter; format(".")'                              # appl
 
 ## Configuration
 
-A run is described by a TOML file, never by editing source.
+A run is described by a TOML file.
 [`config/reference.toml`](config/reference.toml) is the annotated template:
-ten tables, every key with its unit and bounds in a one-line comment. The
+ten tables, each key with its unit and bounds in a one-line comment. The
 loader checks presence, type, enumerated choice and numerical bound, rejects
-keys it does not read, and names the offending key by its full dotted path
-(`ConfigurationError at \`grid.spacing\`: must be smaller than grid.extent
-(20000.0 m), got 20000.0`), so a rejected file says what to change. Where
-published schemes disagree, the choice is a key:
+keys it does not read, and reports the offending key by its full dotted path:
+
+```
+ConfigurationError at `grid.spacing`: must be smaller than grid.extent (20000.0 m), got 20000.0
+```
+
+Where published schemes disagree, the choice is a configuration key:
 
 | Key | Choices | Default |
 |---|---|---|
@@ -101,36 +104,37 @@ published schemes disagree, the choice is a key:
 | `mixing_layer.above_lid` | `rise_inhibited`, `full_penetration` | `rise_inhibited` |
 | `wind_rose.convention` | `blowing_from`, `blowing_toward` | none: it must be stated |
 
-A run that leaves the range its dispersion scheme was fitted over is announced
-rather than silently extrapolated. The reference grid reaches 20 km, twice the
-band of the default scheme, and says `allow`; under `warn` the loader reports
+The loader compares the receptor grid with the range the dispersion scheme was
+fitted over. The reference grid reaches 20 km, twice the upper limit of the
+default scheme, and its configuration sets `allow`; under `warn` the loader
+reports
 
 ```
 Warning: the receptor grid extrapolates DISPERSION_HOSKER past its stated validity range of 100.0–10000.0 m: grid.extent = 20000.0 m lies beyond its 10000.0 m upper end. Set model.extrapolation = "allow" to accept this silently
 ```
 
-and under `refuse` the same sentence is a `ConfigurationError` at
-`grid.extent`. The [configuration page](docs/src/api/configuration.md) of the
-manual says what each choice means.
+and under `refuse` it throws a `ConfigurationError` at `grid.extent` with the
+same text. The [configuration page](docs/src/api/configuration.md) of the
+manual describes each choice.
 
 ## What it produces
 
 ![Long-term dispersion field](figures/dispersion_field.png)
 
 The long-term field for the reference configuration: tritium as HTO, 6.8 × 10¹⁴
-Bq over a year, on a 30 × 30 km grid. The sixteen-fold structure is the wind
-rose: the field is not circular because the frequency of transport towards each
-sector is not uniform. The southward bias is the rose peaking on winds *from*
-the north. Reading the convention the other way reflects this map through the
-origin and puts a dose assessment on the wrong side of a site.
+Bq over a year, on a 30 × 30 km grid. The sixteen-fold structure comes from the
+wind rose: the frequency of transport differs between sectors, so the field is
+not circular. The southward bias reflects a rose that peaks on winds *from* the
+north. Reading the convention the other way reflects this map through the
+origin and places the highest doses on the wrong side of the site.
 
 ![The three regimes and the effective release height](figures/regimes.png)
 
 Left: the three dilution regimes along the plume axis. The instantaneous and
 extended forms agree closely near the axis, since the sector average is the
 crosswind integral of the three-dimensional field spread over the arc. The
-long-term field is flatter because it is averaged over every direction the wind
-takes. All three vanish in the near field, where an elevated plume has not yet
+long-term field is flatter because it is averaged over all wind directions. All
+three vanish in the near field, where an elevated plume has not yet
 reached the ground.
 
 Right: the effective release height by stability class. Plume rise lifts the
@@ -143,49 +147,47 @@ the effective height by 2 m relative to the release-height convention.
 
 ### What the parameters do
 
-The figures below are four sweeps of the same release, each varying one thing.
-Every panel of a figure shares one colour scale, so the comparison is
-quantitative.
+The figures below are four sweeps of the same release, each varying one
+parameter. All panels of a figure share one colour scale.
 
-Half-decade contours are drawn over each field, because a smooth ramp across
-three decades hides everything but the largest changes and a contour that sits
-further out is a difference you can measure. The paired comparisons carry a
-third panel with the ratio of the two fields on a diverging scale centred on
-one, where anything away from white is a real change and the colour bar reads
-as a factor.
+Half-decade contours are drawn over each field, since a continuous colour ramp
+across three decades shows only the largest changes, whereas the displacement
+of a contour can be read off directly. The paired comparisons have a third
+panel with the ratio of the two fields on a diverging scale centred on one, so
+that the colour bar reads as a factor.
 
 ![Stability classes A to F](figures/stability_classes.gif)
 
-**Stability.** The stability class is the largest control on where the release
-lands. Class A spreads it over a wide, dilute fan whose ground-level maximum
-sits 0.5 km out; class F holds it in a narrow ribbon that does not peak until
-15 km. The peak values themselves differ by less than a factor of 3, but the
-distance at which they fall moves by a factor of 28. At a fixed receptor the
-spread is enormous: at 20 km the six classes span a factor of 37, and at 1 km
-class F is twelve orders of magnitude below class B, because the plume has not
-yet reached the ground at all. An assessment therefore needs the joint frequency
-of direction and class. Class F is also the one class the mixing lid reaches
-here: its plume rises to 100.8 m under a 100 m lid, is held at it, and gives
-about twice the ground-level value of an unbounded plume from 5 km outwards.
+**Stability.** The stability class has the largest effect on where the release
+reaches the ground. In class A the plume is wide and dilute, with its
+ground-level maximum 0.5 km from the stack; in class F it is narrow and does
+not peak until 15 km. The peak values differ by less than a factor of 3, but
+their distances differ by a factor of 28. At a fixed receptor the classes
+differ far more: at 20 km they span a factor of 37, and at 1 km class F is
+twelve orders of magnitude below class B, because the plume has not yet reached
+the ground. An assessment therefore needs the joint frequency of direction and
+class. Class F is also the only class the mixing lid affects in this case: its
+plume rises to 100.8 m under a 100 m lid, is held at the lid, and gives about
+twice the ground-level value of an unbounded plume from 5 km outwards.
 
 ![Building wake](figures/building_wake.gif)
 
-**Building wake, worst case.** A 60 m building 25 m from a 50.3 m stack. The
-wake criterion is a threshold: a stack clearing two and a half building heights
-escapes untouched, and one leaving below the building top is entrained into the
-aerodynamic cavity and released at ground level. This building is on the far
-side of it, so the effective release height goes from 50.3 m to zero. The third
-panel is the ratio of the two fields, on a scale that saturates at ten: a factor
-of 20 on the axis at 1 km, 3.3 at 2 km, and still 1.6 at the 12 km edge of the
-map.
+**Building wake, worst case.** A 60 m building stands 25 m from a 50.3 m stack.
+The wake criterion is a threshold: a release above two and a half building
+heights is unaffected, and one below the building top is entrained into the
+aerodynamic cavity and released at ground level. The stack here is lower than
+the building, so the effective release height drops from 50.3 m to zero. The
+third panel shows the ratio of the two fields, on a scale that saturates at
+ten: a factor of 20 on the axis at 1 km, 3.3 at 2 km and 1.6 at the 12 km edge
+of the map.
 
 ![Release height](figures/release_height.gif)
 
 **Release height.** Raising the stack moves the ground-level maximum downwind
 and lowers it. In class D the maximum is 2.77 × 10⁻⁶ s m⁻³ at 1.7 km from a
 30 m stack, 1.58 × 10⁻⁶ at 2.1 km from the 50.3 m reference stack, and
-4.31 × 10⁻⁷ at 4.2 km from 120 m. Four times the height lowers the peak by a
-factor of six.
+4.31 × 10⁻⁷ at 4.2 km from 120 m: a stack four times as high gives a peak six
+times lower.
 
 ![Depletion](figures/depletion.gif)
 
@@ -193,27 +195,27 @@ factor of six.
 and an hour of washout. For HTO the loss is modest over this range (the decay
 constant is 1.78 × 10⁻⁹ s⁻¹ and the deposition velocity 4 mm/s), but it
 accumulates with distance, and the factors compose by multiplication: 4 % at
-1 km and 8 % at 20 km, of which the hour of rain is 3.5 %. The ratio panel shows
-the difference: two fields differing by a few per cent are indistinguishable on
-a ramp spanning three decades.
+1 km and 8 % at 20 km, of which the hour of rain is 3.5 %. The difference is
+visible only in the ratio panel, since two fields a few per cent apart cannot
+be told apart on a colour scale spanning three decades.
 
 Regenerate all of them with `julia scripts/figures.jl`.
 
 ## Validation
 
-The solver is checked against the analytic properties of the Gaussian plume
-first, because these fail first if a normalisation, a reflection term or a
-sector width is wrong: the crosswind integral, mass conservation across any
-downwind plane, the sector average as the crosswind integral over the arc, and
-the position of the ground-level maximum, each to machine precision under its
-own assumptions. Every parameterisation is then asserted against its published
-source, table entry by table entry: Briggs' σ_y and σ_z, Hosker's σ_z with all
+The test suite first checks the analytic properties of the Gaussian plume,
+which are the most sensitive to an error in a normalisation, a reflection term
+or a sector width: the crosswind integral, mass conservation across a downwind
+plane, the sector average as the crosswind integral over the arc, and the
+position of the ground-level maximum. Each parameterisation is then compared
+with its published source, coefficient by coefficient: Briggs' σ_y and σ_z,
+Hosker's σ_z with all
 48 coefficients of its roughness correction, the Eimutis–Konicek fit against
 the XOQDOQ and PAVAN listings, Briggs' plume rise, the washout and resuspension
 constants, and the long-term sector constant of Regulatory Guide 1.111 and of
-SRS-19. Asserting the roughness table found two wrong coefficients in the
-Romanian normative, which the 2021 code had carried faithfully; the package
-follows Hosker.
+SRS-19. This comparison found two wrong coefficients in the roughness table of
+the Romanian normative, which the 2021 code had copied; the package uses
+Hosker's values.
 
 Four published calculations are then run through the package end to end:
 
@@ -221,24 +223,23 @@ Four published calculations are then run through the package end to end:
 |---|---|---|
 | HPA-RPD-058 Table 3.7 | plume depletion by dry deposition: 3 release heights × 6 categories × 8 distances to 100 km | 143 of 144 cells within 0.028 of a table printed to 0.01; the exception is a depletion factor that rises with distance in the source |
 | Turner (1970) Table 7-4 | the concentration profile with height at 1 km, both reflection terms | all 16 rows within 2.3 %, Turner's three-figure rounding |
-| IAEA SRS-19 Tables I and II, Annex IV | the sector-averaged and the wake-corrected diffusion factors to one figure, and three worked examples on the building zones and cavity | 77 of 77 and 106 of 110 cells to the printed figure, the four others on a rounding boundary; the examples come out |
+| IAEA SRS-19 Tables I and II, Annex IV | the sector-averaged and the wake-corrected diffusion factors to one figure, and three worked examples on the building zones and cavity | 77 of 77 and 106 of 110 cells to the printed figure, the four others on a rounding boundary; the three examples are reproduced |
 | NRC XOQDOQ Test Case 2 | the code's own continuous elevated release: a momentum jet over rising terrain, five wind classes, five stability classes | all 22 printed χ/Q within 0.05 %, the rounding of the four printed figures |
 
 ![Four dispersion schemes](figures/validation/dispersion_schemes.png)
 
-Where published schemes disagree, the figure shows by how much. The four
-dispersion schemes in class D over pasture: Hosker, Briggs open country and
-Eimutis–Konicek agree in σ_y and differ by up to a third in σ_z, and Briggs'
-urban set is three times wider vertically at 2 km. The shaded region is beyond
-the 10 km band the three Briggs-based schemes were fitted over, inside the
-100 km of Eimutis–Konicek. Reading the primary documents settled one digit: the
-Handbook on Atmospheric Diffusion misprints the urban E–F σ_z coefficient as
-0.00015 where Briggs' own report and EPA ISC3 have 0.0015.
+The figure compares the four dispersion schemes in class D over pasture.
+Hosker, Briggs open country and Eimutis–Konicek agree in σ_y and differ by up
+to a third in σ_z; Briggs' urban set is three times wider vertically at 2 km.
+The shaded region lies beyond the 10 km limit of the three Briggs-based schemes
+and inside the 100 km limit of Eimutis–Konicek. The Handbook on Atmospheric
+Diffusion misprints the urban E–F σ_z coefficient as 0.00015; Briggs' own
+report and EPA ISC3 have 0.0015, which the package uses.
 
 `figures/validation/` holds one figure per parameterisation, each drawn against
-the published form it is meant to be. Where the test suite asserts an identity
-the curves must lie on top of one another; where it only claims a bracket, the
-figure shows how wide the bracket is.
+its published form. Where the test suite asserts an identity the curves
+coincide; where it asserts only a bracket, the figure shows the width of the
+bracket.
 
 | Figure | Against |
 |---|---|
@@ -256,7 +257,7 @@ Regenerate with `julia scripts/validation.jl`.
 
 The derivations and the evidence are in the documentation, under `docs/src/`:
 
-- [Conventions](docs/src/conventions.md): the wind-direction convention and what getting it wrong costs; why depletion factors multiply.
+- [Conventions](docs/src/conventions.md): the wind-direction convention and the effect of misreading it; why depletion factors multiply.
 - [Validation](docs/src/validation.md): every parameterisation against its published source, the four end-to-end benchmarks, the mixing layer, and where published schemes disagree.
 - [The 2021 thesis code](docs/src/thesis.md): what the rewrite changed and how far the original results move.
 - API reference: `docs/src/api/`.
@@ -276,7 +277,7 @@ What each component follows:
 
 | Component | Follows |
 |---|---|
-| Sector geometry and wind rose | sectors centred on the cardinal directions; the direction convention is declared, never assumed |
+| Sector geometry and wind rose | sectors centred on the cardinal directions; the direction convention is a required argument |
 | Dispersion parameters | Briggs (1973) open country and urban; Hosker (1974) with the roughness correction, the normative's default; Eimutis and Konicek (1972); each with the range it was fitted over |
 | Plume rise | Briggs, momentum and buoyancy; the stable final rise on the mean wind over the rise; the XOQDOQ and NSR-23 constants selectable |
 | Buildings | the displacement, wake and cavity zones of SRS-19 §3.3; wake broadening with the SRS-19 and AVV coefficient; the two cavity forms of §3.6 |
@@ -299,11 +300,11 @@ Outside the scope of the package:
   mixed layer grows into the plume over time, which a steady-state Gaussian
   plume does not describe, and neither lid rule models it.
 
-The wind rose of the reference case is not a measured rose for a site: the
-frequencies came from meteorological data for the Pitești fuel plant and the
-Cernavodă NPP, read in 2021 under the convention this package now refuses to
-assume. The convention is fixed; the numbers remain an illustrative case, and
-the configuration says so.
+The wind rose of the reference case is not a verified measured rose. As far as
+I recall, its frequencies are either placeholder values or meteorological data
+for the Pitești fuel plant or the Cernavodă NPP site, and in 2021 I read them
+under the wrong direction convention. The convention is corrected in the
+reference configuration; the frequencies themselves are illustrative.
 
 ## Full tree
 
@@ -384,12 +385,12 @@ The [`original`](../../tree/original) branch holds the code as submitted for
 the BSc thesis at the Faculty of Physics, University of Bucharest, in June 2021,
 its files under English names since 2026 with the submitted names mapped in its
 README, together with the thesis itself (`BSc_thesis_2021.pdf`, in Romanian).
-`main` shares no history with it. Run both ways on the CANDU case, three of the
-corrections move the result: the wind-direction convention by a half turn and a
-factor of 1.51, the mixing layer by up to +22 % at 20 km, and the stable rise
-on the mean wind by 5 % at 1 km. The account is in
-[docs/src/thesis.md](docs/src/thesis.md), and the changes release by release
-are in [CHANGELOG.md](CHANGELOG.md).
+`main` shares no history with it. On the CANDU case three of the corrections
+change the result: the wind-direction convention by a half turn and a factor of
+1.51, the mixing layer by up to +22 % at 20 km, and the stable rise on the mean
+wind by 5 % at 1 km. The details are in
+[docs/src/thesis.md](docs/src/thesis.md), and the changes of each release in
+[CHANGELOG.md](CHANGELOG.md).
 
 ## How to cite
 

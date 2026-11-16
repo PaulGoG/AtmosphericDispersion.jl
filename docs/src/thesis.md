@@ -7,9 +7,9 @@ for the BSc thesis at the Faculty of Physics, University of Bucharest, in June
 
 ## How far the 2021 results move
 
-Every correction recorded in the [validation](validation.md) page and in the
-changelog is real, but only some of them bite on the CANDU case the thesis
-assessed. Running that configuration both ways:
+Only some of the corrections recorded in the [validation](validation.md) page
+and in the changelog affect the CANDU case the thesis assessed. Running that
+configuration both ways:
 
 | Correction | Effect on the reference case |
 |---|---|
@@ -21,6 +21,6 @@ assessed. Running that configuration both ways:
 
 The published dose maps are rotated by a half turn, and the most-exposed sector
 carries 1.51 times what was reported, more beyond a few kilometres, where the
-lid adds up to 22 %. Everything else corrected here would change a different
-configuration (a momentum-dominated stack, a site with buildings, grassland or
-arable roughness) and leaves this one alone.
+lid adds up to 22 %. The remaining corrections affect only other configurations
+(a momentum-dominated stack, a site with buildings, grassland or arable
+roughness).

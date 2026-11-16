@@ -48,7 +48,7 @@ One change moves results: the stable final rise now takes the wind averaged
 over the depth of the rise, so every effective height of the reference case
 falls by 1 to 3 m and its long-term χ/Q rises by 5 % at 1 km and by 0.3 % at
 20 km. The rest adds schemes, validity ranges, building zones and two
-benchmarks, and leaves the default results alone.
+benchmarks, and does not change the default results.
 
 ### Added
 
@@ -71,7 +71,7 @@ benchmarks, and leaves the default results alone.
   loaded with a warning, refused, or accepted silently as
   `[model] extrapolation = "warn" | "refuse" | "allow"` directs, and
   `scripts/run.jl` reports how many radii extrapolate. The reference
-  configuration's 20 km grid is twice the default band and says `allow`.
+  configuration's 20 km grid is twice the default band and sets `allow`.
 - `layer_mean_wind_speed`, the mean of the power-law profile over a layer in
   closed form, and `stable_rise_wind_speed`, the wind the stable final rise of
   a site is evaluated with.
@@ -85,8 +85,8 @@ benchmarks, and leaves the default results alone.
 - **Two more end-to-end benchmarks**, in `test/test_regulatory.jl`. IAEA SRS-19
   Tables I and II: all 77 cells of the diffusion factor and 106 of the 110 of
   the wake-corrected one reproduce to the printed figure, the four others
-  sitting on a rounding boundary, and the three worked examples of Annex IV
-  come out. NRC XOQDOQ Test Case 2, the code's own continuous elevated
+  lying on a rounding boundary, and the three worked examples of Annex IV
+  match the report. NRC XOQDOQ Test Case 2, the code's own continuous elevated
   release, a momentum jet over rising terrain, summed over five wind classes
   and five stability classes: all 22 printed χ/Q reproduce to within 0.05 %,
   the rounding of the four printed figures.
@@ -132,7 +132,7 @@ it has no buildings; and its roughness class is not one of the two corrected.
     `rise_inhibited`, the default, holds it at the lid after NRPB-R157 §B2.3;
     it is continuous in the release height and is the case HPA-RPD-058
     Table 3.7 tabulates. `full_penetration` is EPA ISC3 vol. II §1.1.6.1: the
-    plume leaves the layer and the ground sees nothing.
+    plume leaves the layer and the ground-level concentration is zero.
   - In the reference case class F rises to 103.5 m under a 100 m lid and is held
     there, which about doubles its ground-level value. The long-term χ/Q at
     20 km in the most exposed sector is 5.2 × 10⁻⁹ s m⁻³ against 4.2 × 10⁻⁹
@@ -140,8 +140,8 @@ it has no buildings; and its roughness class is not one of the two corrected.
 - **`PrescribedPlume`**, a `Site` with its effective height, transport wind
   speed or dispersion parameters stated rather than derived. Published
   benchmarks give these as inputs, and a σ read off a graph is an input to the
-  problem. The depletion integral refuses a prescribed σ_z, which holds at one
-  distance only.
+  problem. The depletion integral rejects a prescribed σ_z, which is valid at
+  one distance only.
 - **An end-to-end benchmark against HPA-RPD-058 Table 3.7**: 3 release heights
   × 6 stability categories × 8 distances of published plume-depletion fractions.
   143 of the 144 cells reproduce to within 0.028 against a printed precision of
@@ -170,7 +170,7 @@ it has no buildings; and its roughness class is not one of the two corrected.
   NSR-23 Table 6, attributed there to Murphy, *Health Physics* **65**(6), 1993.
   The vertical dispersion scheme is Hosker's fit (IAEA-SM-181/19, 1974), printed
   in HPA-RPD-058 Table 3.3 and NRPB-R91 Table 3, and both tables are asserted
-  entry by entry. The long-term sector constant is asserted against NRC
+  in full. The long-term sector constant is asserted against NRC
   Regulatory Guide 1.111 (2.032, sixteen sectors) and IAEA SRS-19 (1.5238,
   twelve). Safety Series 57's resuspension constants are asserted against the
   primary document.
@@ -229,8 +229,8 @@ it has no buildings; and its roughness class is not one of the two corrected.
 - **Two coefficients of the roughness correction.** `F(z₀,x)` carried 1.58 and
   2.08 for z₀ = 0.01 m and 0.04 m where Hosker publishes 1.56 and 2.02, making
   σ_z 1.9 % too large over grassland and water and 3.6 % too large over arable
-  land. These are the values NSR-23 Table 2 itself prints; the 2021 code carried
-  them faithfully. The remaining 22 coefficients, and all 24 of the shape
+  land. These are the values NSR-23 Table 2 itself prints, and the 2021 code
+  used them as printed. The remaining 22 coefficients, and all 24 of the shape
   function, were already exact in both.
 
 ## [0.1.0]
