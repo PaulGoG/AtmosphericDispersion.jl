@@ -52,6 +52,14 @@
         rose_from = WindRose(g, f, BlowingFrom(); stability = m)
         @test stability_fraction(rose_from, 9, PASQUILL_D) == 1.0
         @test stability_fraction(rose_from, 1, PASQUILL_D) == 0.488
+        # Sixteen distinct rows, each asserted at its stated target: the wind
+        # from sector k blows towards the sector eight places on.
+        distinct = [j == 1 ? k / (k + 5) : 1 / (k + 5) for k in 1:16, j in 1:6]
+        rose_d = WindRose(g, f, BlowingFrom(); stability = distinct)
+        for k in 1:16
+            target = mod(k + 7, 16) + 1
+            @test stability_fraction(rose_d, target, PASQUILL_A) == k / (k + 5)
+        end
         # The same rose stated in either convention gives the same field.
         skewed = collect(range(1.0, 2.0; length = 16))
         skewed ./= sum(skewed)
