@@ -68,7 +68,10 @@ three ranges of distance, which the NRC codes XOQDOQ [Sagendorf1982](@cite)
 and PAVAN [Bander1982](@cite) evaluate. The paper is not open; the 42
 coefficients are those of the two codes' `DATA` statements, which are identical,
 and each is asserted individually. The three pieces of each class join
-to within a per cent at 100 m and 1 km.
+to within a per cent at 100 m and 1 km. Both codes limit `σ_y` and `σ_z` to
+1000 m in subroutine POLYN, "a conservative mixing limit", and the package
+does the same; without the limit the class A fit gives a `σ_z` of 4.6 km at
+3 km.
 
 Every scheme states the range of distance it was fitted over, and the package
 checks runs against it. `validity_range` returns the band; a configuration
@@ -241,10 +244,10 @@ ratios to the unbounded one:
 
 | | 10 km | 20 km | 50 km |
 |---|---|---|---|
-| A | 1.06 | 1.45 | 2.23 |
-| B | 1.00 | 1.12 | 1.67 |
-| C | 1.00 | 1.01 | 1.16 |
-| D | 1.00 | 1.00 | 1.00 |
+| A | 1.07 | 1.45 | 2.24 |
+| B | 1.00 | 1.13 | 1.67 |
+| C | 1.00 | 1.01 | 1.17 |
+| D | 1.00 | 1.00 | 1.01 |
 | E | 1.00 | 1.00 | 1.01 |
 | F | 2.06 | 2.03 | 2.06 |
 
@@ -282,7 +285,7 @@ a plume 0.1 m below a 100 m lid gives twice the ground-level concentration of
 one 0.1 m above it.
 
 In the reference case the choice moves the undepleted long-term χ/Q at 20 km in
-the most exposed sector from 4.3 × 10⁻⁹ s m⁻³ with no lid to 5.2 × 10⁻⁹ with
+the most exposed sector from 4.2 × 10⁻⁹ s m⁻³ with no lid to 5.1 × 10⁻⁹ with
 the rise inhibited, and to 3.4 × 10⁻⁹ with full penetration.
 
 The analytic invariants (the crosswind integral, the sector average and the
@@ -362,6 +365,25 @@ At four rates the measurement, which the normative does not cite, agrees within
 16 %, and this identifies the tritium row's snow column as the anomaly.
 `[model] washout = "hto"` selects Ogram's correlation; rain is unaffected.
 
+**How long washout acts.** NSR-23 Eq. (35) writes the wet depletion factor
+`exp(−Λt)` with `t` "the period of time during which the radioactive material
+is subjected to the process". The 2021 code took `t` as the duration of the
+precipitation, the same at every distance. Material scavenged on its way to a
+receptor is scavenged for its travel time `x/u`, and only material released
+while it rains is scavenged at all, so the package takes the share
+`f = min(t_w/T_R, 1)` of a release of duration `T_R` to travel through rain
+lasting `t_w`, and the factor becomes `1 − f + f exp(−Λ_L x/u)`. A
+precipitation that lasts the whole release gives the familiar `exp(−Λ_L x/u)`;
+none gives one.
+
+Wet deposition, NSR-23 Eq. (38), is the high coefficient times the column
+depleted with the low one. Integrated over the ground, that deposits `Λ_H/Λ_L`
+times what the column loses, 20 for tritium in rain at 1 mm/h, and more than
+the release itself once the travel time exceeds about `1/Λ_H`. The package depletes
+the deposited column with the coefficient it deposits with, so the deposit
+out to `x` is `f A (1 − exp(−Λ_H x/u))` before decay and never exceeds the
+activity released into the precipitation. The tests assert that integral.
+
 ### The tritium deposition velocities
 
 The package uses the deposition velocities in the notes to NSR-23 Table 6,
@@ -411,18 +433,23 @@ coefficient to 1.6, the same rounding that makes the neutral final rise 21.425
 against a published 21.4.
 
 `plume_rise = "nsr23"` restores the old constants exactly, and the
-fidelity tests use it, so the 2021 results remain reproducible.
+fidelity tests use it to reproduce the 2021 correlations term by term. Two
+things around them changed in 1.1.0: the stable limits apply in classes E and F
+only, and inside the balance band the combined law is capped at the larger of
+the two final rises, where the 2021 code capped it at their sum. NSR-23 §6.3(e)
+says of the two contributions that they "must not be summed up"; capped at the
+sum, the far-field rise jumped by nearly a factor of two at the edge of the band.
 
 The reference case does not move: the CANDU stack is buoyancy-dominated
-(55.7 m of buoyant rise against 10.6 m of momentum rise in class D, an
+(80.2 m of buoyant rise against 11.7 m of momentum rise in class D, an
 imbalance far outside the tolerance for the combined law), so it takes the
 pure-buoyancy branch, which none of these constants touch. The correction
 affects momentum-dominated and balanced releases, the regime of the 13.6 %
 overshoot.
 
-Selecting `xoqdoq` does move it: the reference atmosphere is stably stratified,
-so the stable branch is active, and the effective release height at 2 km in
-class D falls from 106.0 m to 101.8 m.
+Selecting `xoqdoq` moves the stable classes, where the stable branch is
+active: the effective release height falls from 102.4 m to 98.6 m in class E
+and from 100.8 m to 97.0 m in class F. The other classes have no stable branch.
 
 The wind of the stable final rise is the mean over the rise. Briggs'
 stable limit `2.6 [F/(uS)]^(1/3)` is Eq. 2.19 of the Handbook, which defines
@@ -432,14 +459,13 @@ depend on each other (a higher rise averages over more of the profile, and a
 faster mean lowers the rise), so `stable_rise_wind_speed` solves the two
 together, iterating from the release-height value until the rise settles to a
 part in 10¹²; the mean of the power-law profile over a layer is in closed form,
-`layer_mean_wind_speed`. The reference atmosphere is stably stratified in every
-class, so the stable limit binds throughout and the mean lowers every effective
-height by 1 to 3 m: class D at 2 km from 108.0 m to 106.0 m, class F from
-103.5 m to 100.8 m, still above its 100 m lid. The long-term χ/Q in the most
-exposed sector rises by 5 % at 1 km, 4 % at 2 km, 1.7 % at 5 km and 0.3 % at
-20 km, and the class D ground-level maximum moves from 1.51 × 10⁻⁶ s m⁻³ at
-2.20 km to 1.58 × 10⁻⁶ at 2.15 km. `[model] stable_rise_wind = "release_height"`
-restores the release-height convention.
+`layer_mean_wind_speed`. The stable limit binds in classes E and F, and there
+the mean lowers the effective height by about 3 m: class E from 105.0 m to
+102.4 m, class F from 103.5 m to 100.8 m, still above its 100 m lid. The
+long-term χ/Q in the most exposed sector rises by 0.04 % at 1 km, 1.0 % at
+2 km, 0.9 % at 5 km and 0.2 % at 20 km.
+`[model] stable_rise_wind = "release_height"` restores the release-height
+convention.
 
 Resuspension is selectable the same way: `[model] resuspension` takes
 `iaea_ss57` (the default, Safety Series 57) or `maxwell_anspaugh` (2011, also
@@ -451,6 +477,18 @@ Eq. (6), `Σ_z = (σ_z² + A_B/π)^(1/2)`, and the German AVV Eqs. (4.31)/(4.32)
 recommends the value that gives the largest dilution factor; the 2021 code
 used 1.5, which `NSR23_WAKE_COEFFICIENT` restores. RG 1.111 Eq. (9) is a third
 convention again, applying 0.5 to the building height rather than its area.
+
+Whatever the coefficient, a dispersion parameter is widened by at most `√3`.
+NRC XOQDOQ Eqs. (8) and (11), after RG 1.111, take `√3 σ` as the "maximum
+allowable building-wake dilution", and NSR-23 §5 recommends that the wake
+reduce the concentration by a factor "not higher than 3", which is the same
+limit on the centreline, where the two parameters enter as a product. SRS-19
+sets no limit; `[buildings] broadening_limit = inf` follows it. The building
+that sets the wake is the tallest within three of its own heights of the stack,
+"the building that most influences the resulting plume dispersion" of SRS-19
+§3.3. The 2021 code averaged every building in the list with weights inversely
+proportional to distance, so a low structure beside the stack could cancel the
+wake of a tall one.
 
 Snow washout of tritiated water is selectable, as described under the washout
 table above: `[model] washout = "hto"` replaces the upper snow coefficient of
@@ -476,6 +514,6 @@ is the spread that separates published σ schemes from one another, and
 
 `Σ_z = H/√2` is derived holding `H` fixed and `Σ_y ∝ Σ_z`; asserted under those
 assumptions it is exact. In the real field the maximum lands 5 % away from it,
-because `Σ_y/Σ_z` drifts from 1.94 to 2.43 across the peak region while plume
+because `Σ_y/Σ_z` drifts from 2.07 to 2.72 across the peak region while plume
 rise has already saturated. All six Pasquill classes and three sector counts
 are covered.

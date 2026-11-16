@@ -25,8 +25,8 @@ The ground-level plume as the wind direction sweeps the compass, class D. The
 bearing is the direction the wind blows *from*, as in an ADMS `.met` file, so
 the plume always lies on the far side of the stack: a northerly puts it south.
 The long-term field below is the average of these over a year, weighted by how
-often the wind blows *towards* each sector. Reading that weighting the wrong way
-round was the largest defect of the 2021 code.
+often the wind blows *towards* each sector. The 2021 code read that weighting
+the wrong way round, which turned every map it produced by a half turn.
 
 The solver core (plume rise, dispersion parameters, building wake, deposition
 and resuspension) is nuclide-agnostic. Tritium (HTO/HT) release from a CANDU
@@ -136,16 +136,15 @@ long-term field is flatter because it is averaged over all wind directions. All
 three vanish in the near field, where an elevated plume has not yet
 reached the ground.
 
-Right: the effective release height by stability class. Plume rise adds 50 to
-62 m to the 50.3 m stack, giving 101 to 112 m, and saturates within half a
-kilometre. The reference lapse rate is a strong inversion, so the stable limit
-of the rise applies in every class (see [Known limitations](#known-limitations)),
-and the ordering of the classes comes from the wind alone: the limit varies as
-u^(−1/3), and the wind at stack height is lowest in class A. The stable final
-rise is evaluated with the wind averaged over the depth of the rise, as the
-Handbook on Atmospheric Diffusion defines it: in class D that mean is 6.66 m/s
-against 5.99 m/s at the stack top, which lowers the effective height by 2 m
-relative to the release-height convention.
+Right: the effective release height by stability class. Plume rise lifts the
+50.3 m stack to between 101 and 153 m and saturates within half a kilometre. In
+classes A to D the rise takes the neutral limit, which varies as 1/u, so it is
+highest in class A, where the wind at stack height is weakest; in the stable
+classes E and F the stable limit of the reference inversion holds it near
+100 m. The stable final rise is evaluated with the wind averaged over the depth
+of the rise, as the Handbook on Atmospheric Diffusion defines it: in class F
+that mean is 8.94 m/s against 7.63 m/s at the stack top, which lowers the
+effective height by 2.7 m relative to the release-height convention.
 
 ### What the parameters do
 
@@ -163,8 +162,8 @@ that the colour bar reads as a factor.
 **Stability.** The stability class has the largest effect on where the release
 reaches the ground. In class A the plume is wide and dilute, with its
 ground-level maximum 0.5 km from the stack; in class F it is narrow and does
-not peak until 15 km. The peak values differ by less than a factor of 3, but
-their distances differ by a factor of 28. At a fixed receptor the classes
+not peak until 15 km. The peak values differ by a factor of 1.6, but their
+distances differ by a factor of 30. At a fixed receptor the classes
 differ far more: at 20 km they span a factor of 37, and at 1 km class F is
 twelve orders of magnitude below class B, because the plume has not yet reached
 the ground. An assessment therefore needs the joint frequency of direction and
@@ -179,25 +178,28 @@ The wake criterion is a threshold: a release above two and a half building
 heights is unaffected, and one below the building top is entrained into the
 aerodynamic cavity and released at ground level. The stack here is lower than
 the building, so the release height drops from 50.3 m to zero; plume rise is
-still added to it. The third panel shows the ratio of the two fields, on a scale
-that saturates at ten: a factor of 20 on the axis at 1 km, 3.3 at 2 km and 1.6
-at the 12 km edge of the map.
+still added to it, as NSR-23 prescribes, and in class D carries the plume to
+120 m. The third panel shows the ratio of the two fields, on a scale that
+saturates at ten: a factor of 7 on the axis at 1 km, 2.1 at 2 km and 1.5 at the
+12 km edge of the map.
 
 ![Release height](figures/release_height.gif)
 
 **Release height.** Raising the stack moves the ground-level maximum downwind
-and lowers it. In class D the maximum is 2.77 × 10⁻⁶ s m⁻³ at 1.7 km from a
-30 m stack, 1.58 × 10⁻⁶ at 2.1 km from the 50.3 m reference stack, and
-4.31 × 10⁻⁷ at 4.2 km from 120 m: a stack four times as high gives a peak six
-times lower.
+and lowers it. In class D the maximum is 1.33 × 10⁻⁶ s m⁻³ at 2.6 km from a
+30 m stack, 9.92 × 10⁻⁷ at 2.8 km from the 50.3 m reference stack, and
+3.71 × 10⁻⁷ at 4.6 km from 120 m: a stack four times as high gives a peak 3.6
+times lower. Plume rise narrows the difference, since the effective heights
+are 121, 130 and 184 m.
 
 ![Depletion](figures/depletion.gif)
 
 **Depletion.** The same plume with and without radioactive decay, dry deposition
-and an hour of washout. For HTO the loss is modest over this range (the decay
-constant is 1.78 × 10⁻⁹ s⁻¹ and the deposition velocity 4 mm/s), but it
-accumulates with distance, and the factors compose by multiplication: 4 % at
-1 km and 8 % at 20 km, of which the hour of rain is 3.5 %. The difference is
+and washout by rain throughout the release. For HTO the loss is modest over
+this range (the decay constant is 1.78 × 10⁻⁹ s⁻¹ and the deposition velocity
+4 mm/s), but it accumulates with distance, since rain and deposition act for
+the travel time, and the factors compose by multiplication: 0.2 % at 1 km and
+7 % at 20 km, of which the rain is 3.3 %. The difference is
 visible only in the ratio panel, since two fields a few per cent apart cannot
 be told apart on a colour scale spanning three decades.
 
@@ -214,9 +216,9 @@ with its published source, coefficient by coefficient: Briggs' σ_y and σ_z,
 Hosker's σ_z with its 24 shape and 24 roughness coefficients, the
 Eimutis–Konicek fit against the XOQDOQ and PAVAN listings, Briggs' plume rise,
 the washout and resuspension constants, and the long-term sector constant of
-Regulatory Guide 1.111 and of SRS-19. This comparison found two wrong coefficients in the roughness table of
-the Romanian normative, which the 2021 code had copied; the package uses
-Hosker's values.
+Regulatory Guide 1.111 and of SRS-19. This comparison found two wrong
+coefficients in the roughness table of the Romanian normative, which the 2021
+code had copied; the package uses Hosker's values.
 
 Four published calculations are then run through the package end to end:
 
@@ -280,14 +282,14 @@ What each component follows:
 | Component | Follows |
 |---|---|
 | Sector geometry and wind rose | sectors centred on the cardinal directions; the direction convention is a required argument |
-| Dispersion parameters | Briggs (1973) open country and urban; Hosker (1974) with the roughness correction, the normative's default; Eimutis and Konicek (1972); each with the range it was fitted over |
-| Plume rise | Briggs, momentum and buoyancy; the stable final rise on the mean wind over the rise; the XOQDOQ and NSR-23 constants selectable |
-| Buildings | the displacement, wake and cavity zones of SRS-19 §3.3; wake broadening with the SRS-19 and AVV coefficient; the two cavity forms of §3.6 |
+| Dispersion parameters | Briggs (1973) open country and urban; Hosker (1974) with the roughness correction, the normative's default; Eimutis and Konicek (1972), limited to 1000 m as in XOQDOQ; each with the range it was fitted over |
+| Plume rise | Briggs, momentum and buoyancy; the stable limits in the stable classes E and F, with the final rise on the mean wind over the rise; the wind held at 1 m/s from below; the XOQDOQ and NSR-23 constants selectable |
+| Buildings | the tallest building near the stack; the displacement, wake and cavity zones of SRS-19 §3.3; wake broadening with the SRS-19 and AVV coefficient, limited to √3 as in XOQDOQ; the two cavity forms of §3.6 |
 | Mixing layer | the image sum of HPA-RPD-058 §3.2.2.1 to double precision, its Table 3.5(a) depths; a plume above the lid held at it (NRPB-R157) or leaving the layer (EPA ISC3) |
 | Dilution | instantaneous, sector-averaged with the constant of RG 1.111 or SRS-19, and long term over the rose |
-| Depletion and deposition | decay, dry deposition, NSR-23 Table 7 washout with Slinn's J^0.75 law and Ogram's snow scavenging of HTO; dry and wet deposition; Safety Series 57 or Maxwell–Anspaugh resuspension |
+| Depletion and deposition | decay, dry deposition, NSR-23 Table 7 washout with Slinn's J^0.75 law and Ogram's snow scavenging of HTO, acting for the travel time on the share of the release in the precipitation; dry and wet deposition, the wet deposit bounded by that share; Safety Series 57 or Maxwell–Anspaugh resuspension |
 | `Site` and `PrescribedPlume` | the per-run precomputation, and a plume whose height, wind or σ a published benchmark states |
-| Quality | Aqua, ExplicitImports and, on the current Julia, JET in the suite; 6932 assertions; CI on the LTS and the current Julia, rerun monthly without a commit; the manual built with its doctests |
+| Quality | Aqua, ExplicitImports and, on the current Julia, JET in the suite; 6960 assertions; CI on the LTS and the current Julia, rerun monthly without a commit; the manual built with its doctests |
 
 Outside the scope of the package:
 
@@ -310,36 +312,21 @@ reference configuration; the frequencies themselves are illustrative.
 
 ## Known limitations
 
-A review of the physics against the literature in November 2026 found the
-points below. They are not corrected in the 1.0 series, because each correction
-changes results; the [limitations page](docs/src/limitations.md) of the manual
-gives the numbers.
+A review of the physics against the literature in November 2026 led to the
+corrections of 1.1.0, listed in the [changelog](CHANGELOG.md). The points below
+remain; the [limitations page](docs/src/limitations.md) of the manual gives
+the numbers.
 
-- One stability parameter, formed from the single `lapse_rate`, serves all six
-  Pasquill classes, so with a positive lapse rate the stable limit of the plume
-  rise also acts in the unstable and neutral classes. EPA ISC3 and XOQDOQ apply
-  it in the stable classes only. In the reference case this keeps the effective
-  height of classes A to D at 106–112 m where the neutral limit gives
-  130–152 m, and raises the long-term χ/Q by a factor of 2.1 at 1 km, 1.6 at
-  2 km and 1.13 at 5 km. The reference results are conservative in the near
-  field.
-- The wet depletion factor is `exp(−Λ t_w)` at every distance, although the
-  plume at distance `x` has been in the rain for at most `x/u`; near the source
-  the air concentration is underestimated. Wet deposition is formed from the
-  whole released activity whatever the duration of the rain, and its integral
-  over the ground can exceed the release.
-- Depletion takes the low deposition velocity and washout coefficient and
-  deposition the high ones, so the ground receives more than the plume loses.
+- Dry deposition takes the high deposition velocity while the depletion of the
+  plume takes the low one, so the ground receives up to twice what the plume
+  loses. Wet deposition depletes its own column and is bounded.
 - A deposition velocity above zero for HTO lowers the air concentration; with
   re-emission, zero is the conservative choice (Lee et al. 2012,
   doi:10.2172/1038895).
-- The building rules of the normative: the equivalent building is a mean
-  weighted by inverse distance, so a small structure near the stack can cancel
-  the wake of a large one; a release entrained into the cavity still receives
-  the full plume rise; the entrainment test is discontinuous at its 5 m/s
-  threshold.
-- The Eimutis–Konicek fit is evaluated without the 1000 m limit XOQDOQ and
-  PAVAN apply to it.
+- The building rules of the normative: a release entrained into the cavity is
+  released at ground level and still receives the full plume rise, and the
+  entrainment test is discontinuous at its 5 m/s threshold.
+- The stable classes E and F share one temperature gradient.
 
 ## Full tree
 
@@ -421,10 +408,12 @@ The [`original`](../../tree/original) branch holds the code as submitted for
 the BSc thesis at the Faculty of Physics, University of Bucharest, in June 2021,
 its files under English names since 2026 with the submitted names mapped in its
 README, together with the thesis itself (`BSc_thesis_2021.pdf`, in Romanian).
-`main` shares no history with it. On the CANDU case three of the corrections
+`main` shares no history with it. On the CANDU case four of the corrections
 change the result: the wind-direction convention by a half turn and a factor of
-1.51, the mixing layer by up to +22 % at 20 km, and the stable rise on the mean
-wind by 5 % at 1 km. The details are in
+1.51; the stable limits of the plume rise, which the 2021 code applied in every
+class, confined to the stable classes, which halves the near field (a factor of
+0.48 at 1 km); the mixing layer by up to +23 % at 20 km; and the stable rise on
+the mean wind by 1 % at 2 km. The details are in
 [docs/src/thesis.md](docs/src/thesis.md), and the changes of each release in
 [CHANGELOG.md](CHANGELOG.md).
 

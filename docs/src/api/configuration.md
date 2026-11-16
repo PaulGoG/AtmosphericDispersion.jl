@@ -66,7 +66,7 @@ many radii extrapolate.
 | Key | Value | Meaning |
 |---|---|---|
 | `scheme` | `tabulated` | HPA-RPD-058 [SmithSimmonds2009](@cite) Table 3.5(a) by class: A 1300, B 900, C 850, D 800, E 400, F 100 m |
-| | `uniform` | one depth for every class, given as `uniform_depth` in metres; HPA-RPD-058 §3.2.2.2.3 recommends 800 |
+| | `uniform` | one depth for every class, given as `uniform_depth` in metres; HPA-RPD-058 §3.2.2.2.4 reports 800 as the recommendation for long-range dispersion |
 | | `custom` | six `depths` in metres, class A to F; `inf` leaves a class unbounded |
 | | `unbounded` | no lid |
 | `above_lid` | `rise_inhibited` | a plume above the lid is held at it, NRPB-R157 [Jones1983](@cite) §B2.3 |
@@ -95,6 +95,25 @@ default, or `other` for every other radionuclide. See [`WashoutSpecies`](@ref).
 Eq. (6) and AVV [AVV2012](@cite) Eqs. (4.31)/(4.32); NSR-23 gives 0.5 to 2.0,
 and the 2021 code used 1.5 ([`NSR23_WAKE_COEFFICIENT`](@ref)). Zero disables
 the broadening.
+
+`broadening_limit` is the largest factor by which the wake may widen a
+dispersion parameter, `√3` by default after NRC XOQDOQ and NSR-23
+([`MAXIMUM_WAKE_BROADENING`](@ref)); `inf` removes the limit, as in SRS-19.
+Of the `[[buildings.building]]` entries, only the tallest within three of its
+own heights of the stack sets the wake; see [`BuildingEnvelope`](@ref).
+
+## The `[atmosphere]` and `[precipitation]` tables
+
+`lapse_rate` is the temperature gradient `dT/dz` of the stable classes E and F,
+from which the stability parameter of their plume rise is formed. Classes A
+to D take no stable limit whatever its value; see
+[`stability_parameter`](@ref).
+
+`washout_duration` is how long it rains or snows during the release. That
+share of the release, `min(washout_duration/release.duration, 1)`, is
+scavenged for its travel time to each receptor, and the rest is not; zero, the
+reference value, turns washout and wet deposition off. See
+[`WashoutEvent`](@ref).
 
 ## The `[wind_rose]` table
 
