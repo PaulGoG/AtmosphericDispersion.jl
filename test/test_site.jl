@@ -12,7 +12,7 @@
     end
 
     @testset "downwash" begin
-        # A vigorous efflux in a light wind clears the stack untouched.
+        # A vigorous efflux in a light wind is not drawn down.
         @test downwash_height(stack, air) == stack.height
         # A weak efflux in a strong wind is drawn down.
         calm = reference_stack(; exit_velocity = 1.0)
@@ -102,7 +102,7 @@ end
             end
         end
         # One field at a time: the others are untouched. There are no buildings
-        # here, so the dispersion parameters do not see a prescribed height.
+        # here, so a prescribed height does not affect the dispersion parameters.
         only_wind = PrescribedPlume(site; wind = u)
         only_height = PrescribedPlume(site; height = H)
         for class in PASQUILL_CLASSES, x in distances

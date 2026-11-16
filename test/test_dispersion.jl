@@ -84,7 +84,7 @@
         # Table_2.csv, Tabel_2.csv as submitted: z_0, c_1, d_1, c_2, d_2. The first two
         # c_1 read 1.58 and 2.08 here, as the 2021 tables carried; Hosker publishes 1.56
         # and 2.02. This reference implementation keeps the 2021 values, so those two rows
-        # no longer match the package; the assertion below pins the size of the correction.
+        # differ from the package; the assertion below bounds the size of the correction.
         T2 = [
             (0.01, 1.58, 0.048, 6.25e-4, 0.45),
             (0.04, 2.08, 0.0269, 7.76e-4, 0.37),

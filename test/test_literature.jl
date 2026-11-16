@@ -6,12 +6,12 @@
     # The vertical dispersion scheme is Hosker's fit to F.B. Smith (1972)
     # and Briggs (1973), published as IAEA-SM-181/19 (1974) and printed in
     # Smith and Simmonds (eds.), HPA-RPD-058, Health Protection Agency
-    # (2009), Table 3.3, and in Clarke, NRPB-R91 (1979), Table 3. Both
-    # printings agree digit for digit, and the ORNL codes that implement it
-    # (ORNL-5913 Table 6, ORNL/TM-6874 p. 25) carry the same numbers.
+    # (2009), Table 3.3, and in Clarke, NRPB-R91 (1979), Table 3. The two
+    # printings are identical, and the ORNL codes that implement it
+    # (ORNL-5913 Table 6, ORNL/TM-6874 p. 25) contain the same numbers.
     #
-    # Transcribing a table is exactly where a package of tabulated constants
-    # fails, so the whole table is asserted rather than sampled.
+    # Transcription is the likeliest point of failure in a package of tabulated
+    # constants, so the whole table is asserted rather than sampled.
     @testset "vertical dispersion coefficients are Hosker's" begin
         # σ_z = a x^b / (1 + c x^d), x and σ_z in metres.
         shape = (
@@ -217,8 +217,8 @@
         end
 
         # The profile peaks at plume height and is symmetric about it only
-        # in the first term; the ground reflection lifts z = 0 above the
-        # pure Gaussian and makes the peak sit slightly below H.
+        # in the first term; the ground reflection raises the value at z = 0
+        # above the pure Gaussian and shifts the peak slightly below H.
         χs = [Q * dilution_instantaneous(0.0, -1000.0, Float64(z), site, PASQUILL_D, 0.0)
               for (z, _) in published]
         @test argmax(χs) == 6                       # z = 150 m, the release height
@@ -279,9 +279,9 @@
         )
         release = Site(; source = stack, atmosphere = air)
 
-        # The one cell that is wrong in the source: category F at 30 m runs
-        # 0.13 at 50 km and 0.19 at 100 km. A depletion factor cannot rise
-        # with distance (material already deposited does not return), so
+        # In the source, category F at 30 m reads 0.13 at 50 km and 0.19 at
+        # 100 km, the only wrong cell of the table. A depletion factor cannot
+        # rise with distance (material already deposited does not return), so
         # the row is non-monotonic and cannot be right. This package gives
         # 0.0188 there, which is both monotone and a decimal point away from
         # the printed 0.19.
@@ -349,7 +349,7 @@
         @test ogram_snow_washout(2.0) ≈ 6.1e-4 rtol = 0.02
         @test ogram_snow_washout(1.0) ≈ 1.2e-4 + 3.0e-4
 
-        # Ogram's measurement lands on NSR-23's own other-nuclides snow
+        # Ogram's measurement agrees with NSR-23's own other-nuclides snow
         # lower limit, a row it does not cite Ogram for. That agreement is
         # the evidence that the tritium row's snow column is the anomaly.
         for r in PRECIPITATION_RATES
@@ -394,7 +394,7 @@
     # The combined momentum-and-buoyancy law must reduce to the pure
     # buoyancy law when the momentum flux vanishes. Briggs writes its
     # buoyancy term as 3F x²/(2β²u³) with β = 0.6, a denominator of
-    # 2β² = 0.72, and that is now the default; the 2021 code had 0.5, which
+    # 2β² = 0.72, and that is the default; the 2021 code had 0.5, which
     # overshoots the two-thirds law by 13.6 % and is kept as NSR23_RISE.
     @testset "combined rise reduces to the two-thirds law" begin
         # With c = 2β² = 0.72 the combined law implies a two-thirds
@@ -608,8 +608,8 @@ end
     # a x^0.9031 and σ_z = a x^b + c on three ranges of distance. The paper is
     # not open; the coefficients are those of the DATA statements of subroutine
     # POLYN in NRC XOQDOQ (NUREG/CR-2919, listing p. A.42) and PAVAN
-    # (NUREG/CR-2858), two independent listings that agree digit for digit,
-    # and are asserted entry by entry.
+    # (NUREG/CR-2858), two independent listings that are identical, and every
+    # coefficient is asserted.
     @testset "σ_y and σ_z under DISPERSION_EIMUTIS_KONICEK are the NRC coefficients" begin
         AY = (0.3658, 0.2751, 0.2089, 0.1471, 0.1046, 0.0722)
         AZ = (

@@ -77,7 +77,7 @@
 
     # The ground-level centreline maximum falls at Σ_z = H/√2. That is exact
     # only under the assumptions of its derivation (H fixed and Σ_y ∝ Σ_z),
-    # so it is asserted there. In the real field it lands within 6 %; the
+    # so it is asserted there. In the real field it is within 6 %; the
     # residual is Σ_y/Σ_z drifting by about a quarter across the peak region.
     @testset "ground-level maximum" begin
         for H in (50.0, 100.0, 200.0), u in (2.0, 5.0)

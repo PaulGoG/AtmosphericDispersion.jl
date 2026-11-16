@@ -137,8 +137,8 @@
         # sector axis is the extended factor times the frequency of
         # transport towards that sector, identically for any vertical
         # profile. It fails if the two regimes treat the mixing lid
-        # differently, which they once did: the lid reached the extended
-        # regime and the depletion integral but not the long-term sum.
+        # differently, for instance if the lid reaches the extended regime
+        # and the depletion integral but not the long-term sum.
         g = SectorGrid(16)
         F_k = fill(1 / 16, 16)
         lid_off = UNBOUNDED_SITE
@@ -166,7 +166,7 @@
     end
 
     # Which row of the washout table applies is a property of the species, so
-    # rain with nothing named for it to act on is refused rather than ignored.
+    # rain with nothing named for it to act on is rejected rather than ignored.
     @testset "washout needs a nuclide" begin
         rain = WashoutEvent(; duration = 3600.0)
         rose = WindRose(

@@ -56,9 +56,8 @@
         end
     end
 
-    # What the lid has to satisfy whatever the representation: the released
-    # activity stays between the ground and the lid, a source at the lid
-    # included.
+    # In either representation the released activity must stay between the
+    # ground and the lid, a source at the lid included.
     @testset "activity under the lid is conserved" begin
         for A in (800.0, 100.0), ratio in ratios, H in (0.0, A / 10, A / 2, A)
             Σz = ratio * A

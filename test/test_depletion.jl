@@ -105,8 +105,8 @@
     end
 
     # The composition is multiplicative, not additive. With nothing removed
-    # at all every factor is one and so is the product. The 2021 code added
-    # the wet and dry factors and returned two in this limit.
+    # every factor is one and so is the product. The 2021 code added the wet
+    # and dry factors and returned two in this limit.
     @testset "the no-depletion limit is one" begin
         no_rain = WashoutEvent(; duration = 0.0)
         for class in PASQUILL_CLASSES, x in (10.0, 1e3, 1e5)

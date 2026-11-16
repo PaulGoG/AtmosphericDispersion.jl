@@ -343,7 +343,7 @@
                   f(TRITIATED_WATER, snow(WASHOUT_NORMATIVE)) ≈ 4.2e-4 / 4e-7 rtol = 1e-12
             @test f(TRITIATED_WATER, wash_hto) == f(TRITIATED_WATER, wash)
         end
-        # The low coefficient is shared, so depletion does not see the model.
+        # The low coefficient is shared, so the model does not affect depletion.
         @test inst(TRITIATED_WATER) == dilution_instantaneous(
             0.0,
             -5000.0,

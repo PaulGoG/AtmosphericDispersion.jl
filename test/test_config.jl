@@ -325,7 +325,7 @@ end
     end
 
     # The reference grid reaches 20 km, twice the band of every Briggs-based
-    # scheme, and the file accepts that with "allow".
+    # scheme, and the file sets "allow" to accept that.
     @test_logs configuration_from(withkey(identity))
     @test_logs (:warn, r"validity range") configuration_from(
         withkey(t -> (t["model"]["extrapolation"] = "warn")),

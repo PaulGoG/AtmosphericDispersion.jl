@@ -8,7 +8,7 @@
         @test buoyancy_transition_distance(10.0) ≈ 14 * 10.0^(5 / 8)
         @test buoyancy_transition_distance(100.0) ≈ 34 * 100.0^(2 / 5)
         @test buoyancy_transition_distance(0.0) == 0
-        # Continuous enough across the breakpoint to be a sane correlation.
+        # Continuous enough across the breakpoint to be physically plausible.
         below = buoyancy_transition_distance(BUOYANCY_FLUX_BREAKPOINT - 1e-9)
         above = buoyancy_transition_distance(BUOYANCY_FLUX_BREAKPOINT)
         @test abs(below - above) / below < 0.1
@@ -56,8 +56,8 @@
 
     # As for the dispersion parameters, reproduce the 2021 correlations
     # literally and require exact agreement wherever they are applicable,
-    # i.e. in stably stratified air, which is the only case the original
-    # could evaluate at all.
+    # i.e. in stably stratified air, the only case the original could
+    # evaluate.
     @testset "fidelity to the 2021 implementation" begin
         original_X_0 = F -> F < 55 ? 14 * F^(5 / 8) : 34 * F^(2 / 5)
         original_hb_final = function (F, u, S)
@@ -145,7 +145,7 @@ end
     for u in (2.0, 5.0)
         default = final_buoyant_rise(F, u, S)
         @test final_buoyant_rise(F, u, S; stable_wind = u) == default
-        # A faster mean wind lowers the stable limit and touches nothing else.
+        # A faster mean wind lowers the stable limit and no other.
         faster = final_buoyant_rise(F, u, S; stable_wind = 2u)
         @test faster ≤ default
         x₀ = buoyancy_transition_distance(F)

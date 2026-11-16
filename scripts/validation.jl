@@ -1,7 +1,7 @@
 #!/usr/bin/env julia
 #
-# Validation figures: every parameterisation this package implements, drawn
-# against the published form it is supposed to be.
+# Validation figures: the parameterisations this package implements, drawn
+# against the published forms they are meant to reproduce.
 #
 #     julia scripts/validation.jl [output_dir]
 #
@@ -514,7 +514,7 @@ function figure_plume_rise()
             linestyle = :dash,
         )
         # At the right margin, level with the final rise: the two-thirds law of
-        # either curve sweeps through every free spot beside the curves themselves.
+        # either curve passes through the space left beside the curves themselves.
         text!(
             ax2,
             x[end],

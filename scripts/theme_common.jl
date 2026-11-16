@@ -107,9 +107,9 @@ spans use powers of ten throughout. Pass `style = :decimal` or `style = :power`
 to override the choice.
 
 Every logarithmic axis in these scripts sets its ticks through this function.
-Left to itself Makie labels the unit decade as `10^0` on some axes and as `1` on
-others, and on ranges narrower than a decade it falls back to fractional
-exponents such as `10^{-0.4}`.
+With its automatic ticks Makie labels the unit decade as `10^0` on some axes
+and as `1` on others, and on ranges narrower than a decade it falls back to
+fractional exponents such as `10^{-0.4}`.
 
 In the power style the unit decade is still written `1` and the first `10`, as
 [`sci`](@ref) writes them: `10^{-2}, 1, 10^{2}`.

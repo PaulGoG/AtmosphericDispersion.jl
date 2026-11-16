@@ -68,7 +68,7 @@
             # A bearing exactly on a boundary belongs to one of the two
             # sectors meeting there. The tie rule takes the higher, but a
             # boundary bearing is generally not representable, so round-off
-            # may place it either side. Both answers are defensible.
+            # may place it on either side, and both answers are accepted.
             @test sector_of(g, mod2pi(c + half)) in (k, mod(k, 16) + 1)
         end
     end
@@ -84,7 +84,7 @@
             @test sector_of(g, β - 2π) == k
             @test sector_of(g, β + 6π) == k
         end
-        # Any bearing whatsoever lands in a valid sector.
+        # Any bearing maps to a valid sector.
         for β in range(-4π, 4π; length = 401)
             @test 1 ≤ sector_of(g, β) ≤ 16
         end

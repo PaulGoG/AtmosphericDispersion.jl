@@ -56,9 +56,8 @@ function compass!(ax; color = :white)
             fontsize = ANNOTATION_SIZE,
             font = :bold,
             color = color,
-            # The marks sit over whatever the field happens to be doing at the
-            # edge, which for a plume running due west is the bright end of the
-            # colour scale.
+            # The marks overlie the field at the edge, which for a plume running
+            # due west is at the bright end of the colour scale.
             strokecolor = :black,
             strokewidth = 0.6,
         )
@@ -150,7 +149,7 @@ function figure_field(config)
     text!(ax, 0.4, 0.4; text = "Stack", fontsize = ANNOTATION_SIZE, color = :white)
     compass!(ax)
     # Explicit ticks: the range spans about 1.2 decades, so automatic log ticks
-    # land on fractional exponents like 10^6.75.
+    # are placed at fractional exponents such as 10^6.75.
     Colorbar(
         fig[1, 2],
         hm,
@@ -209,8 +208,8 @@ function figure_regimes(config)
     # Clipped at the bottom only. Below about 300 m the elevated plume has not
     # reached the ground and the factor falls through thirty decades, which is
     # physical and not worth thirty decades of axis. The top must contain the
-    # peaks: at 3e-7 the instantaneous and extended curves left the frame and
-    # re-entered it, which reads as a break in the data.
+    # peaks: with an upper limit of 3e-7 the instantaneous and extended curves
+    # would leave the frame and re-enter it, which reads as a break in the data.
     ylims!(ax1, 1e-12, 4e-6)
 
     ax2 = Axis(
@@ -270,7 +269,7 @@ end
 
 The instantaneous ground-level plume, as the wind direction sweeps the compass.
 
-The figure shows the direction convention at work. The bearing is the direction
+The figure illustrates the direction convention: the bearing is the direction
 the wind blows from, as in a `.met` file, so the plume always lies on the
 opposite side of the stack: at a bearing of 0 (a northerly) the plume runs
 south. The long-term field is the average of these over a year, weighted by how
@@ -319,8 +318,8 @@ function figure_animation(config; half_width = 20_000.0, n = 141, frames = 72)
         markersize = MARKERSIZE.emphasis,
     )
     compass!(ax)
-    # Under the axes rather than over the field: the compass marks now occupy
-    # the edges, and a white overlay at the top left ran into the N.
+    # Under the axes rather than over the field: the compass marks occupy the
+    # edges, and a white overlay at the top left would collide with the N.
     Label(fig[2, 1], label, fontsize = ANNOTATION_SIZE, tellwidth = false)
     Colorbar(fig[1, 2], hm, label = CHI_Q_LABEL, ticks = logticks(-9, -6))
     colsize!(fig.layout, 1, Aspect(1, 1.0))
@@ -371,7 +370,7 @@ function panel_sweep(
     grid_layout = fig[1, 1] = GridLayout()
     rows = cld(length(panels), columns)
     # Ticks stop short of the frame. Labelling the extremes puts the last label
-    # of one panel against the first of the next; that collision read as "2020".
+    # of one panel against the first of the next, and the pair reads as "2020".
     ticks = ([-10.0, 0.0, 10.0], ["−10", "0", "10"])
     axes = Axis[]
     local hm
@@ -642,13 +641,13 @@ end
     figure_buildings(config)
 
 The same release with and without a building beside the stack, in the worst
-case: one tall enough to swallow the plume entirely.
+case: one tall enough to entrain the plume into its cavity.
 
-The wake criterion is a threshold. A stack clearing two and a half building
-heights escapes untouched; one leaving below the building top is entrained into
-the aerodynamic cavity and released at ground level. A 60 m building next to this
-50.3 m stack is on the far side of that threshold, so the effective release height
-goes from 50.3 m to zero and the comparison shows the whole effect.
+A stack taller than two and a half building heights is unaffected by the wake;
+a plume leaving below the building top is entrained into the aerodynamic cavity
+and released at ground level. This 50.3 m stack is lower than the 60 m building
+next to it, so the release height drops from 50.3 m to zero and the comparison
+shows the whole effect.
 """
 function figure_buildings(config)
     source, air = config.site.source, config.site.atmosphere

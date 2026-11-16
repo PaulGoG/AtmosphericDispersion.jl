@@ -113,7 +113,7 @@
     )
     # The table evaluates each band at its lower edge, the smaller area giving
     # the larger factor: there, 106 of the 110 cells round to the printed
-    # figure. The four that do not sit on a rounding boundary: at 100 m for
+    # figure. The four that do not lie on a rounding boundary: at 100 m for
     # 1201–1600 m² the value is 7.5 × 10⁻⁴, printed 8; and at 20 km the table
     # repeats Table I's 4 × 10⁻⁷ across every area band, where the wake term
     # is a 3 % effect and the value is 3.5 × 10⁻⁷ or below. Every cell lies
