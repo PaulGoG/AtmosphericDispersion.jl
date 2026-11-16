@@ -18,6 +18,16 @@
         calm = reference_stack(; exit_velocity = 1.0)
         windy = reference_atmosphere(; reference_speed = 15.0)
         @test downwash_height(calm, windy) < calm.height
+        # In calm air the test takes the 1 m/s floor: 2 (1.5 − 1/1) D lower.
+        still = reference_atmosphere(; reference_speed = 0.0)
+        @test downwash_height(calm, still) ≈ 50.3 - 2 * 0.5 * 2.33
+        # A short, wide stack with no efflux is drawn down to the ground and
+        # no further, and with no building it is released there.
+        for h in (3.0, 2.0)
+            stub = reference_stack(; height = h, diameter = 1.0, exit_velocity = 0.0)
+            @test downwash_height(stub, still) == 0
+            @test wake_height(stub, still, BuildingEnvelope()) == 0
+        end
     end
 
     @testset "wake height" begin

@@ -31,14 +31,14 @@ above_lid = "rise_inhibited"  # plume above the lid; one of: rise_inhibited | fu
 # depths = [1300.0, 900.0, 850.0, 800.0, 400.0, 100.0]  # per class A to F, m; each > 0, inf for none; only with scheme = "custom"
 
 [buildings]
-wake_coefficient = 1.0    # wake broadening coefficient C in sqrt(sigma^2 + C A/pi); >= 0, 0 disables
-broadening_limit = 1.7320508075688772  # largest widening factor of a dispersion parameter, sqrt(3); >= 1, inf for none
+wake_coefficient = 1.0    # wake broadening coefficient C in sqrt(sigma^2 + C A/pi); >= 0, finite, 0 disables
+broadening_limit = 1.7320508075688772  # largest widening factor of a dispersion parameter at ground level, sqrt(3); >= 1, inf for none
 # Repeat [[buildings.building]] for each structure; omit the block for none.
 # [[buildings.building]]
-# east = 30.0             # displacement from the stack, m
-# north = 0.0             # displacement from the stack, m
-# height = 20.0           # building height, m; >= 0
-# frontal_area = 400.0    # cross-section presented to the wind, m^2; >= 0
+# east = 30.0             # displacement from the stack to the nearest point of the building, m; finite
+# north = 0.0             # displacement from the stack to the nearest point of the building, m; finite
+# height = 20.0           # building height, m; >= 0, finite
+# frontal_area = 400.0    # cross-section presented to the wind, m^2; >= 0, finite
 
 [nuclide]
 name = "HTO"                        # label of the released species
@@ -61,14 +61,14 @@ frequencies = [
 stability = [0.065331, 0.065331, 0.065331, 0.488005, 0.158002, 0.158002]
 
 [release]
-activity = 6.8e14         # released activity, Bq; >= 0
-duration = 31557600.0     # release duration, s; > 0
+activity = 6.8e14         # released activity, Bq; >= 0, finite
+duration = 31557600.0     # release duration, s; > 0, finite
 
 [precipitation]
 type = "rain"             # one of: rain | snow
 rate = 1.0                # intensity, mm/h; one of: 0.5 | 1.0 | 3.0 | 5.0
-washout_duration = 0.0    # duration of the precipitation during the release, s; >= 0
+washout_duration = 0.0    # duration of the precipitation, s; >= 0, finite
 
 [grid]
-extent = 20000.0          # half-width of the receptor grid, m; > 0
+extent = 20000.0          # half-width of the receptor grid, m; > 0, finite
 spacing = 250.0           # receptor spacing, m; > 0 and < extent

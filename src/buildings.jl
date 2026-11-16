@@ -3,9 +3,14 @@
 
 A structure near the stack, positioned relative to it in the geographic frame.
 
-- `east`, `north` — displacement from the stack, m
+- `east`, `north` — displacement from the stack to the point of the building
+  nearest it, m; zero for a stack on the building
 - `height` — building height above ground, m
 - `frontal_area` — cross-sectional area presented to the wind, m²
+
+The vicinity test of [`BuildingEnvelope`](@ref) takes the distance to that
+point, as CNCAN NSR-23 [CNCAN2004](@cite) §5 takes the distance from the
+source to the building.
 """
 struct Building
     east::Float64
@@ -14,10 +19,13 @@ struct Building
     frontal_area::Float64
 
     function Building(; east::Real, north::Real, height::Real, frontal_area::Real)
-        height ≥ 0 ||
-            throw(ArgumentError("building height cannot be negative, got $height m"))
-        frontal_area ≥ 0 ||
-            throw(ArgumentError("frontal area cannot be negative, got $frontal_area m²"))
+        isfinite(east) && isfinite(north) ||
+            throw(ArgumentError("building position must be finite, got ($east, $north) m"))
+        0 ≤ height < Inf ||
+            throw(ArgumentError("building height must be finite and non-negative, got $height m"))
+        0 ≤ frontal_area < Inf || throw(
+            ArgumentError("frontal area must be finite and non-negative, got $frontal_area m²"),
+        )
         return new(east, north, height, frontal_area)
     end
 end
@@ -70,16 +78,23 @@ const NSR23_WAKE_COEFFICIENT = 1.5
 """
     MAXIMUM_WAKE_BROADENING
 
-Largest factor by which the building wake may widen a dispersion parameter, √3.
-NRC XOQDOQ [Sagendorf1982](@cite), after Regulatory Guide 1.111, bounds the
-"maximum allowable building-wake dilution" by `3σ_yσ_z` in its point form,
-Eq. (8), and by `√3 σ_z` in its sector form, Eq. (11); CNCAN NSR-23
-[CNCAN2004](@cite) §5 recommends that the reduction of concentration by the
-wake "is not higher than 3". Limiting each parameter to √3 reproduces the
-sector form exactly and keeps the reduction of a centreline concentration
-within 3. Where the two parameters widen unequally, as they do when
-`σ_y ≫ σ_z`, it is stricter than the product bound of Eq. (8), which errs
+Largest factor by which the building wake may widen a dispersion parameter of a
+release at ground level, √3. NRC XOQDOQ [Sagendorf1982](@cite), after
+Regulatory Guide 1.111, bounds the "maximum allowable building-wake dilution"
+of a ground-level release by `3σ_yσ_z` in its point form, Eq. (8), and by
+`√3 σ_z` in its sector form, Eq. (11); CNCAN NSR-23 [CNCAN2004](@cite) §5
+recommends, "in case of a discharge at the ground level", that the reduction of
+concentration by the wake "is not higher than 3". Limiting each parameter to √3
+reproduces the sector form exactly and keeps the reduction of a centreline
+concentration within 3. Where the two parameters widen unequally, as they do
+when `σ_y ≫ σ_z`, it is stricter than the product bound of Eq. (8), which errs
 towards the higher concentration.
+
+Neither source limits the wake of an elevated plume, and there the limit would
+not be conservative: a wider `Σ_z` brings the plume to the ground sooner, so
+that limiting it lowers the ground-level concentration where `Σ_z` is still
+below the effective height. [`wake_broadened`](@ref) applies it at effective
+height zero only.
 """
 const MAXIMUM_WAKE_BROADENING = sqrt(3.0)
 
@@ -90,17 +105,18 @@ const MAXIMUM_WAKE_BROADENING = sqrt(3.0)
 The building that governs the wake of a stack, reduced once to a height and a
 frontal area, and the rules of the wake correction: the coefficient `C` of
 [`wake_broadened`](@ref) and the largest factor `broadening_limit` by which it
-may widen a dispersion parameter (`Inf` for no limit, as in IAEA SRS-19).
+may widen a dispersion parameter of a ground-level release (`Inf` for no limit,
+as in IAEA SRS-19).
 
 Buildings within [`WAKE_INFLUENCE_RADII`](@ref) of their own height from the
 stack are in its vicinity; the rest are ignored. Of those, the tallest governs,
-and of equally tall ones the one with the larger frontal area. IAEA SRS-19
-[IAEA2001](@cite) §3.3 takes "the building that most influences the resulting
-plume dispersion", noting that a much larger building nearby exerts more
-influence than the one the release comes from; CNCAN NSR-23 [CNCAN2004](@cite)
-§5 takes the nearest building in the vicinity. The 2021 code averaged the
-heights and areas with weights inversely proportional to distance, so that a
-small structure near the stack could cancel the wake of a large one.
+and of equally tall ones the nearest. IAEA SRS-19 [IAEA2001](@cite) §3.3 takes
+"the building that most influences the resulting plume dispersion", noting that
+a much larger building nearby exerts more influence than the one the release
+comes from; CNCAN NSR-23 [CNCAN2004](@cite) §5 takes the nearest building in
+the vicinity. The 2021 code averaged the heights and areas with weights
+inversely proportional to distance, so that a small structure near the stack
+could cancel the wake of a large one.
 
 The reduction is performed at construction. The 2021 code recomputed it inside
 the dispersion-parameter correction, which is called once per grid point per
@@ -127,14 +143,12 @@ struct BuildingEnvelope
         broadening_limit ≥ 1 || throw(
             ArgumentError("the broadening limit cannot be below one, got $broadening_limit"),
         )
-        h, a = 0.0, 0.0
+        h, a, nearest = 0.0, 0.0, Inf
         for b in buildings
             d = distance(b)
-            d > 0 || throw(
-                ArgumentError("a building cannot sit at the foot of the stack itself"),
-            )
-            d ≤ WAKE_INFLUENCE_RADII * b.height || continue
-            (b.height, b.frontal_area) > (h, a) && ((h, a) = (b.height, b.frontal_area))
+            b.height > 0 && d ≤ WAKE_INFLUENCE_RADII * b.height || continue
+            (b.height, -d) > (h, -nearest) &&
+                ((h, a, nearest) = (b.height, b.frontal_area, d))
         end
         return new(h, a, float(wake_coefficient), float(broadening_limit))
     end
@@ -160,23 +174,28 @@ equivalent_area(envelope::BuildingEnvelope) = envelope.frontal_area
 
 Dispersion parameter in metres, broadened by the building wake.
 
-A plume released well above the buildings (higher than
-`2.5 × equivalent_height`) is unaffected. One released below their tops is
-fully mixed into the wake and takes the broadened value
-`min(√(σ² + C A / π), L σ)`, with `L` the `broadening_limit` of the envelope.
-Between the two the correction is interpolated linearly in release height, as
-in CNCAN NSR-23 [CNCAN2004](@cite) Eq. (10).
+`σ` is the parameter in metres and `H` the effective height of the plume in
+metres. A plume well above the buildings (higher than
+`2.5 × equivalent_height`) is unaffected. One below their tops is fully mixed
+into the wake and takes the broadened value `√(σ² + C A / π)` of CNCAN NSR-23
+[CNCAN2004](@cite) Eq. (9). Between the two the correction is interpolated
+linearly in effective height, as in NSR-23 Eq. (10).
+
+At effective height zero the broadened value is limited to `L σ`, with `L` the
+`broadening_limit` of the envelope; see [`MAXIMUM_WAKE_BROADENING`](@ref) for
+why the limit is not applied to an elevated plume.
 
 With an empty envelope this is the identity, since the height and area are
 then zero.
 """
 function wake_broadened(σ::Real, H::Real, envelope::BuildingEnvelope)
+    σ ≥ 0 || throw(DomainError(σ, "dispersion parameter cannot be negative"))
+    H ≥ 0 || throw(DomainError(H, "effective height cannot be below ground"))
     h = equivalent_height(envelope)
-    H ≥ 2.5 * h && return float(σ)
-    broadened = min(
-        sqrt(σ^2 + envelope.wake_coefficient * equivalent_area(envelope) / π),
-        envelope.broadening_limit * σ,
-    )
+    H ≥ 2.5 * h && return σ + zero(h)
+    broadened = sqrt(σ^2 + envelope.wake_coefficient * equivalent_area(envelope) / π)
+    L = envelope.broadening_limit
+    iszero(H) && return isfinite(L) ? min(broadened, L * σ) : broadened
     H < h && return broadened
     return broadened - (H - h) / (1.5 * h) * (broadened - σ)
 end

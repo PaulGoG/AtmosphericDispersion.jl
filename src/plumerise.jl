@@ -162,6 +162,7 @@ function final_buoyant_rise(
 )
     F ≥ 0 || throw(DomainError(F, "the rise correlations describe a buoyant plume"))
     u > 0 || throw(DomainError(u, "wind speed at the release height must be positive"))
+    isnan(S) && throw(DomainError(S, "stability parameter is not a number"))
     stable_wind > 0 ||
         throw(DomainError(stable_wind, "the wind speed of the stable rise must be positive"))
     x₀ = buoyancy_transition_distance(F)
@@ -213,7 +214,10 @@ function final_momentum_rise(
         rise::RiseCoefficients = BRIGGS_RISE,
 )
     Fₘ ≥ 0 || throw(DomainError(Fₘ, "momentum flux cannot be negative"))
+    w₀ ≥ 0 || throw(DomainError(w₀, "exit velocity cannot be negative"))
+    D ≥ 0 || throw(DomainError(D, "stack diameter cannot be negative"))
     u > 0 || throw(DomainError(u, "wind speed at the release height must be positive"))
+    isnan(S) && throw(DomainError(S, "stability parameter is not a number"))
     neutral = rise.neutral_momentum * w₀ * D / u
     S > 0 || return neutral
     calm = 4 * (Fₘ / S)^(1 / 4)
@@ -312,8 +316,8 @@ function _plume_rise(
     buoyant = final_buoyant_rise(F, u, S, rise; stable_wind)
     momentum = final_momentum_rise(Fₘ, w₀, D, u, S, rise)
     total = buoyant + momentum
-    balanced = iszero(total) ||
-               2 * abs(buoyant - momentum) / total ≤ MECHANISM_BALANCE_TOLERANCE
+    iszero(total) && return zero(total)   # no efflux: neither flux drives a rise
+    balanced = 2 * abs(buoyant - momentum) / total ≤ MECHANISM_BALANCE_TOLERANCE
     balanced && return combined_rise(x, F, Fₘ, w₀, u, S, D, rise; stable_wind)
     momentum > buoyant && return momentum_rise(x, Fₘ, w₀, D, u, S, rise)
     return buoyant_rise(x, F, u, S, rise; stable_wind)

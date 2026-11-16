@@ -135,16 +135,24 @@
 
         # The column normalisation is √(2π) Σ_y u, the result of integrating
         # the Gaussian plume over all z. The 2021 code wrote √2 π, larger by
-        # exactly √π, understating deposition by that factor. The column is
-        # depleted with the deposition's own coefficient, 2 × 10⁻⁴ s⁻¹ at
-        # 1 mm/h (NSR-23 Table 7), over the travel time.
+        # exactly √π, understating deposition by that factor. The high
+        # coefficient is 2 × 10⁻⁴ s⁻¹ at 1 mm/h (NSR-23 Table 7), and the
+        # column is not depleted on the way.
         Λ = 2e-4
         u = transport_wind_speed(site, PASQUILL_D)
         x, _ = plume_frame(0.0, -1000.0, 0.0)
         Σy = corrected_lateral_dispersion(x, site, PASQUILL_D)
-        expected = Λ * Q * decay_factor(x, u, TRITIATED_WATER) * exp(-Λ * x / u) /
-                   (sqrt(2π) * Σy * u)
+        expected = Λ * Q * decay_factor(x, u, TRITIATED_WATER) / (sqrt(2π) * Σy * u)
         @test ω ≈ expected
+        # Across the plume it sums to Λ f A D/u per metre of path, whatever Σ_y:
+        # each becquerel that passes in the precipitation deposits Λ/u per metre.
+        quarter = WashoutEvent(; duration = 900.0, release_duration = 3600.0, rate = 1.0)
+        across, _ = quadgk(
+            e -> wet_deposition(e, -5000.0, site, PASQUILL_D, 0.0, TRITIATED_WATER;
+                activity = Q, washout = quarter,),
+            -Inf, Inf; rtol = 1e-10,)
+        x5, _ = plume_frame(0.0, -5000.0, 0.0)
+        @test across ≈ Λ * 0.25 * Q * decay_factor(x5, u, TRITIATED_WATER) / u rtol = 1e-8
     end
 
     @testset "sector-averaged wet deposition" begin
@@ -167,7 +175,7 @@
             washout = rain(1.0),
         ) == 0
         # Spread over an arc that grows with distance, so falls as 1/r, and
-        # depleted over the extra travel time by the deposition's own Λ.
+        # decays over the extra travel time.
         u = transport_wind_speed(site, PASQUILL_D)
         @test wet_deposition_sector(
             2000.0,
@@ -176,7 +184,7 @@
             TRITIATED_WATER;
             activity = Q,
             washout = rain(1.0),
-        ) ≈ ω / 2 * exp(-(2e-4 + TRITIUM_DECAY_CONSTANT) * 1000 / u) rtol = 1e-12
+        ) ≈ ω / 2 * exp(-TRITIUM_DECAY_CONSTANT * 1000 / u) rtol = 1e-12
         # A wider sector spreads the same material further.
         @test wet_deposition_sector(
             1000.0,
@@ -187,10 +195,10 @@
             washout = rain(1.0),
             sectors = SectorGrid(8),
         ) ≈ ω / 2 rtol = 1e-6
-        # The deposit over the ground is the activity released in the
-        # precipitation less what is still airborne at the edge,
-        # f A (1 − exp(−Λ X/u)) for a species that does not decay; 6 × 10⁻⁴ s⁻¹
-        # at 5 mm/h. The 2021 form deposited 1.8 times the release within 20 km.
+        # The deposit over the ground is f A Λ X/u out to X for a species that
+        # does not decay, 6 × 10⁻⁴ s⁻¹ at 5 mm/h: it scales with the share in
+        # the precipitation and vanishes without it. The 2021 form deposited
+        # the whole release, 1.8 times over within 20 km, at any duration.
         stable = Nuclide(;
             name = "stable", decay_constant = 0.0,
             deposition_velocity = DepositionVelocity(0.0, 0.0),)
@@ -202,7 +210,52 @@
                          r, site, PASQUILL_D, stable; activity = 1.0, washout = event,) *
                      sector_width(SectorGrid(16)) * r,
                 0.0, X; rtol = 1e-10,)
-            @test total ≈ f * (1 - exp(-6e-4 * X / u)) rtol=1e-8 atol=1e-14
+            @test total ≈ f * 6e-4 * X / u rtol=1e-8 atol=1e-14
+        end
+    end
+
+    # Against a Lagrangian deposit: parcels released at a constant rate over
+    # [0, T_R], precipitation of duration t_w from t_s, either over the whole
+    # path (each parcel scavenged from max(τ, t_s) until it passes x) or over
+    # the receptor alone. A parcel passing x in the precipitation deposits
+    # Λ q/u per metre. The crosswind-integrated deposit of the package,
+    # Λ f A/u, is the largest over every timing and both patterns, and the
+    # shower over the receptor alone attains it.
+    @testset "wet deposition bounds every timing of the precipitation" begin
+        T_R = 3600.0
+        uniform(x, u, Λ, t_s, t_w) =
+            let τx = x / u, a = max(0.0, t_s - τx), b = min(T_R, t_s + t_w - τx)
+                b > a ?
+                Λ / (u * T_R) * quadgk(
+                    τ -> exp(-Λ * (τ + τx - max(τ, t_s))), a, clamp(t_s, a, b), b,)[1] : 0.0
+            end
+        localised(x, u, Λ, t_s, t_w) = Λ / (u * T_R) *
+                                       max(0.0, min(T_R, t_s + t_w - x / u) -
+                                                max(0.0, t_s - x / u))
+        for (species, precipitation, rate) in (
+            (WASHOUT_TRITIUM_IODINE, PRECIPITATION_RAIN, 5.0),
+            (WASHOUT_OTHER_NUCLIDES, PRECIPITATION_SNOW, 1.0)
+        )
+            stable = Nuclide(;
+                name = "stable", decay_constant = 0.0,
+                deposition_velocity = DepositionVelocity(0.0, 0.0),
+                washout_species = species,)
+            for t_w in (300.0, 900.0, 3600.0), r in (1000.0, 20_000.0)
+
+                event = WashoutEvent(; duration = t_w, release_duration = T_R,
+                    precipitation, rate,)
+                Λ = washout_coefficients(event, species).high
+                u = transport_wind_speed(site, PASQUILL_D)
+                package = wet_deposition_sector(
+                              r, site, PASQUILL_D, stable; activity = 1.0, washout = event,) *
+                          sector_width(SectorGrid(16)) * r
+                timings = range(-r / u - t_w, T_R + r / u; length = 41)
+                worst = maximum(max(uniform(r, u, Λ, t_s, t_w), localised(
+                                    r, u, Λ, t_s, t_w,))
+                for t_s in timings)
+                @test worst ≤ package * (1 + 1e-9)
+                @test localised(r, u, Λ, r / u, t_w) ≈ package rtol = 1e-12
+            end
         end
     end
 
@@ -335,8 +388,7 @@
             @test χ(other) / χ(TRITIATED_WATER) ≈ expected rtol = 1e-12
         end
 
-        # Deposition takes the high coefficient, 3e-4 against 2e-4, in the
-        # flux and in the depletion of its own column.
+        # Deposition takes the high coefficient, 3e-4 against 2e-4.
         ω(n, event) = wet_deposition(
             0.0,
             -5000.0,
@@ -356,8 +408,7 @@
             washout = event,
         )
         for f in (ω, ωs)
-            @test f(other, wash) / f(TRITIATED_WATER, wash) ≈
-                  1.5 * exp(-(3e-4 - 2e-4) * 5000 / u) rtol = 1e-12
+            @test f(other, wash) / f(TRITIATED_WATER, wash) ≈ 1.5 rtol = 1e-12
         end
 
         # The model changes snow only, and only the high coefficient: Ogram
@@ -377,7 +428,7 @@
         for f in (ω, ωs)
             @test f(TRITIATED_WATER, snow(WASHOUT_HTO)) /
                   f(TRITIATED_WATER, snow(WASHOUT_NORMATIVE)) ≈
-                  4.2e-4 * exp(-4.2e-4 * 5000 / u) / (4e-7 * exp(-4e-7 * 5000 / u)) rtol = 1e-12
+                  4.2e-4 / 4e-7 rtol = 1e-12
             @test f(TRITIATED_WATER, wash_hto) == f(TRITIATED_WATER, wash)
         end
         # The low coefficient is shared, so the model does not affect depletion.

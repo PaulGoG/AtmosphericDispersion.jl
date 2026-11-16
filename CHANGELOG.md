@@ -28,28 +28,32 @@ reference case change, through the first item only.
   during which the radioactive material is subjected to the process", on the
   share `min(t_w/T_R, 1)` of the release that falls in the precipitation.
   Earlier versions scavenged the whole release for the duration `t_w` of the
-  precipitation, the same at every distance. The form holds for precipitation
-  lasting longer than the travel time; for a shorter one the result depends on
-  when it falls, and the loader warns. `WashoutEvent` takes
+  precipitation, the same at every distance. The form is the limit of a
+  precipitation much longer than the travel time; where the result depends on
+  when the precipitation falls, the loader warns. `WashoutEvent` takes
   `release_duration`, which the loader sets from `[release] duration`. A call
   `WashoutEvent(; duration)` without it now means precipitation throughout the
   release; pass `release_duration` for a shorter event. With `duration = 0`
   there is no wet deposition either.
-- Wet deposition depletes its own column with the high coefficient it deposits
-  with and scales with the same share, so the deposit over the ground cannot
-  exceed the activity released into the precipitation and vanishes without
-  precipitation. NSR-23 Eqs. (38)–(39), which earlier versions followed,
-  deposited up to 1.8 times the release within 20 km.
+- Wet deposition takes the same share, undepleted on its way, which is the
+  largest deposit that share can lay at a receptor whenever and wherever the
+  precipitation falls; it vanishes without precipitation. NSR-23
+  Eqs. (38)–(39), which earlier versions followed, deposited the whole
+  release, up to 1.8 times over within 20 km, however short the
+  precipitation.
 - The building that sets the wake is the tallest within three of its own
   heights of the stack, as SRS-19 §3.3 takes the building that most influences
-  the dispersion. Earlier versions averaged every building with weights
-  inversely proportional to distance, so a low structure beside the stack
-  could cancel the wake of a tall one.
-- The wake widens a dispersion parameter by `√3` at most. That is the sector
-  form of NRC XOQDOQ, Eq. (11), and keeps a centreline value within the factor
-  of 3 of XOQDOQ Eq. (8) and NSR-23 §5, more strictly than their product bound
-  where σ_y and σ_z widen unequally. `[buildings] broadening_limit` sets it,
-  and `inf` gives the unlimited form of SRS-19.
+  the dispersion, and of equally tall ones the nearest, as NSR-23 §5 does.
+  Earlier versions averaged every building with weights inversely
+  proportional to distance, so a low structure beside the stack could cancel
+  the wake of a tall one. A stack may now stand on its building.
+- The wake widens a dispersion parameter of a ground-level release by `√3`
+  at most. That is the sector form of NRC XOQDOQ, Eq. (11), and keeps a
+  centreline value within the factor of 3 that XOQDOQ Eq. (8) and NSR-23 §5
+  allow a ground-level release, more strictly than their product bound where
+  σ_y and σ_z widen unequally. An elevated plume is broadened without limit,
+  as before. `[buildings] broadening_limit` sets it, and `inf` gives the
+  unlimited form of SRS-19.
 - The Eimutis–Konicek σ_y and σ_z are limited to 1000 m, as in subroutine
   POLYN of XOQDOQ (§4.21) and PAVAN (§4.16).
 - Inside the balance band the combined plume rise is capped at the larger
@@ -66,9 +70,19 @@ reference case change, through the first item only.
 - `stability_parameter(site, class)` and `STABLE_CLASSES`;
   `precipitation_fraction`; `MAXIMUM_WAKE_BROADENING`,
   `EIMUTIS_KONICEK_CEILING` and `MINIMUM_WIND_SPEED`.
-- `load_configuration` warns when `washout_duration` is shorter than the time
-  the slowest class takes to reach `grid.extent`. Washout and release
-  durations must be finite, in the configuration and in `WashoutEvent`.
+- `load_configuration` warns when `grid.extent` lies beyond
+  `u ln(1 + Λ t_w)/Λ` in the slowest class, past which washout depends on when
+  the precipitation falls. Durations, the released activity, the grid extent
+  and the building entries must be finite, in the configuration, in
+  `WashoutEvent` and in `Building`.
+
+### Fixed
+
+- A stack with no efflux has no plume rise; `plume_rise` threw a
+  `DomainError`.
+- Stack downwash lowers the release height to ground level at most;
+  `downwash_height` could return a negative height, and `wake_height` threw
+  for a stack drawn down exactly to the ground with no building near it.
 
 ### Not changed
 

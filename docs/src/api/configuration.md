@@ -97,10 +97,13 @@ and the 2021 code used 1.5 ([`NSR23_WAKE_COEFFICIENT`](@ref)). Zero disables
 the broadening.
 
 `broadening_limit` is the largest factor by which the wake may widen a
-dispersion parameter, `√3` by default after NRC XOQDOQ and NSR-23
-([`MAXIMUM_WAKE_BROADENING`](@ref)); `inf` removes the limit, as in SRS-19.
-Of the `[[buildings.building]]` entries, only the tallest within three of its
-own heights of the stack sets the wake; see [`BuildingEnvelope`](@ref).
+dispersion parameter of a release at ground level, `√3` by default after NRC
+XOQDOQ and NSR-23 ([`MAXIMUM_WAKE_BROADENING`](@ref)); `inf` removes the
+limit, as in SRS-19. An elevated plume is broadened without limit. Of the
+`[[buildings.building]]` entries, only the tallest within three of its own
+heights of the stack sets the wake, the nearest of equally tall ones; `east`
+and `north` locate the point of the building nearest the stack. See
+[`BuildingEnvelope`](@ref).
 
 ## The `[atmosphere]` and `[precipitation]` tables
 
@@ -109,14 +112,15 @@ from which the stability parameter of their plume rise is formed. Classes A
 to D take no stable limit whatever its value; see
 [`stability_parameter`](@ref).
 
-`washout_duration` is how long it rains or snows during the release. That
-share of the release, `min(washout_duration/release.duration, 1)`, is
-scavenged for its travel time to each receptor, and the rest is not; zero, the
-reference value, turns washout and wet deposition off. The form assumes the
-precipitation lasts at least the travel time; when `washout_duration` is
-shorter than the time the slowest class takes to reach `grid.extent`, the
-loader warns that the result beyond `u × washout_duration` depends on when the
-precipitation falls. See [`WashoutEvent`](@ref).
+`washout_duration` is how long it rains or snows. That share of the release,
+`min(washout_duration/release.duration, 1)`, is scavenged for its travel time
+to each receptor, and the rest is not; zero, the reference value, turns
+washout and wet deposition off. The washout of the airborne plume is the limit
+of a precipitation much longer than the travel time, and the loader warns when
+`grid.extent` lies beyond `u ln(1 + Λ t_w)/Λ` in the slowest class, past which
+the result depends on when the precipitation falls; wet deposition is the bound
+for any timing. See [`wet_depletion_factor`](@ref) and
+[`wet_deposition`](@ref).
 
 ## The `[wind_rose]` table
 

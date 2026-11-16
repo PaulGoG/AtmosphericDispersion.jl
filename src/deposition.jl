@@ -11,9 +11,8 @@ Both take the high member of their bracketing pair (the high deposition
 velocity and the high washout coefficient) because more deposited material is
 the conservative assumption for the ground-shine and ingestion pathways.
 Depletion of the airborne plume takes the low members, for the opposite reason.
-See `DepositionVelocity`. Wet deposition depletes its own plume with the same
-high coefficient, so that the activity it deposits cannot exceed the activity
-released during the precipitation.
+See `DepositionVelocity`. Wet deposition is not depleted on the way to the
+receptor, which bounds it for any timing and extent of the precipitation.
 =#
 
 """
@@ -37,22 +36,26 @@ end
 Wet deposition per unit ground area in Bq/m² beneath a plume of a single
 direction,
 
-    ω_w = Λ f A D exp(−Λ x/u) exp(−y²/2Σ_y²) / (√(2π) Σ_y u)
+    ω_w = Λ f A D exp(−y²/2Σ_y²) / (√(2π) Σ_y u)
 
 where `Λ` is the high washout coefficient of the [`WashoutEvent`](@ref)
 `washout` for the nuclide's species, `f` its [`precipitation_fraction`](@ref),
-`A` the released activity in Bq and `D` the surviving fraction after decay. The
-column is depleted by the same `Λ` over the travel time `x/u`, so that the
-deposit integrated over the ground is `f A (1 − exp(−Λ x/u))` out to `x` (with
-no decay), never more than the activity released during the precipitation, and
-nothing for an event of zero duration.
+`A` the released activity in Bq and `D` the surviving fraction after decay. It
+is nothing for an event of zero duration.
 
-The precipitation is taken to stay on the material released into it, as in
-[`wet_depletion_factor`](@ref). A shorter precipitation fixed over the site
-also scavenges material already in transit when it begins, so that the deposit
-out to `x` can exceed the `t_w/T_R` of the release this form allows, up to
-`(t_w + x/u)/T_R`, for an event of duration `t_w` in a release of duration
-`T_R`.
+This is the largest deposit a precipitation of the event's duration can lay at
+the receptor, whenever and wherever it falls: the activity that passes the
+receptor during the precipitation is at most `f A`, and each becquerel of it
+deposits `Λ/u` per metre of its path. A shower over the receptor alone, which
+scavenges nothing upstream, deposits exactly this. Precipitation over the whole
+path depletes the plume before it arrives, down to `exp(−Λ x/u)` of this value
+for one lasting much longer than the travel time; one that begins over a plume
+already airborne deposits in between, and where `Λ x/u ≫ 1` far more than the
+depleted value. EPA ISC3 [EPA1995](@cite) §1.4 likewise notes that omitting wet
+depletion gives a conservative deposition. Since each receptor takes its own
+worst case, the deposit integrated over the ground, `f A Λ X/u` out to `X`
+(with no decay), exceeds the activity released into the precipitation beyond
+`X = u/Λ`.
 
 `release_duration` sets the meander of `Σ_y` only, and is independent of the
 release duration of the event.
@@ -60,7 +63,7 @@ release duration of the event.
 CNCAN NSR-23 [CNCAN2004](@cite) Eq. (38) multiplies the high coefficient by the
 whole release depleted with the low coefficient over the duration of the event,
 which the 2021 code followed; that deposit does not vanish without
-precipitation and its integral over the ground can exceed the release.
+precipitation and counts the whole of a long release as falling in it.
 
 The denominator is `√(2π) Σ_y u`, which is what integrating the Gaussian plume
 over the whole vertical column leaves. The 2021 code wrote `√2 π Σ_y u`; the
@@ -78,7 +81,8 @@ function wet_deposition(
         washout::WashoutEvent,
         release_duration::Real = SHORT_RELEASE_REFERENCE,
 )
-    activity ≥ 0 || throw(DomainError(activity, "released activity cannot be negative"))
+    0 ≤ activity < Inf ||
+        throw(DomainError(activity, "released activity must be finite and non-negative"))
     x, y = plume_frame(east, north, wind_bearing)
     x > 0 || return 0.0
 
@@ -87,8 +91,7 @@ function wet_deposition(
     u > 0 || return 0.0
     Σy = corrected_lateral_dispersion(x, site, class; release_duration)
 
-    column = precipitation_fraction(washout) * activity * decay_factor(x, u, nuclide) *
-             exp(-Λ * x / u)
+    column = precipitation_fraction(washout) * activity * decay_factor(x, u, nuclide)
     return Λ * column * exp(-y^2 / (2Σy^2)) / (sqrt(2π) * Σy * u)
 end
 
@@ -99,12 +102,12 @@ end
 Wet deposition per unit ground area in Bq/m² at radial distance `r` metres,
 averaged over a sector,
 
-    ω_w = Λ f A D exp(−Λ r/u) / (u θ_L r)
+    ω_w = Λ f A D / (u θ_L r)
 
 the column activity spread over the arc the sector subtends at that distance,
-with `f`, `D`, the depletion of the column and its assumptions as in
-[`wet_deposition`](@ref). NSR-23 Eq. (39) is the same form with the whole
-release, depleted over the duration of the event.
+with `f` and `D` as in [`wet_deposition`](@ref), whose bound it shares. NSR-23
+Eq. (39) is the same form with the whole release, depleted over the duration
+of the event.
 """
 function wet_deposition_sector(
         r::Real,
@@ -115,15 +118,15 @@ function wet_deposition_sector(
         washout::WashoutEvent,
         sectors::SectorGrid = SectorGrid(16),
 )
-    activity ≥ 0 || throw(DomainError(activity, "released activity cannot be negative"))
+    0 ≤ activity < Inf ||
+        throw(DomainError(activity, "released activity must be finite and non-negative"))
     r > 0 || return 0.0
 
     Λ = washout_coefficients(washout, nuclide.washout_species).high
     u = transport_wind_speed(site, class)
     u > 0 || return 0.0
 
-    column = precipitation_fraction(washout) * activity * decay_factor(r, u, nuclide) *
-             exp(-Λ * r / u)
+    column = precipitation_fraction(washout) * activity * decay_factor(r, u, nuclide)
     return Λ * column / (u * sector_width(sectors) * r)
 end
 

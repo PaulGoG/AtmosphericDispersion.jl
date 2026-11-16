@@ -3,37 +3,41 @@
 An independent review of the physics against the literature, in November 2026,
 and the published text of CNCAN NSR-23 [CNCAN2004](@cite) led to the
 corrections of 1.1.0: the stable limits of the plume rise in the stable classes
-only, washout for the travel time, a bounded wet deposition, the governing
-building and the limit on wake broadening, the 1000 m limit of the
-Eimutis–Konicek scheme, the cap of the combined rise and the minimum wind
-speed. The [changelog](https://github.com/PaulGoG/AtmosphericDispersion.jl/blob/main/CHANGELOG.md)
+only, washout for the travel time, a wet deposition on the share of the release
+in the precipitation, the governing building and the limit on the wake of a
+ground-level release, the 1000 m limit of the Eimutis–Konicek scheme, the cap
+of the combined rise and the minimum wind speed. The [changelog](https://github.com/PaulGoG/AtmosphericDispersion.jl/blob/main/CHANGELOG.md)
 lists them with their effect on the reference case. The points below remain.
 
 ## Bracketing values and the activity budget
 
 Depletion of the airborne plume takes the low deposition velocity and the
 low washout coefficient, and deposition the high ones, as NSR-23 Tables 6 and
-7 direct. Each choice is conservative for its own pathway. Wet deposition
-depletes its own column with the high coefficient, so the activity it deposits
-cannot exceed the activity released in the precipitation. Dry deposition is
+7 direct. Each choice is conservative for its own pathway. Dry deposition is
 the high velocity times an air concentration depleted with the low velocity
 and the low washout coefficient, so the ground receives up to the ratio of the
-two velocities times what dry deposition takes from the plume, 2 for HTO. The
-two budgets are separate: material that wet deposition removes with the high
-coefficient is still in the air that feeds dry deposition, so with
-precipitation the two deposits together can exceed what the plume loses.
+two velocities times what dry deposition takes from the plume, 2 for HTO. Wet
+deposition is the largest deposit the precipitation can lay at each receptor,
+undepleted on the way, so its integral over the ground, `f A Λ_H X/u` out to
+`X`, exceeds the activity released into the precipitation beyond
+`X = u/Λ_H`, 10 km for HTO in rain at 5 mm/h and 6 m/s. The budgets are
+separate: material that wet deposition removes is still in the air that feeds
+dry deposition, so with precipitation the two deposits together can exceed
+what the plume loses.
 
 ## Washout of a short precipitation
 
-Washout and wet deposition take the material released into the precipitation
-to stay in it for its whole travel time, which holds for precipitation that
-lasts longer than the travel time to the receptor. For a shorter precipitation
-fixed over the site the result depends on when it falls, which a configuration
-does not state: for `Λ = 10⁻³ s⁻¹`, 900 s of precipitation in a 3600 s
-release and 20 km at 6 m/s, the surviving fraction lies between 0.47 and 0.92
-by timing, against 0.76 from the form, and the wet deposit can exceed the share
-`t_w/T_R` of the release. `load_configuration` warns when the receptor grid
-reaches that range.
+Washout of the airborne plume takes the material released into the
+precipitation to stay in it for its whole travel time, the limit of a
+precipitation much longer than that. For a shorter precipitation fixed over
+the site the result depends on when it falls, which a configuration does not
+state: for `Λ = 10⁻³ s⁻¹`, 900 s of precipitation in a 3600 s release and
+20 km at 6 m/s, the surviving fraction lies between 0.47 and 0.92 by timing,
+against 0.76 from the form. Where `Λ x/u` is large the precipitation must
+outlast the travel time by far, `t_w ≫ (exp(Λ x/u) − 1)/Λ`, and
+`load_configuration` warns when the receptor grid reaches beyond
+`u ln(1 + Λ t_w)/Λ`. Setting no washout bounds the air concentration for any
+timing. Wet deposition is not affected: it is the bound for any timing.
 
 ## Dry deposition of tritiated water
 
@@ -60,6 +64,16 @@ These are the rules of NSR-23 §6.2, which the package follows.
   depends on whether the mean wind at the stack, averaged over the six
   classes, exceeds 5 m/s, so the release height changes discontinuously at
   that wind speed.
+- The `√3` limit on the wake broadening applies to a plume at effective
+  height zero, the ground-level release for which NRC XOQDOQ and NSR-23 §5
+  state it; an elevated plume is broadened without limit, as NSR-23 Eq. (9)
+  prescribes. Near the source, where the wake would widen the parameters by
+  more than `√3`, the ground-level concentration therefore drops between
+  effective height zero and a small one, from the limited to the unlimited
+  broadening.
+- The vicinity of a building is judged from the point given for it, which
+  should be the point of the building nearest the stack; the package carries
+  no footprint.
 
 ## Plume rise
 

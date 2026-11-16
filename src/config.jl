@@ -287,7 +287,10 @@ function configuration_from(root::AbstractDict)
 
     release = _table(root, "release", "")
     _reject_unknown(release, _RELEASE_KEYS, "release")
-    activity = _nonnegative(_value(release, "activity", Float64, "release"), "release.activity")
+    activity = _finite(
+        _nonnegative(_value(release, "activity", Float64, "release"), "release.activity"),
+        "release.activity",
+    )
     release_duration = _finite(
         _positive(_value(release, "duration", Float64, "release"), "release.duration"),
         "release.duration",
@@ -320,7 +323,7 @@ function configuration_from(root::AbstractDict)
 
     grid = _table(root, "grid", "")
     _reject_unknown(grid, _GRID_KEYS, "grid")
-    extent = _positive(_value(grid, "extent", Float64, "grid"), "grid.extent")
+    extent = _finite(_positive(_value(grid, "extent", Float64, "grid"), "grid.extent"), "grid.extent")
     spacing = _positive(_value(grid, "spacing", Float64, "grid"), "grid.spacing")
     spacing < extent ||
         _fail("grid.spacing", "must be smaller than grid.extent ($extent m), got $spacing")
@@ -328,7 +331,7 @@ function configuration_from(root::AbstractDict)
 
     event = WashoutEvent(;
         duration = washout, release_duration, precipitation, rate, model = washout_model,)
-    _check_washout_reach(site, event, extent)
+    _check_washout_reach(site, event, nuclide.washout_species, extent)
 
     return RunConfiguration(
         site,
@@ -377,19 +380,27 @@ function _check_validity(
     return nothing
 end
 
-# Washout assumes that the material released into the precipitation stays in it
-# for its whole travel time; a shorter precipitation makes the result depend on
-# when it falls, which the configuration does not say.
-function _check_washout_reach(site::Site, event::WashoutEvent, extent::Real)
+# Washout of the airborne plume is the limit of a precipitation much longer than
+# the travel time. Beyond u ln(1 + Λ t_w)/Λ, where (exp(Λ x/u) − 1)/Λ reaches t_w,
+# the result depends on when the precipitation falls, which the configuration does
+# not say; see wet_depletion_factor.
+function _check_washout_reach(
+        site::Site,
+        event::WashoutEvent,
+        species::WashoutSpecies,
+        extent::Real,
+)
     iszero(event.duration) && return nothing
+    Λ = washout_coefficients(event, species).low
+    iszero(Λ) && return nothing
     slowest = minimum(c -> transport_wind_speed(site, c), PASQUILL_CLASSES)
-    travel = extent / slowest
-    travel > event.duration || return nothing
-    @warn "precipitation.washout_duration = $(event.duration) s is shorter than the " *
-          "$(round(Int, travel)) s the slowest class takes to reach grid.extent; " *
-          "washout and wet deposition take the material released into the precipitation " *
-          "to stay in it for its whole travel time, and beyond $(round(Int, slowest * event.duration)) m " *
-          "the result depends on when the precipitation falls"
+    reach = slowest * log1p(Λ * event.duration) / Λ
+    extent > reach || return nothing
+    @warn "precipitation.washout_duration = $(event.duration) s: washout takes the " *
+          "precipitation to last much longer than the travel time, which holds within " *
+          "$(round(reach / 1000; sigdigits = 3)) km of the stack in the slowest class, " *
+          "short of grid.extent ($extent m); beyond it the airborne fraction depends on " *
+          "when the precipitation falls"
     return nothing
 end
 
@@ -497,13 +508,16 @@ end
 
 function _buildings_from(t::AbstractDict)
     _reject_unknown(t, _BUILDINGS_KEYS, "buildings")
-    coefficient = _nonnegative(
-        _value(
-            t,
-            "wake_coefficient",
-            Float64,
-            "buildings";
-            default = DEFAULT_WAKE_COEFFICIENT,
+    coefficient = _finite(
+        _nonnegative(
+            _value(
+                t,
+                "wake_coefficient",
+                Float64,
+                "buildings";
+                default = DEFAULT_WAKE_COEFFICIENT,
+            ),
+            "buildings.wake_coefficient",
         ),
         "buildings.wake_coefficient",
     )
@@ -521,11 +535,14 @@ function _buildings_from(t::AbstractDict)
         push!(
             buildings,
             Building(;
-                east = _value(entry, "east", Float64, p),
-                north = _value(entry, "north", Float64, p),
-                height = _nonnegative(_value(entry, "height", Float64, p), "$p.height"),
+                east = _finite(_value(entry, "east", Float64, p), "$p.east"),
+                north = _finite(_value(entry, "north", Float64, p), "$p.north"),
+                height = _finite(
+                    _nonnegative(_value(entry, "height", Float64, p), "$p.height"),
+                    "$p.height",
+                ),
                 frontal_area = _nonnegative(
-                    _value(entry, "frontal_area", Float64, p),
+                    _finite(_value(entry, "frontal_area", Float64, p), "$p.frontal_area"),
                     "$p.frontal_area",
                 ),
             ),

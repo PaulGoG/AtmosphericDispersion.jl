@@ -376,30 +376,46 @@ lasting `t_w`, and the factor becomes `1 − f + f exp(−Λ_L x/u)`. A
 precipitation that lasts the whole release gives the familiar `exp(−Λ_L x/u)`;
 none gives one.
 
-The form takes the precipitation to stay on the material released into it for
-the whole travel time, which holds when it lasts longer than `x/u`. The tests
-check it against an average over parcels released uniformly through the
-release, each exposed for the overlap of its transit with a precipitation
-fixed over the site: with 10⁶ s of precipitation in a 10⁷ s release the two
-agree to the edge effect, of order `(x/u)/t_w`. A shorter precipitation has no
-single answer, because the result depends on when it falls. For
-`Λ_L = 10⁻³ s⁻¹`, 900 s of it in a 3600 s release and `x/u = 3333 s`, the
-surviving fraction is 0.92 if it falls at the start of the release and 0.47 at
-the end, and the form gives 0.76. Capping the exposure at `t_w` is no bound
-either (0.85 in that case), so the package keeps the form and
-`load_configuration` warns when the receptor grid reaches beyond the distance
-`u t_w`.
+The form is the limit of a precipitation that covers the path for much longer
+than the travel time. The tests check it against an average over parcels
+released uniformly through the release, each exposed for the overlap of its
+transit with a precipitation fixed over the site: with 10⁶ s of precipitation
+in a 10⁷ s release the two agree to the edge effect, of order `(x/u)/t_w`. A
+precipitation that begins with the release leaves the scavenged share more
+airborne than the form, by the relative amount
+`((exp(Λ x/u) − 1)/Λ − x/u)/t_w`, so the condition is
+`t_w ≫ (exp(Λ x/u) − 1)/Λ`, which reduces to `t_w ≫ x/u` only while `Λ x/u`
+is small. A shorter precipitation has no single answer, because the result
+depends on when it falls. For `Λ_L = 10⁻³ s⁻¹`, 900 s of it in a 3600 s
+release and `x/u = 3333 s`, the surviving fraction is 0.92 if it falls at the
+start of the release and 0.47 at the end, and the form gives 0.76. Capping the
+exposure at `t_w` is no bound either (0.85 in that case). Omitting washout
+bounds the airborne concentration for any timing, as EPA ISC3
+[EPA1995](@cite) §1.4 and IAEA SRS-19 [IAEA2001](@cite) §3.8 note; the package
+keeps the form, and `load_configuration` warns when the receptor grid reaches
+beyond `u ln(1 + Λ_L t_w)/Λ_L`, the distance at which
+`(exp(Λ_L x/u) − 1)/Λ_L = t_w`.
 
-Wet deposition, NSR-23 Eq. (38), is the high coefficient times the column
-depleted with the low one. Integrated over the ground, that deposits `Λ_H/Λ_L`
-times what the column loses, 20 for tritium in rain at 1 mm/h, and more than
-the release itself once the travel time exceeds about `1/Λ_H`. The package depletes
-the deposited column with the coefficient it deposits with, so the deposit
-out to `x` is `f A (1 − exp(−Λ_H x/u))` before decay and never exceeds the
-activity released into the precipitation. The tests assert that integral. A
-short precipitation fixed over the site also catches material already in
-transit when it begins, and can then deposit up to `(t_w + x/u)/T_R` of the
-release.
+Wet deposition, NSR-23 Eq. (38), is the high coefficient times the whole
+release depleted with the low one over the duration of the event. It does not
+vanish without precipitation, and one hour of rain at 5 mm/h deposited 1.8
+times the whole release within 20 km, however long the release. The package takes the
+share `f` instead, and does not deplete the column on its way to the receptor:
+`ω_w = Λ_H f A D exp(−y²/2Σ_y²)/(√(2π) Σ_y u)`. That is the largest deposit a
+precipitation of duration `t_w` can lay at the receptor, whenever and wherever
+it falls, since no more than `f A` passes the receptor while it falls and each
+becquerel deposits `Λ_H/u` per metre. A shower over the receptor alone
+deposits exactly that. Precipitation over the whole path depletes the plume
+first, to `exp(−Λ_H x/u)` of that value if it lasts long, and one that begins
+over a plume already airborne lies in between. Where `Λ_H x/u ≫ 1` the onset
+dominates: for snow on the other species at 1 mm/h (`Λ_H = 2 × 10⁻² s⁻¹`), 20 km
+downwind at 6 m/s, the depleted form falls short of it by a factor of order
+10²⁴, which is why the package does not deplete. The tests check the bound
+against Lagrangian deposits over 41 timings, for precipitation over the whole
+path and over the receptor alone. Each receptor takes its own worst case, so
+the deposit integrated over the ground, `f A Λ_H X/u` out to `X` before decay,
+exceeds the activity released into the precipitation beyond `X = u/Λ_H`; ISC3
+§1.4 likewise calls a deposition computed without wet depletion conservative.
 
 ### The tritium deposition velocities
 
@@ -495,19 +511,25 @@ recommends the value that gives the largest dilution factor; the 2021 code
 used 1.5, which `NSR23_WAKE_COEFFICIENT` restores. RG 1.111 Eq. (9) is a third
 convention again, applying 0.5 to the building height rather than its area.
 
-Whatever the coefficient, a dispersion parameter is widened by at most `√3`.
-NRC XOQDOQ, after RG 1.111, bounds the "maximum allowable building-wake
-dilution" by `3σ_yσ_z` in its point form, Eq. (8), and by `√3 σ_z` in its
-sector form, Eq. (11), and NSR-23 §5 recommends that the wake reduce the
-concentration by a factor "not higher than 3". The limit on each parameter is
-Eq. (11) exactly and keeps a centreline value within the factor of 3, but where
-`σ_y` and `σ_z` widen unequally it is stricter than the product bound: for
-`σ_y = 100 m`, `σ_z = 10 m` and a 30 000 m² building the reduction is 2.4
-where Eq. (8) allows 3, which errs towards the higher concentration. SRS-19
-sets no limit; `[buildings] broadening_limit = inf` follows it. The building
-that sets the wake is the tallest within three of its own heights of the stack,
-"the building that most influences the resulting plume dispersion" of SRS-19
-§3.3. The 2021 code averaged every building in the list with weights inversely
+For a release at ground level a dispersion parameter is widened by at most
+`√3`, whatever the coefficient. NRC XOQDOQ, after RG 1.111, bounds the "maximum
+allowable building-wake dilution" of a ground-level release by `3σ_yσ_z` in its
+point form, Eq. (8), and by `√3 σ_z` in its sector form, Eq. (11), and NSR-23
+§5 recommends, "in case of a discharge at the ground level", that the wake
+reduce the concentration by a factor "not higher than 3". The limit on each
+parameter is Eq. (11) exactly and keeps a centreline value within the factor
+of 3, but where `σ_y` and `σ_z` widen unequally it is stricter than the product
+bound: for `σ_y = 100 m`, `σ_z = 10 m` and a 30 000 m² building the reduction
+is 2.4 where Eq. (8) allows 3, which errs towards the higher concentration.
+Neither source limits the wake of an elevated plume, and there a limit errs the
+other way: a wider `Σ_z` brings the plume down sooner, so for a plume at 50 m
+in the wake of a 60 m building the limit would lower χ/Q at 200 m by a factor
+of 9. The package applies it at effective height zero only. SRS-19 sets no
+limit; `[buildings] broadening_limit = inf` follows it. The building that sets
+the wake is the tallest within three of its own heights of the stack, "the
+building that most influences the resulting plume dispersion" of SRS-19 §3.3,
+and of equally tall ones the nearest, as NSR-23 §5 takes the nearest building.
+The 2021 code averaged every building in the list with weights inversely
 proportional to distance, so a low structure beside the stack could cancel the
 wake of a tall one.
 

@@ -52,6 +52,25 @@
         @test_throws DomainError final_momentum_rise(Fₘ, 10.0, 2.33, 0.0, S)
         @test_throws DomainError buoyant_rise(-1.0, F, 4.0, S)
         @test_throws DomainError momentum_rise(-1.0, Fₘ, 10.0, 2.33, 4.0, S)
+        @test_throws DomainError final_momentum_rise(Fₘ, -1.0, 2.33, 4.0, S)
+        @test_throws DomainError final_momentum_rise(Fₘ, 10.0, -1.0, 4.0, S)
+        @test_throws DomainError final_momentum_rise(Fₘ, 10.0, 2.33, 4.0, NaN)
+        @test_throws DomainError final_buoyant_rise(F, 4.0, NaN)
+    end
+
+    # No efflux: neither buoyancy nor momentum leaves the stack, and the plume
+    # stays at the release height in every class.
+    @testset "a stack with no efflux has no rise" begin
+        still = Site(;
+            source = reference_stack(; exit_velocity = 0.0),
+            atmosphere = REFERENCE_AIR,
+        )
+        @test still.buoyancy == 0 && still.momentum == 0
+        for class in PASQUILL_CLASSES, x in (0.0, 100.0, 1e4)
+
+            @test plume_rise(x, still, class) == 0
+            @test effective_height(x, still, class) == release_height(still)
+        end
     end
 
     # As for the dispersion parameters, reproduce the 2021 correlations
@@ -113,10 +132,14 @@
         Fm, w, D, u, S = 100.0, 20.0, 1.0, 5.0, -1e-6
         momentum = final_momentum_rise(Fm, w, D, u, S)
         @test momentum ≈ 3 * w * D / u
-        for F in (4.20, 4.62)
-            buoyant = final_buoyant_rise(F, u, S)
+        # Briggs' neutral final rise 1.6 F^(1/3) (3.5 x*)^(2/3)/u with
+        # x* = 14 F^(5/8), written out; F = 3.60 puts buoyancy below momentum
+        # inside the band (11.20 m), 4.20 and 4.62 above it, inside and out.
+        neutral(F) = 1.6 * F^(1 / 3) * (3.5 * 14 * F^(5 / 8))^(2 / 3) / u
+        @test neutral(3.60) < momentum < neutral(4.20)
+        for F in (3.60, 4.20, 4.62)
             rise = AtmosphericDispersion._plume_rise(1e5, F, Fm, S, w, D, u, BRIGGS_RISE)
-            @test rise ≈ max(momentum, buoyant)
+            @test rise ≈ max(3 * w * D / u, neutral(F))
         end
     end
 

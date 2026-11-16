@@ -154,7 +154,7 @@
     # downwind is in the cavity, 0.25/(π · 2 · 30) = 1.3 × 10⁻³ Bq/m³, and
     # the farm at 1 km is in the wake as in IV-2.
     large = BuildingEnvelope([
-        Building(; east = 10.0, north = 0.0, height = 30.0, frontal_area = 5000.0),
+        Building(; east = 0.0, north = 0.0, height = 30.0, frontal_area = 5000.0),
     ])
     @test building_zone(33.0, 150.0, large) === CAVITY_ZONE
     @test building_zone(33.0, 1000.0, large) === WAKE_ZONE

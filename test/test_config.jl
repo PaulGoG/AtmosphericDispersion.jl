@@ -374,16 +374,33 @@ end
     c = @test_logs (:warn, r"washout_duration") configuration_from(
         withkey(t -> (t["precipitation"]["washout_duration"] = 3600.0)),)
     @test precipitation_fraction(c.washout) ≈ 3600 / 31_557_600
-    # Durations must be finite.
-    for (table, key) in (("precipitation", "washout_duration"), ("release", "duration"))
+    # Durations, activity and extent must be finite.
+    for (table, key) in (("precipitation", "washout_duration"), ("release", "duration"),
+        ("release", "activity"), ("grid", "extent"))
         err = failure(withkey(t -> (t[table][key] = Inf)))
         @test err isa ConfigurationError
         @test err.path == "$table.$key"
         @test occursin("finite", err.message)
     end
-    # Precipitation shorter than the travel time to the edge of the grid is
-    # reported, as above; none, or a long one, is not.
+    # Precipitation that does not reach u ln(1 + Λ t_w)/Λ beyond the edge of
+    # the grid in the slowest class is reported, as above; none, or a long one,
+    # is not. Λ = 10⁻⁵ s⁻¹ (HTO, rain, 1 mm/h) and 4.70 m/s give 16.6 km for an
+    # hour and 293 km for a day.
     @test_logs configuration_from(withkey(identity))
     @test_logs configuration_from(
         withkey(t -> (t["precipitation"]["washout_duration"] = 86_400.0)),)
+    # Where Λ x/u is large the travel time is not the measure: 10 h of snow at
+    # 5 mm/h on a species of the other row (Λ = 10⁻³ s⁻¹) outlast the 4254 s
+    # to the edge, yet hold only to 17.0 km.
+    @test_logs (:warn, r"17\.0 km") configuration_from(withkey(t -> begin
+        t["precipitation"]["washout_duration"] = 36_000.0
+        t["precipitation"]["type"] = "snow"
+        t["precipitation"]["rate"] = 5.0
+        t["nuclide"]["washout_species"] = "other"
+    end))
+    # The warning is formed for any finite input.
+    @test_logs (:warn, r"washout_duration") configuration_from(withkey(t -> begin
+        t["grid"]["extent"] = 1e20
+        t["precipitation"]["washout_duration"] = 1e19
+    end))
 end

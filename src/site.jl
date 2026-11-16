@@ -43,13 +43,14 @@ Stack height in metres corrected for aerodynamic downwash at the stack itself.
 
 Where the efflux velocity is below about one and a half times the wind speed,
 the plume is drawn into the lee of the stack and the effective release height
-drops by `2 (1.5 − w₀/u) D`.
+drops by `2 (1.5 − w₀/u) D`, CNCAN NSR-23 [CNCAN2004](@cite) Eq. (12), down to
+ground level at most.
 """
 function downwash_height(source::StackSource, atmosphere::Atmosphere)
     u = max(mean_wind_speed(atmosphere, source.height), MINIMUM_WIND_SPEED)
     w₀ = source.exit_velocity
     w₀ < 1.5u || return source.height
-    return source.height - 2 * (1.5 - w₀ / u) * source.diameter
+    return max(source.height - 2 * (1.5 - w₀ / u) * source.diameter, 0.0)
 end
 
 """
@@ -72,7 +73,7 @@ function wake_height(
     H₁ = downwash_height(source, atmosphere)
     h = equivalent_height(envelope)
     H₁ < h && return 0.0
-    H₁ > 2.5h && return H₁
+    H₁ ≥ 2.5h && return H₁
     mean_wind_speed(atmosphere, H₁) < WAKE_WIND_THRESHOLD && return H₁
     return H₁ - (1.5h - 0.6H₁)
 end

@@ -339,7 +339,8 @@
             @test wake_broadened(σ, 0.0, normative) ≈ sqrt(σ^2 + 1.5A / π)
         end
         # XOQDOQ Eqs. (8) and (11) and NSR-23 §5: the wake widens a parameter
-        # by √3 at most, so it reduces a centreline concentration by 3 at most.
+        # of a ground-level release by √3 at most, so it reduces a centreline
+        # concentration by 3 at most.
         limited = BuildingEnvelope([b])
         for σ in (10.0, 50.0, 200.0)
             @test wake_broadened(σ, 0.0, limited) ≈ min(sqrt(σ^2 + A / π), sqrt(3) * σ)

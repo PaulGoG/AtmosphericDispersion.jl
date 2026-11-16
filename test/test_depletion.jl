@@ -185,6 +185,12 @@
             @test depletion_factor(x, site, class, TRITIATED_WATER; washout = rain) ≈
                   expected
             @test 0 < expected ≤ 1
+            # Rain through a quarter of the release scavenges that quarter only.
+            quarter = WashoutEvent(; duration = t / 4, release_duration = t, rate = 1.0)
+            @test depletion_factor(x, site, class, TRITIATED_WATER; washout = quarter) ≈
+                  decay_factor(x, u, TRITIATED_WATER) *
+                  dry_depletion_factor(x, site, class, TRITIATED_WATER) *
+                  (0.75 + 0.25 * exp(-1e-5 * x / u))
             # Rain can only remove more.
             @test depletion_factor(
                 x,
@@ -221,5 +227,26 @@
             nuclide = TRITIATED_WATER,
             washout = WashoutEvent(; duration = 3600.0),
         ) < depleted
+        # Each class is scavenged at its own transport speed: the class sum
+        # with washout is the sum of the single-class fields, each times its
+        # own wet depletion factor. Snow at 5 mm/h on the other row
+        # (Λ = 10⁻³ s⁻¹) makes the difference between the classes large.
+        snow = WashoutEvent(;
+            duration = 3600.0, precipitation = PRECIPITATION_SNOW, rate = 5.0,)
+        other = Nuclide(;
+            name = "other inert", decay_constant = 0.0,
+            deposition_velocity = DepositionVelocity(0.0, 0.0),
+            washout_species = WASHOUT_OTHER_NUCLIDES,)
+        p = normalised_stability()
+        washed = dilution_long_term(
+            0.0, -5000.0, site, rose; nuclide = other, washout = snow,)
+        by_class = sum(enumerate(PASQUILL_CLASSES)) do (k, class)
+            single = WindRose(g, fill(1 / 16, 16), BlowingToward();
+                stability = [i == k ? 1.0 : 0.0 for i in 1:6],)
+            u = transport_wind_speed(site, class)
+            p[k] * dilution_long_term(0.0, -5000.0, site, single) *
+            wet_depletion_factor(5000.0, u, snow, WASHOUT_OTHER_NUCLIDES)
+        end
+        @test washed ≈ by_class rtol = 1e-12
     end
 end
