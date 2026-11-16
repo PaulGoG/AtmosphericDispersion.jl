@@ -437,7 +437,7 @@ wind by 5 % at 1 km. The details are in
   author  = {Gogîță, Paul-Adrian},
   title   = {AtmosphericDispersion.jl: Gaussian-plume atmospheric dispersion of stack releases},
   year    = {2026},
-  version = {1.0.0},
+  version = {1.0.1},
   url     = {https://github.com/PaulGoG/AtmosphericDispersion.jl}
 }
 ```

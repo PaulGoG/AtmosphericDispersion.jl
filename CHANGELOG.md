@@ -4,10 +4,11 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.1] - 2026-11-16
 
-Corrections from an independent review of the physics against the literature.
-No result of the reference case changes.
+Corrections from an independent review of the physics against the literature,
+and from the text of CNCAN NSR-23, which is now consulted in its published
+English translation. No result of the reference case changes.
 
 ### Added
 
@@ -36,8 +37,12 @@ No result of the reference case changes.
   EPA ISC3 Eq. (1-27); SRS-19 Eq. (6) broadens σ_z only; the release height,
   not the effective height, is zero for a release entrained into a cavity.
 - The deposition velocity of HTO is compared with Lee et al. (2012,
-  doi:10.2172/1038895), who recommend zero for safety analyses; the
-  comparison with uncited values is removed.
+  doi:10.2172/1038895), who recommend zero for safety analyses; a range
+  attributed to AECL, for which no source was found, is removed.
+- NSR-23 gives the wake coefficient as 0.5 to 2.0, not 1.5:
+  `NSR23_WAKE_COEFFICIENT` is the value of the 2021 code. The normative prints
+  the lower snow washout coefficient of the tritium row at 0.5 mm/h as
+  "< 10⁻⁷", carried as 5 × 10⁻⁸. The profile exponents are its Table 4.
 
 ### Changed
 
