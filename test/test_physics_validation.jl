@@ -82,7 +82,12 @@
     @testset "ground-level maximum" begin
         for H in (50.0, 100.0, 200.0), u in (2.0, 5.0)
 
-            f(σz) = exp(-H^2 / (2σz^2)) / (π * (2σz) * σz * u)
+            # The kernel on a plume prescribed with Σ_y = 2Σ_z, at a receptor on
+            # the axis. A prescribed plume does not depend on the distance.
+            f(σz) = dilution_instantaneous(
+                0.0, -1000.0, 0.0,
+                PrescribedPlume(site; height = H, wind = u, lateral = 2σz, vertical = σz),
+                PASQUILL_D, 0.0,)
             σzs = range(1.0, 5H, length = 200_000)
             @test σzs[argmax(f.(σzs))] ≈ H / sqrt(2) rtol = 1e-4
         end
