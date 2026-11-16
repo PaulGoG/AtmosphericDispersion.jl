@@ -16,9 +16,12 @@ low washout coefficient, and deposition the high ones, as NSR-23 Tables 6 and
 7 direct. Each choice is conservative for its own pathway. Wet deposition
 depletes its own column with the high coefficient, so the activity it deposits
 cannot exceed the activity released in the precipitation. Dry deposition is
-the high velocity times an air concentration depleted with the low one, so the
-ground receives up to the ratio of the two velocities times what the plume
-loses: 2 for HTO.
+the high velocity times an air concentration depleted with the low velocity
+and the low washout coefficient, so the ground receives up to the ratio of the
+two velocities times what dry deposition takes from the plume, 2 for HTO. The
+two budgets are separate: material that wet deposition removes with the high
+coefficient is still in the air that feeds dry deposition, so with
+precipitation the two deposits together can exceed what the plume loses.
 
 ## Dry deposition of tritiated water
 

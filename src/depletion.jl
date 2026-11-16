@@ -121,10 +121,10 @@ washout table being defined only there.
 
 The precipitation is taken to cover the whole path of the material released
 while it lasts, the fraction `min(duration/release_duration, 1)` of the
-release; that material is scavenged for its travel time to the receptor, the
-rest not at all. See [`wet_depletion_factor`](@ref) and
-[`wet_deposition`](@ref). The default `release_duration` makes the event last
-the whole release.
+release. That material is scavenged for its travel time to the receptor, but
+for no longer than the precipitation lasts; the rest of the release is not
+scavenged. See [`wet_depletion_factor`](@ref) and [`wet_deposition`](@ref).
+The default `release_duration` makes the event last the whole release.
 
 Which row of the table applies is a property of the released species, so it is
 stored in the [`Nuclide`](@ref).
@@ -188,23 +188,26 @@ washout_coefficients(
 Surviving airborne fraction of the release at downwind distance `x` metres,
 transported at `u` m/s, under the washout `event`,
 
-    1 − f + f exp(−Λ x/u)
+    1 − f + f exp(−Λ min(x/u, t_w))
 
-with `f` the [`precipitation_fraction`](@ref) of the event. The material
-released during the precipitation has been scavenged for its travel time
-`x/u`, which is the time of CNCAN NSR-23 [CNCAN2004](@cite) Eq. (35), "the
-period of time during which the radioactive material is subjected to the
-process", and of HPA-RPD-058 [SmithSimmonds2009](@cite) Eq. (3.13); the rest of
-the release travels in dry air.
+with `f` the [`precipitation_fraction`](@ref) and `t_w` the duration of the
+event. The material released during the precipitation has been scavenged for
+its travel time `x/u`, which is the time of CNCAN NSR-23 [CNCAN2004](@cite)
+Eq. (35), "the period of time during which the radioactive material is
+subjected to the process", and of HPA-RPD-058 [SmithSimmonds2009](@cite)
+Eq. (3.13), but for no longer than `t_w`, since no material is under
+precipitation for longer than it lasts. The rest of the release travels in
+dry air.
 
 The low washout coefficient is used, for the same reason the low deposition
 velocity is: it removes the least material and so is conservative for the
 airborne concentration. The high coefficient drives the ground deposition
 instead; see [`wet_deposition`](@ref).
 
-The two-argument form is `exp(−Λ t)` for material that stays in the
-precipitation for the whole duration `t` of the event, as the 2021 code applied
-it at every distance.
+The two-argument form is `exp(−Λ t_w)` for material that stays in the
+precipitation for the whole duration of the event, as the 2021 code applied it
+at every distance; it is the far-field value of the four-argument form for a
+precipitation lasting the whole release.
 """
 function wet_depletion_factor(
         x::Real,
@@ -215,8 +218,13 @@ function wet_depletion_factor(
     x ≥ 0 || throw(DomainError(x, "travel distance cannot be negative"))
     u > 0 || throw(DomainError(u, "transport speed must be positive"))
     f = precipitation_fraction(event)
-    return 1 - f + f * exp(-washout_coefficients(event, species).low * x / u)
+    Λ = washout_coefficients(event, species).low
+    return 1 - f + f * exp(-Λ * scavenging_time(x, u, event))
 end
+
+# Time the material released into the precipitation spends in it on its way to
+# `x`: the travel time, bounded by the duration of the event.
+scavenging_time(x::Real, u::Real, event::WashoutEvent) = min(x / u, event.duration)
 
 wet_depletion_factor(
     event::WashoutEvent,

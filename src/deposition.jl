@@ -42,10 +42,12 @@ direction,
 where `Λ` is the high washout coefficient of the [`WashoutEvent`](@ref)
 `washout` for the nuclide's species, `f` its [`precipitation_fraction`](@ref),
 `A` the released activity in Bq and `D` the surviving fraction after decay. The
-column is depleted by the same `Λ` over the travel time `x/u`, so that the
-deposit integrated over the ground is `f A (1 − exp(−Λ x/u))` out to `x` (with
-no decay), never more than the activity released during the precipitation, and
-nothing for an event of zero duration.
+column is depleted by the same `Λ` over the travel time `x/u`. Beyond the
+distance `u t_w` that material travels while the precipitation of duration
+`t_w` lasts, it is no longer under precipitation and the deposit is zero. The
+deposit integrated over the ground out to `x` is then
+`f A (1 − exp(−Λ min(x/u, t_w)))` (with no decay), never more than the activity
+released during the precipitation, and nothing for an event of zero duration.
 
 CNCAN NSR-23 [CNCAN2004](@cite) Eq. (38) multiplies the high coefficient by the
 whole release depleted with the low coefficient over the duration of the event,
@@ -75,6 +77,7 @@ function wet_deposition(
     Λ = washout_coefficients(washout, nuclide.washout_species).high
     u = transport_wind_speed(site, class)
     u > 0 || return 0.0
+    x / u ≤ washout.duration || return 0.0
     Σy = corrected_lateral_dispersion(x, site, class; release_duration)
 
     column = precipitation_fraction(washout) * activity * decay_factor(x, u, nuclide) *
@@ -92,9 +95,9 @@ averaged over a sector,
     ω_w = Λ f A D exp(−Λ r/u) / (u θ_L r)
 
 the column activity spread over the arc the sector subtends at that distance,
-with `f`, `D` and the depletion of the column as in [`wet_deposition`](@ref).
-NSR-23 Eq. (39) is the same form with the whole release, depleted over the
-duration of the event.
+with `f`, `D`, the depletion of the column and the zero beyond `u t_w` as in
+[`wet_deposition`](@ref). NSR-23 Eq. (39) is the same form with the whole
+release, depleted over the duration of the event.
 """
 function wet_deposition_sector(
         r::Real,
@@ -111,6 +114,7 @@ function wet_deposition_sector(
     Λ = washout_coefficients(washout, nuclide.washout_species).high
     u = transport_wind_speed(site, class)
     u > 0 || return 0.0
+    r / u ≤ washout.duration || return 0.0
 
     column = precipitation_fraction(washout) * activity * decay_factor(r, u, nuclide) *
              exp(-Λ * r / u)

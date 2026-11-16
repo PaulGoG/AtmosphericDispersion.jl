@@ -71,11 +71,15 @@ const NSR23_WAKE_COEFFICIENT = 1.5
     MAXIMUM_WAKE_BROADENING
 
 Largest factor by which the building wake may widen a dispersion parameter, √3.
-NRC XOQDOQ [Sagendorf1982](@cite) Eqs. (8) and (11), after Regulatory Guide
-1.111, take `√3 σ` as the "maximum allowable building-wake dilution", and CNCAN
-NSR-23 [CNCAN2004](@cite) §5 recommends that the reduction of concentration by
-the wake "is not higher than 3". Limiting both parameters to √3 limits the
-reduction of a centreline concentration to 3 and of a sector average to √3.
+NRC XOQDOQ [Sagendorf1982](@cite), after Regulatory Guide 1.111, bounds the
+"maximum allowable building-wake dilution" by `3σ_yσ_z` in its point form,
+Eq. (8), and by `√3 σ_z` in its sector form, Eq. (11); CNCAN NSR-23
+[CNCAN2004](@cite) §5 recommends that the reduction of concentration by the
+wake "is not higher than 3". Limiting each parameter to √3 reproduces the
+sector form exactly and keeps the reduction of a centreline concentration
+within 3. Where the two parameters widen unequally, as they do when
+`σ_y ≫ σ_z`, it is stricter than the product bound of Eq. (8), which errs
+towards the higher concentration.
 """
 const MAXIMUM_WAKE_BROADENING = sqrt(3.0)
 

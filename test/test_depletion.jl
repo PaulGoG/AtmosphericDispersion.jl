@@ -127,8 +127,18 @@
         @test precipitation_fraction(quarter) == 0.25
         @test precipitation_fraction(dry) == 0
         @test wet_depletion_factor(x, u, whole) ≈ exp(-Λ * x / u)
-        @test wet_depletion_factor(x, u, quarter) ≈ 0.75 + 0.25 * exp(-Λ * x / u)
         @test wet_depletion_factor(x, u, dry) == 1
+        # The quarter-hour of rain cannot scavenge for the 1000 s of travel:
+        # what was released into it is under rain for 900 s at most.
+        @test wet_depletion_factor(x, u, quarter) ≈ 0.75 + 0.25 * exp(-Λ * 900)
+        @test wet_depletion_factor(4800.0, u, quarter) ≈ 0.75 + 0.25 * exp(-Λ * 800)
+        # Continuous at x = u t_w, and constant beyond.
+        @test wet_depletion_factor(5400.0, u, quarter) ≈
+              wet_depletion_factor(5400.0 + 1e-6, u, quarter)
+        @test wet_depletion_factor(5e4, u, quarter) ==
+              wet_depletion_factor(6000.0, u, quarter)
+        # Far out, precipitation through the whole release gives the 2021 form.
+        @test wet_depletion_factor(1e7, u, whole) ≈ wet_depletion_factor(whole)
         # At the source nothing has been scavenged yet, however long it rains.
         @test wet_depletion_factor(0.0, u, whole) == 1
         # Rain longer than the release covers all of it.

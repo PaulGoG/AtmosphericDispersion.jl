@@ -111,7 +111,8 @@ to D take no stable limit whatever its value; see
 
 `washout_duration` is how long it rains or snows during the release. That
 share of the release, `min(washout_duration/release.duration, 1)`, is
-scavenged for its travel time to each receptor, and the rest is not; zero, the
+scavenged for its travel time to each receptor, up to `washout_duration`, and
+the rest is not; zero, the
 reference value, turns washout and wet deposition off. See
 [`WashoutEvent`](@ref).
 

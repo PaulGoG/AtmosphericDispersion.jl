@@ -369,20 +369,25 @@ At four rates the measurement, which the normative does not cite, agrees within
 `exp(−Λt)` with `t` "the period of time during which the radioactive material
 is subjected to the process". The 2021 code took `t` as the duration of the
 precipitation, the same at every distance. Material scavenged on its way to a
-receptor is scavenged for its travel time `x/u`, and only material released
-while it rains is scavenged at all, so the package takes the share
-`f = min(t_w/T_R, 1)` of a release of duration `T_R` to travel through rain
-lasting `t_w`, and the factor becomes `1 − f + f exp(−Λ_L x/u)`. A
-precipitation that lasts the whole release gives the familiar `exp(−Λ_L x/u)`;
-none gives one.
+receptor is scavenged for its travel time `x/u`, but not for longer than the
+precipitation lasts, and only material released while it falls is scavenged
+at all. The package therefore takes the share `f = min(t_w/T_R, 1)` of a
+release of duration `T_R` to travel through precipitation lasting `t_w`, and
+the factor becomes `1 − f + f exp(−Λ_L min(x/u, t_w))`. A precipitation that
+lasts the whole release gives the familiar `exp(−Λ_L x/u)`; none gives one.
+The bound is that of material released as the precipitation begins; material
+released later leaves it sooner, and material released earlier and still in
+transit is caught by it, which this form neglects.
 
 Wet deposition, NSR-23 Eq. (38), is the high coefficient times the column
 depleted with the low one. Integrated over the ground, that deposits `Λ_H/Λ_L`
 times what the column loses, 20 for tritium in rain at 1 mm/h, and more than
 the release itself once the travel time exceeds about `1/Λ_H`. The package depletes
-the deposited column with the coefficient it deposits with, so the deposit
-out to `x` is `f A (1 − exp(−Λ_H x/u))` before decay and never exceeds the
-activity released into the precipitation. The tests assert that integral.
+the deposited column with the coefficient it deposits with and ends the
+deposit at `u t_w`, where that material leaves the precipitation, so the
+deposit out to `x` is `f A (1 − exp(−Λ_H min(x/u, t_w)))` before decay and
+never exceeds the activity released into the precipitation. The tests assert
+that integral.
 
 ### The tritium deposition velocities
 
@@ -479,10 +484,14 @@ used 1.5, which `NSR23_WAKE_COEFFICIENT` restores. RG 1.111 Eq. (9) is a third
 convention again, applying 0.5 to the building height rather than its area.
 
 Whatever the coefficient, a dispersion parameter is widened by at most `√3`.
-NRC XOQDOQ Eqs. (8) and (11), after RG 1.111, take `√3 σ` as the "maximum
-allowable building-wake dilution", and NSR-23 §5 recommends that the wake
-reduce the concentration by a factor "not higher than 3", which is the same
-limit on the centreline, where the two parameters enter as a product. SRS-19
+NRC XOQDOQ, after RG 1.111, bounds the "maximum allowable building-wake
+dilution" by `3σ_yσ_z` in its point form, Eq. (8), and by `√3 σ_z` in its
+sector form, Eq. (11), and NSR-23 §5 recommends that the wake reduce the
+concentration by a factor "not higher than 3". The limit on each parameter is
+Eq. (11) exactly and keeps a centreline value within the factor of 3, but where
+`σ_y` and `σ_z` widen unequally it is stricter than the product bound: for
+`σ_y = 100 m`, `σ_z = 10 m` and a 30 000 m² building the reduction is 2.4
+where Eq. (8) allows 3, which errs towards the higher concentration. SRS-19
 sets no limit; `[buildings] broadening_limit = inf` follows it. The building
 that sets the wake is the tallest within three of its own heights of the stack,
 "the building that most influences the resulting plume dispersion" of SRS-19

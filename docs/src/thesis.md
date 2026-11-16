@@ -22,11 +22,11 @@ configuration both ways:
 | Stable final rise on the mean wind over the rise | effective heights of classes E and F lower by 2.6 and 2.7 m; χ/Q in the most exposed sector higher by 1 % at 2 and 5 km and 0.2 % at 20 km |
 | Washout and wet deposition | none: the reference configuration has no precipitation |
 
-The published dose maps are rotated by a half turn. Taken together, the
-corrections make the most exposed sector about three quarters of the published
-value at 1 km, the same at 2 km, and 1.4 and 1.8 times it at 5 and 20 km. Near
-the source the 2021 code held the plume of the unstable and neutral classes
-down with the stable limit of the rise, which outweighs the convention; further
-out the convention dominates, and the lid adds up to 23 % at 20 km. The remaining corrections affect only other
+The published dose maps are rotated by a half turn, which moves their maximum
+without changing its value. Peak against peak, the corrected maximum is about
+half the published one at 1 km, two thirds at 2 km, 0.92 of it at 5 km and
+1.2 times it at 20 km. Near the source the 2021 code held the plume of the
+unstable and neutral classes down with the stable limit of the rise; further
+out the lid adds up to 23 %. The remaining corrections affect only other
 configurations (a momentum-dominated stack, a site with buildings, grassland or
 arable roughness, precipitation).

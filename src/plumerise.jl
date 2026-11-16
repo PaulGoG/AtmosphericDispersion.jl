@@ -332,6 +332,12 @@ agree to within [`MECHANISM_BALANCE_TOLERANCE`](@ref) in relative terms neither
 dominates and the combined law applies, otherwise the law of the mechanism with
 the larger final rise is used alone. `rise` selects the
 [`RiseCoefficients`](@ref).
+
+This method knows no stability class. It forms the stability parameter from the
+gradient of `atmosphere`, which is that of the stable classes E and F, and takes
+`u` as given, with no lower limit. For a class, `plume_rise(x, site, class)`
+applies the stable limits in E and F only and holds the wind at
+[`MINIMUM_WIND_SPEED`](@ref) from below.
 """
 function plume_rise(
         x::Real,

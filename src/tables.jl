@@ -271,8 +271,10 @@ const EIMUTIS_KONICEK_RANGES = (100.0, 1000.0)
     EIMUTIS_KONICEK_CEILING
 
 Upper limit in metres of both Eimutis–Konicek dispersion parameters, 1000 m.
-NRC XOQDOQ [Sagendorf1982](@cite) §4.6 and PAVAN [Bander1982](@cite) limit
-`σ_y` and `σ_z` to it in subroutine POLYN, "a conservative mixing limit".
+NRC XOQDOQ [Sagendorf1982](@cite) §4.21 and PAVAN [Bander1982](@cite) §4.16
+limit `σ_y` and `σ_z` to it in subroutine POLYN, "a conservative mixing limit"
+in PAVAN's words. The limit applies before any widening for meander or a
+building wake.
 Without it the fit for class A gives a `σ_z` of 4.6 km at 3 km and 7 × 10⁶ m at
 100 km.
 """

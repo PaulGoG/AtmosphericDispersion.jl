@@ -25,13 +25,17 @@ reference case change, through the first item only.
   and the class D ground-level maximum moves from 1.58 × 10⁻⁶ s m⁻³ at 2.15 km
   to 9.9 × 10⁻⁷ at 2.85 km.
 - Washout acts for the travel time `x/u`, which is NSR-23's "period of time
-  during which the radioactive material is subjected to the process", on the
-  share `min(t_w/T_R, 1)` of the release that falls in the precipitation.
-  Earlier versions scavenged the whole release for the duration of the
-  precipitation, the same at every distance. `WashoutEvent` takes
-  `release_duration`, which the loader sets from `[release] duration`.
+  during which the radioactive material is subjected to the process", up to
+  the duration `t_w` of the precipitation, on the share `min(t_w/T_R, 1)` of
+  the release that falls in it. Earlier versions scavenged the whole release
+  for `t_w`, the same at every distance. `WashoutEvent` takes
+  `release_duration`, which the loader sets from `[release] duration`. A call
+  `WashoutEvent(; duration)` without it now means precipitation throughout the
+  release; pass `release_duration` for a shorter event. With `duration = 0`
+  there is no wet deposition either.
 - Wet deposition depletes its own column with the high coefficient it deposits
-  with and scales with the same share, so the deposit over the ground cannot
+  with, scales with the same share and ends where the material released into
+  the precipitation leaves it, at `u t_w`. The deposit over the ground cannot
   exceed the activity released into the precipitation and vanishes without
   precipitation. NSR-23 Eqs. (38)–(39), which earlier versions followed,
   deposited up to 1.8 times the release within 20 km.
@@ -40,11 +44,13 @@ reference case change, through the first item only.
   the dispersion. Earlier versions averaged every building with weights
   inversely proportional to distance, so a low structure beside the stack
   could cancel the wake of a tall one.
-- The wake widens a dispersion parameter by `√3` at most, the limit of NRC
-  XOQDOQ Eqs. (8) and (11) and of NSR-23 §5; `[buildings] broadening_limit`
-  sets it, and `inf` gives the unlimited form of SRS-19.
+- The wake widens a dispersion parameter by `√3` at most. That is the sector
+  form of NRC XOQDOQ, Eq. (11), and keeps a centreline value within the factor
+  of 3 of XOQDOQ Eq. (8) and NSR-23 §5, more strictly than their product bound
+  where σ_y and σ_z widen unequally. `[buildings] broadening_limit` sets it,
+  and `inf` gives the unlimited form of SRS-19.
 - The Eimutis–Konicek σ_y and σ_z are limited to 1000 m, as in subroutine
-  POLYN of XOQDOQ and PAVAN.
+  POLYN of XOQDOQ (§4.21) and PAVAN (§4.16).
 - Inside the balance band the combined plume rise is capped at the larger
   final rise, not at the sum of the two, which NSR-23 §6.3(e) excludes; the
   far-field rise no longer jumps at the edge of the band.
@@ -63,9 +69,9 @@ reference case change, through the first item only.
 ### Not changed
 
 - A release entrained into the building cavity still receives the plume rise
-  from ground level. The review proposed suppressing it, but NSR-23 §6.2
-  prescribes the rise, and the buoyancy flux is not lost when the plume is
-  mixed into the cavity. The limitations page gives the size of the effect and
+  from ground level. The review proposed suppressing it, but NSR-23 sets the
+  release height to zero (§6.2) and adds the rise to it (§6.3 Eq. (15)), and
+  the buoyancy flux is not lost when the plume is mixed into the cavity. The limitations page gives the size of the effect and
   the pessimistic alternative of SRS-19.
 
 ## [1.0.1] - 2026-11-16
