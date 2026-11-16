@@ -287,7 +287,7 @@ What each component follows:
 | Dilution | instantaneous, sector-averaged with the constant of RG 1.111 or SRS-19, and long term over the rose |
 | Depletion and deposition | decay, dry deposition, NSR-23 Table 7 washout with Slinn's J^0.75 law and Ogram's snow scavenging of HTO; dry and wet deposition; Safety Series 57 or Maxwell–Anspaugh resuspension |
 | `Site` and `PrescribedPlume` | the per-run precomputation, and a plume whose height, wind or σ a published benchmark states |
-| Quality | Aqua, ExplicitImports and, on the current Julia, JET in the suite; 6915 assertions; CI on the LTS and the current Julia, rerun monthly without a commit; the manual built with its doctests |
+| Quality | Aqua, ExplicitImports and, on the current Julia, JET in the suite; 6933 assertions; CI on the LTS and the current Julia, rerun monthly without a commit; the manual built with its doctests |
 
 Outside the scope of the package:
 
