@@ -74,22 +74,23 @@ these paths.
 
 ## Running it
 
-Not reproducible as it stands, on Linux or on Windows. `Read_data.jl` and
+The code does not run as it stands, on Linux or on Windows. `Read_data.jl` and
 `Graphics.jl` use backslash path separators, `Graphics/` must already exist, and there is no `Project.toml` pinning `Plots`, `Trapz`,
 `DataFrames` or `CSV`. `Main.jl` also requires a kernel restart whenever the
 release time changes, because `Q_0` is computed from `t_R` at include time.
 
 ## Known defects
 
-Recorded here because they motivate the rewrite, not because they were fixed.
+These defects are recorded because they motivate the rewrite. None is fixed on
+this branch.
 
 **Wind-rose sector convention.** `Helpers.jl:Apartenenta_Sector_Cerc` numbers
 sectors counterclockwise from East, starting at a sector edge. The
-meteorological convention — the one ADMS and the norm's own frequency tables
-follow — centres sector 1 on North, increases clockwise, and denotes the
-direction the wind blows *from*. That is an axis rotation, a handedness flip and
-a half-sector binning offset, and it propagates into every `Frequencies.csv`
-lookup and therefore into all long-duration results.
+meteorological convention, which ADMS and the norm's own frequency tables
+follow, centres sector 1 on North, increases clockwise, and denotes the
+direction the wind blows *from*. The two differ by an axis rotation, a
+handedness flip and a half-sector binning offset, which affect every
+`Frequencies.csv` lookup and therefore all long-duration results.
 
 **Performance.** `Echivalent_Cladire()` is recomputed twice per call inside both
 `Σ_y` and `Σ_z`, i.e. at every grid point, though it depends on nothing that
@@ -102,7 +103,7 @@ call graph is type-unstable.
 the same name. `DEP_d_lung` sums six exponentials where a frequency-weighted
 average is intended.
 
-**Thesis discrepancies.** `Constante.jl` and the thesis disagree on the sign of
+**Thesis discrepancies.** `Constants.jl` and the thesis disagree on the sign of
 the vertical temperature gradient, on the effluent temperature (324 K vs 45 °C)
 and on the stack diameter (2.33 vs 2.334 m).
 
@@ -113,9 +114,9 @@ orthographic and grammatical corrections only, plus one corrected unit prefix in
 the dosimetric calculation and a repointed source-code citation. The argument,
 structure, figures and numerical results are as submitted.
 
-The thesis is in Romanian; the filename is not, so that it says what it is to a
-reader who meets it outside this repository — the same convention as
-`MSc_thesis_2023.pdf` on the `original` branch of
+The thesis is in Romanian. Its file name is in English, so that the file can be
+identified outside this repository, as with `MSc_thesis_2023.pdf` on the
+`original` branch of
 [DeterministicSequentialEmission.jl](https://github.com/PaulGoG/DeterministicSequentialEmission.jl).
 
 ## Licence
