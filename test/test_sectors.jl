@@ -18,6 +18,8 @@
         # Just west of north, where the wrapped angle rounds to 2π.
         @test bearing(-1e-17, 1.0) == 0
         @test bearing(-1.0f-9, 1.0f0) === 0.0f0
+        @test isnan(bearing(NaN, 1.0))
+        @test isnan(bearing(1.0, NaN))
     end
 
     # The 2021 implementation binned by truncating a ratio, which put every

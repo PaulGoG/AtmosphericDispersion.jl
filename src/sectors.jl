@@ -73,7 +73,8 @@ function bearing(east::Real, north::Real)
         return zero(float(promote_type(typeof(east), typeof(north))))
     β = mod2pi(atan(east, north))
     # mod2pi rounds an angle a fraction of an ulp below zero up to 2π itself.
-    return β < 2π ? β : zero(β)
+    # Written so that a NaN coordinate still gives a NaN bearing.
+    return β ≥ 2π ? zero(β) : β
 end
 
 """
