@@ -77,15 +77,17 @@ and the one that deposits readily.
 Deposition velocity 0.4–0.8 × 10⁻² m/s, from the notes to CNCAN NSR-23 Table 6,
 which attribute it to experimental measurement by [Murphy1993](@citet) and
 attach the condition that the tropopause be taken at 12–15 km. The lower bound
-agrees with the values in common use elsewhere: the MACCS2 default of 0.5,
-0.42 measured at the Savannah River Site, and 0.392–0.444 from AECL.
+is close to the daylight average of about 0.42 × 10⁻² m/s that [Lee2012](@citet)
+report over forest at the Savannah River Site.
 
-Non-zero HTO deposition is a deliberate divergence from other guidance. IAEA
-SRS-19 [IAEA2001](@cite) §3.9, EUR 15760 [Simmonds1995](@cite) §3.2 and
-HPA-RPD-058 [SmithSimmonds2009](@cite) §3.2.2.3 each assign tritium a deposition
-velocity of zero and handle it by specific activity instead. This package
-follows the normative the work was done under; setting the velocities to zero
-reproduces the others.
+Non-zero HTO deposition is a deliberate divergence from other guidance, and it
+is not the conservative choice for the air concentration. IAEA SRS-19
+[IAEA2001](@cite) §3.9, EUR 15760 [Simmonds1995](@cite) §3.2 and HPA-RPD-058
+[SmithSimmonds2009](@cite) §3.2.2.3 each assign tritium a deposition velocity
+of zero and handle it by specific activity instead, and [Lee2012](@citet)
+conclude that an effective velocity of zero is appropriate for safety analyses
+because deposited HTO is re-emitted. This package follows the normative the
+work was done under; setting the velocities to zero reproduces the others.
 """
 const TRITIATED_WATER = Nuclide(;
     name = "HTO",

@@ -106,7 +106,8 @@ a decimal is a run of zeros and the power of ten is the readable form; wider
 spans use powers of ten throughout. Pass `style = :decimal` or `style = :power`
 to override the choice.
 
-Every logarithmic axis in these scripts sets its ticks through this function.
+The logarithmic axes of these scripts set their ticks through this function,
+apart from the few that state them explicitly.
 With its automatic ticks Makie labels the unit decade as `10^0` on some axes
 and as `1` on others, and on ranges narrower than a decade it falls back to
 fractional exponents such as `10^{-0.4}`.

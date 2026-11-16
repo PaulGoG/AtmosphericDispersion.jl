@@ -40,9 +40,8 @@ held fixed, the long-term dilution factor at 1 km differs by up to a factor of
 sector that matters is the most-exposed one, so the error points the assessment
 at the wrong side of the site.
 
-I misread the convention in 2021. The table is therefore a blowing-from rose,
-which is what every published wind rose is, and the 2021 code consumed it as
-blowing-toward. The 2021 dose field is rotated by half a turn, and the sector
+The table is a blowing-from rose, as every published wind rose is. In 2021 I
+misread the convention, and the code consumed the table as blowing-toward. The 2021 dose field is rotated by half a turn, and the sector
 it reports as most exposed, N, is in fact the fifth least exposed of the
 sixteen. `config/reference.toml` declares `blowing_from` accordingly.
 

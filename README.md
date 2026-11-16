@@ -136,13 +136,16 @@ long-term field is flatter because it is averaged over all wind directions. All
 three vanish in the near field, where an elevated plume has not yet
 reached the ground.
 
-Right: the effective release height by stability class. Plume rise lifts the
-50.3 m stack to between 101 and 112 m and saturates within half a kilometre,
-higher in unstable air where the plume rises further before ambient turbulence
-breaks it up. The stable final rise is evaluated with the wind averaged over the
-depth of the rise, as the Handbook on Atmospheric Diffusion defines it: in
-class D that mean is 6.66 m/s against 5.99 m/s at the stack top, which lowers
-the effective height by 2 m relative to the release-height convention.
+Right: the effective release height by stability class. Plume rise adds 50 to
+62 m to the 50.3 m stack, giving 101 to 112 m, and saturates within half a
+kilometre. The reference lapse rate is a strong inversion, so the stable limit
+of the rise applies in every class (see [Known limitations](#known-limitations)),
+and the ordering of the classes comes from the wind alone: the limit varies as
+u^(−1/3), and the wind at stack height is lowest in class A. The stable final
+rise is evaluated with the wind averaged over the depth of the rise, as the
+Handbook on Atmospheric Diffusion defines it: in class D that mean is 6.66 m/s
+against 5.99 m/s at the stack top, which lowers the effective height by 2 m
+relative to the release-height convention.
 
 ### What the parameters do
 
@@ -175,10 +178,10 @@ twice the ground-level value of an unbounded plume from 5 km outwards.
 The wake criterion is a threshold: a release above two and a half building
 heights is unaffected, and one below the building top is entrained into the
 aerodynamic cavity and released at ground level. The stack here is lower than
-the building, so the effective release height drops from 50.3 m to zero. The
-third panel shows the ratio of the two fields, on a scale that saturates at
-ten: a factor of 20 on the axis at 1 km, 3.3 at 2 km and 1.6 at the 12 km edge
-of the map.
+the building, so the release height drops from 50.3 m to zero; plume rise is
+still added to it. The third panel shows the ratio of the two fields, on a scale
+that saturates at ten: a factor of 20 on the axis at 1 km, 3.3 at 2 km and 1.6
+at the 12 km edge of the map.
 
 ![Release height](figures/release_height.gif)
 
@@ -208,11 +211,10 @@ or a sector width: the crosswind integral, mass conservation across a downwind
 plane, the sector average as the crosswind integral over the arc, and the
 position of the ground-level maximum. Each parameterisation is then compared
 with its published source, coefficient by coefficient: Briggs' σ_y and σ_z,
-Hosker's σ_z with all
-48 coefficients of its roughness correction, the Eimutis–Konicek fit against
-the XOQDOQ and PAVAN listings, Briggs' plume rise, the washout and resuspension
-constants, and the long-term sector constant of Regulatory Guide 1.111 and of
-SRS-19. This comparison found two wrong coefficients in the roughness table of
+Hosker's σ_z with its 24 shape and 24 roughness coefficients, the
+Eimutis–Konicek fit against the XOQDOQ and PAVAN listings, Briggs' plume rise,
+the washout and resuspension constants, and the long-term sector constant of
+Regulatory Guide 1.111 and of SRS-19. This comparison found two wrong coefficients in the roughness table of
 the Romanian normative, which the 2021 code had copied; the package uses
 Hosker's values.
 
@@ -259,6 +261,7 @@ The derivations and the evidence are in the documentation, under `docs/src/`:
 - [Conventions](docs/src/conventions.md): the wind-direction convention and the effect of misreading it; why depletion factors multiply.
 - [Validation](docs/src/validation.md): every parameterisation against its published source, the four end-to-end benchmarks, the mixing layer, and where published schemes disagree.
 - [The 2021 thesis code](docs/src/thesis.md): what the rewrite changed and how far the original results move.
+- [Known limitations](docs/src/limitations.md): what an independent review found and the size of each effect.
 - API reference: `docs/src/api/`.
 - [References](docs/src/references.md): every source cited, by DOI where one exists; the list itself is rendered in the built documentation from `docs/src/refs.bib`.
 
@@ -284,7 +287,7 @@ What each component follows:
 | Dilution | instantaneous, sector-averaged with the constant of RG 1.111 or SRS-19, and long term over the rose |
 | Depletion and deposition | decay, dry deposition, NSR-23 Table 7 washout with Slinn's J^0.75 law and Ogram's snow scavenging of HTO; dry and wet deposition; Safety Series 57 or Maxwell–Anspaugh resuspension |
 | `Site` and `PrescribedPlume` | the per-run precomputation, and a plume whose height, wind or σ a published benchmark states |
-| Quality | Aqua, JET and ExplicitImports in the suite; 6906 assertions; CI on the LTS and the current Julia, rerun monthly without a commit; the manual built with its doctests |
+| Quality | Aqua, ExplicitImports and, on the current Julia, JET in the suite; 6915 assertions; CI on the LTS and the current Julia, rerun monthly without a commit; the manual built with its doctests |
 
 Outside the scope of the package:
 
@@ -304,6 +307,39 @@ I recall, its frequencies are either placeholder values or meteorological data
 for the Pitești fuel plant or the Cernavodă NPP site, and in 2021 I read them
 under the wrong direction convention. The convention is corrected in the
 reference configuration; the frequencies themselves are illustrative.
+
+## Known limitations
+
+A review of the physics against the literature in November 2026 found the
+points below. They are not corrected in the 1.0 series, because each correction
+changes results; the [limitations page](docs/src/limitations.md) of the manual
+gives the numbers.
+
+- One stability parameter, formed from the single `lapse_rate`, serves all six
+  Pasquill classes, so with a positive lapse rate the stable limit of the plume
+  rise also acts in the unstable and neutral classes. EPA ISC3 and XOQDOQ apply
+  it in the stable classes only. In the reference case this keeps the effective
+  height of classes A to D at 106–112 m where the neutral limit gives
+  130–152 m, and raises the long-term χ/Q by a factor of 2.1 at 1 km, 1.6 at
+  2 km and 1.13 at 5 km. The reference results are conservative in the near
+  field.
+- The wet depletion factor is `exp(−Λ t_w)` at every distance, although the
+  plume at distance `x` has been in the rain for at most `x/u`; near the source
+  the air concentration is underestimated. Wet deposition is formed from the
+  whole released activity whatever the duration of the rain, and its integral
+  over the ground can exceed the release.
+- Depletion takes the low deposition velocity and washout coefficient and
+  deposition the high ones, so the ground receives more than the plume loses.
+- A deposition velocity above zero for HTO lowers the air concentration; with
+  re-emission, zero is the conservative choice (Lee et al. 2012,
+  doi:10.2172/1038895).
+- The building rules of the normative: the equivalent building is a mean
+  weighted by inverse distance, so a small structure near the stack can cancel
+  the wake of a large one; a release entrained into the cavity still receives
+  the full plume rise; the entrainment test is discontinuous at its 5 m/s
+  threshold.
+- The Eimutis–Konicek fit is evaluated without the 1000 m limit XOQDOQ and
+  PAVAN apply to it.
 
 ## Full tree
 
@@ -371,9 +407,10 @@ reference configuration; the frequencies themselves are illustrative.
 │       ├── conventions.md  the wind-direction convention, and why depletion multiplies
 │       ├── validation.md   the analytic invariants and every published comparison
 │       ├── thesis.md       the 2021 code, and how far its results move
+│       ├── limitations.md  known limitations, with the size of each effect
 │       ├── references.md, refs.bib   the bibliography, DOI-keyed
 │       └── api/            four API pages
-└── .github/                CI workflow and Dependabot configuration
+└── .github/                CI and Format workflows, Dependabot configuration
 ```
 
 </details>

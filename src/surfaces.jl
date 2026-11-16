@@ -56,9 +56,11 @@ const ROUGHNESS_CLASSES = (
 """
     PrecipitationType
 
-Form of precipitation scavenging the plume. Rain removes airborne material
-between two and three orders of magnitude faster than snow at the same
-intensity.
+Form of precipitation scavenging the plume. The ratio of the rain and snow
+coefficients depends on the species row and on the [`WashoutModel`](@ref): in
+the tritium and iodine row of the normative rain scavenges two to three orders
+of magnitude faster than snow at the same intensity, and in the other-nuclides
+row snow is the faster by a factor of 20 to 50.
 """
 @enum PrecipitationType::UInt8 begin
     PRECIPITATION_RAIN = 1

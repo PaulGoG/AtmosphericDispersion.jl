@@ -230,9 +230,10 @@
     # 3 effective release heights × 7 stability categories × 8 distances,
     # with the wind speed at stack height printed for each row.
     #
-    # This is the only end-to-end benchmark in the suite. It exercises σ_z,
-    # the mixing layer and the depletion integral together against published
-    # numbers, where everything else here checks one piece at a time.
+    # An end-to-end benchmark: it exercises σ_z, the mixing layer and the
+    # depletion integral together against published numbers, where everything
+    # else in this file checks one piece at a time. test_regulatory.jl holds
+    # the others.
     # Category G is omitted: this package has no category G.
     @testset "depletion against HPA-RPD-058 Table 3.7" begin
         rows = (
@@ -541,9 +542,9 @@ end
     # prints the σ themselves, rounded to the figures shown, and EPA ISC3
     # Tables 1-3 and 1-4 repeat that printing. The Handbook misprints the
     # denominator of the E–F urban σ_z as (1 + 0.00015x); Briggs' own table and
-    # ISC3 have 0.0015. Asserted: the Handbook's printing exactly, and that it
-    # is Briggs' R/1.25 to the rounding, which reaches 7 % where 0.056 became
-    # 0.06.
+    # ISC3 have 0.0015. Asserted: the Handbook's printing exactly, with 0.0015
+    # in that one place, and that it is Briggs' R/1.25 to the rounding, which
+    # reaches 7 % where 0.056 became 0.06.
     @testset "σ_y and σ_z are Briggs 1973, open country and urban" begin
         handbook_open_y = (0.22, 0.16, 0.11, 0.08, 0.06, 0.04)
         handbook_open_z = (

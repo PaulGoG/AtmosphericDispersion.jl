@@ -397,7 +397,7 @@ function panel_sweep(
             colorrange = (lo, hi),
         )
         # A smooth colour ramp over three decades hides everything but the
-        # largest differences. Decade contours give the eye a fixed reference:
+        # largest differences. Half-decade contours give a fixed reference:
         # a panel where a contour sits further out is quantitatively different,
         # whatever the ramp looks like.
         contour!(
@@ -707,7 +707,7 @@ end
 
 The same release with and without depletion by decay, deposition and washout.
 
-Depletion is a multiplicative factor below one that grows with distance, so on a
+Depletion is a multiplicative factor below one that falls with distance, so on a
 three-decade colour ramp the two fields look the same. The ratio panel shows the
 difference.
 """

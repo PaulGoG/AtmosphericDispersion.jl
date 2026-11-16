@@ -157,12 +157,18 @@ washout_coefficients(
 """
     wet_depletion_factor(event, species = WASHOUT_TRITIUM_IODINE)
 
-Surviving airborne fraction after the washout `event`, `exp(−Λ t)`.
+Surviving airborne fraction after the washout `event`, `exp(−Λ t)`, with `t`
+the duration of the event.
 
 The low washout coefficient is used, for the same reason the low deposition
 velocity is: it removes the least material and so is conservative for the
 airborne concentration. The high coefficient drives the ground deposition
 instead.
+
+The factor does not depend on distance. Material at distance `x` has been in
+the rain for at most the travel time `x/u`, the time of HPA-RPD-058
+[SmithSimmonds2009](@cite) Eq. (3.13), so for `x < u t` the plume is depleted
+too much; this is a known limitation.
 """
 wet_depletion_factor(
     event::WashoutEvent,

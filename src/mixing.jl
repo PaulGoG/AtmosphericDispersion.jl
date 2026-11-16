@@ -27,11 +27,12 @@ layer.
     `min(H, A)`. NRPB-R157 [Jones1983](@cite) §B2.3: "plume rise will be
     inhibited by a capping inversion to the mixing layer. If a plume rises into
     such an inversion the amount of material in the mixing layer, and hence
-    ground-level concentration, will be reduced." Keeping all of it in the layer
-    is therefore the conservative reading, it is continuous in `H`, and it is
-    what HPA-RPD-058 [SmithSimmonds2009](@cite) Table 3.7 tabulates for a 100 m
-    release under a 100 m lid. It is the default. A source that stands
-    physically above the lid is treated the same way.
+    ground-level concentration, will be reduced." The report does not say by
+    how much; keeping all of it in the layer is the upper bound and this
+    package's choice. It is continuous in `H` and joins the case HPA-RPD-058
+    [SmithSimmonds2009](@cite) Table 3.7 tabulates, a 100 m release under a
+    100 m lid. It is the default. A source that stands physically above the lid
+    is treated the same way.
   - `FULL_PENETRATION` — EPA ISC3 [EPA1995](@cite): "if the effective stack height exceeds the
     mixing height, the plume is assumed to fully penetrate the elevated
     inversion and the ground-level concentration is set equal to zero." Nothing
@@ -105,8 +106,11 @@ const MIXING_UNBOUNDED = MixingLayer(Inf)
 """
     RECOMMENDED_MIXING_DEPTH
 
-The single depth in metres HPA-RPD-058 §3.2.2.2.3 recommends "for all
-conditions" where the real one is unknown; `MixingLayer(RECOMMENDED_MIXING_DEPTH)`.
+The single depth in metres that HPA-RPD-058 [SmithSimmonds2009](@cite)
+§3.2.2.2.4 reports as recommended "for all conditions" in long-range
+dispersion, where every release is taken in neutral stability;
+`MixingLayer(RECOMMENDED_MIXING_DEPTH)`. Where the depth is unknown at shorter
+range the report refers to its Table 3.5, [`MIXING_TABULATED`](@ref).
 """
 const RECOMMENDED_MIXING_DEPTH = 800.0
 

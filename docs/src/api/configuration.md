@@ -102,10 +102,11 @@ or an ADMS `.met` file, `blowing_toward` for frequencies already expressed as
 transport towards a sector. See [`WindRose`](@ref).
 
 !!! warning "The reference frequencies are illustrative"
-    The rose in `config/reference.toml` is not a measured rose for any one
-    site. I assembled it in 2021 from meteorological data for the Pitești fuel
-    plant and the Cernavodă NPP, and it is unusually flat for a real site.
-    Replace it before using the configuration for an assessment.
+    The rose in `config/reference.toml` is not a verified measured rose. As
+    far as I recall, its frequencies are either placeholder values or
+    meteorological data for the Pitești fuel plant or the Cernavodă NPP site,
+    and it is unusually flat for a real site. Replace it before using the
+    configuration for an assessment.
 
 ## Reference
 

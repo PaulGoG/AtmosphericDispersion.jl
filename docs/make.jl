@@ -28,6 +28,7 @@ makedocs(;
         "Conventions" => "conventions.md",
         "Validation" => "validation.md",
         "The 2021 thesis code" => "thesis.md",
+        "Known limitations" => "limitations.md",
         "API" => [
             "Sectors, stability and the wind rose" => "api/geometry.md",
             "Site and dispersion parameters" => "api/parameters.md",

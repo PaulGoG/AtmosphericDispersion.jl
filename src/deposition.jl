@@ -45,6 +45,10 @@ The denominator is `√(2π) Σ_y u`, which is what integrating the Gaussian plu
 over the whole vertical column leaves. The 2021 code wrote `√2 π Σ_y u`; the
 ratio of the two is exactly `√π`, so that expression understated wet deposition
 by a factor of 1.772.
+
+`A` is the whole released activity, whatever the duration of the event: the
+deposit does not vanish for an event of zero duration, and its integral over
+the ground is not bounded by the release. This is a known limitation.
 """
 function wet_deposition(
         east::Real,
@@ -82,6 +86,8 @@ averaged over a sector,
     ω_w = Λ A D / (u θ_L r)
 
 the column activity spread over the arc the sector subtends at that distance.
+As in [`wet_deposition`](@ref), `A` is the whole released activity whatever the
+duration of the event, a known limitation.
 """
 function wet_deposition_sector(
         r::Real,

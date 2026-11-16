@@ -101,7 +101,9 @@ end
 accounts for the additional meander of the wind direction over the release;
 unchanged at or below ten minutes. `release_duration` is in seconds. The rule
 is the normative's and applies whichever [`DispersionScheme`](@ref) supplied
-`σ_y`.
+`σ_y`. The Handbook on Atmospheric Diffusion [Hanna1982](@cite) Eq. (4.15)
+gives the exponent as about 0.2 between 3 min and 1 h and 0.25 to 0.3 between
+1 h and 100 h; the normative's 0.2 is applied at every duration.
 """
 function meander_broadened(σy::Real, release_duration::Real)
     release_duration > 0 ||
@@ -335,9 +337,14 @@ the ranges quoted for its two parameters; the ends are included.
   - `DISPERSION_HOSKER` pairs Briggs' `σ_y` with Hosker's `σ_z`, which was
     fitted to Smith's curves "presented graphically out to distances of 100 km"
     (HPA-RPD-058 [SmithSimmonds2009](@cite) §3.2.2.1). The pairing is bounded
-    by its `σ_y`: `(100, 10_000)`.
+    by its `σ_y`: `(100, 10_000)`. The sector-averaged and long-term forms do
+    not use `σ_y`, so for them the bound is that of the pairing and not of the
+    quantity evaluated.
   - The Eimutis–Konicek fit reproduces the Pasquill–Gifford curves, which
-    [Turner1970](@citet) draws from 100 m to 100 km: `(100, 100_000)`.
+    [Turner1970](@citet) draws from 100 m to 100 km: `(100, 100_000)`. XOQDOQ
+    [Sagendorf1982](@cite) and PAVAN [Bander1982](@cite) limit both parameters
+    to 1000 m, which this package does not: `σ_z` of class A exceeds that
+    beyond 1.5 km.
 
 The evaluation itself does not enforce the range. The configuration loader
 applies the policy of `[model] extrapolation` to the receptor grid, and

@@ -71,7 +71,9 @@ releases followed, but no new features are planned. The exported interface is
 stable from 1.0.0 under semantic versioning. Names documented here but not
 exported, such as the convergence controls of the stable rise, are not part of
 it. A stability category G, a Prairie Grass benchmark and fumigation are
-outside the scope; the README gives the reasons.
+outside the scope; the README gives the reasons. The
+[known limitations](limitations.md) page lists what an independent review of
+the physics found and has not been corrected.
 
 ## The module
 
@@ -82,6 +84,6 @@ AtmosphericDispersion
 ## Pages
 
 ```@contents
-Pages = ["conventions.md", "validation.md", "thesis.md", "api/geometry.md", "api/parameters.md", "api/fields.md", "api/configuration.md", "references.md"]
+Pages = ["conventions.md", "validation.md", "thesis.md", "limitations.md", "api/geometry.md", "api/parameters.md", "api/fields.md", "api/configuration.md", "references.md"]
 Depth = 2
 ```

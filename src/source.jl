@@ -25,7 +25,8 @@ Geometry and discharge conditions of an elevated point source.
 - `diameter` — inner diameter at the stack exit, m
 - `exit_velocity` — vertical gas velocity at the exit, m/s
 - `exit_density` — density of the emitted gas at the exit, kg/m³
-- `exit_temperature` — temperature of the emitted gas, K
+- `exit_temperature` — temperature of the emitted gas, K; recorded but not used,
+  the buoyancy flux being formed from the two densities
 
 The buoyancy and momentum fluxes that drive plume rise are derived from these
 together with the ambient state; see [`buoyancy_flux`](@ref) and
@@ -81,6 +82,12 @@ Ambient state the plume disperses into.
     positive for E and F. Holding one fixed while sweeping the other, as the
     2021 code did with a single strongly stable gradient applied to every class,
     makes the unstable classes internally inconsistent.
+
+    A [`Site`](@ref) holds one `Atmosphere` and so one lapse rate for all six
+    classes, and the long-term sum runs over them: with a positive lapse rate
+    the stable limits of the plume rise act in classes A to D as well. This is a
+    known limitation; EPA ISC3 [EPA1995](@cite) §1.1.4.6 applies the stability
+    parameter in the stable classes only.
 """
 struct Atmosphere
     reference_speed::Float64

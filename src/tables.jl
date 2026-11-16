@@ -10,7 +10,7 @@ data frame costs more than the dispersion calculation itself.
 
 The vertical dispersion tables are Hosker's, and the normative reproduces them:
 [Hosker1974](@citet), IAEA-SM-181/19. The tables are an analytic fit to the
-schemes of F.B. Smith [Smith1973](@cite) and Briggs [Briggs1973](@cite). They are
+scheme of F.B. Smith [Smith1973](@cite). They are
 printed in HPA-RPD-058 [SmithSimmonds2009](@cite) Table 3.3 and in NRPB-R91
 [Clarke1979](@cite) Table 3, and both printings are asserted in the test suite.
 
@@ -72,7 +72,8 @@ end
 # its Table 2 to CAN/CSA-N288.2-M91 and UNSCEAR 2000, and somewhere
 # in that chain Hosker's 1.56 and 2.02 became 1.58 and 2.08. Following the
 # published values makes σ_z smaller by 1.9 % over grassland and water and 3.6 %
-# over arable land.
+# over arable land at 100 m, and by 1.4 to 2.9 % and 3.0 to 4.2 % between
+# 100 km and 1 m.
 const _ROUGHNESS = (
     RoughnessCoefficients(0.01, 1.56, 0.048, 6.25e-4, 0.45),    # grassland and water
     RoughnessCoefficients(0.04, 2.02, 0.0269, 7.76e-4, 0.37),   # arable
@@ -369,7 +370,7 @@ attributes to CAN/CSA-N288.2-M91, tabulates two:
   - `WASHOUT_TRITIUM_IODINE` — tritium and iodine, the default, and the case
     this package's reference configuration is.
   - `WASHOUT_OTHER_NUCLIDES` — every other radionuclide. Its rain values are
-    roughly twice the tritium row's; its snow values are three to four orders of
+    roughly twice the tritium row's; its snow values are three to five orders of
     magnitude larger.
 
 Because the two snow rows differ by so much in opposite directions, the snow
@@ -420,8 +421,9 @@ const _WASHOUT = (
 Which scavenging scheme to use.
 
   - `WASHOUT_NORMATIVE` — the tabulated scheme of the normative, and the
-    default. Its snow columns are the rain columns divided by exactly 100 and
-    500, a suppression appropriate to particles and reactive gases: IAEA
+    default. In the tritium and iodine row the snow columns are the rain
+    columns divided by 100 and by 500 (600 for the upper value at 5 mm/h), a
+    suppression appropriate to particles and reactive gases: IAEA
     TECDOC-379 [IAEA1986](@cite) §3.5.4 gives 5 × 10⁻⁸ s⁻¹ for inorganic iodine
     in powder snow at 0.2 mm/h against 1.7 × 10⁻⁵ for the same species in rain,
     a factor of some 340 in the same direction.
@@ -460,10 +462,12 @@ function ogram_snow_washout(rate::Real)
 end
 
 """
-    washout_coefficients(precipitation, rate, model = WASHOUT_NORMATIVE)
+    washout_coefficients(precipitation, rate, model = WASHOUT_NORMATIVE,
+                         species = WASHOUT_TRITIUM_IODINE)
 
 [`WashoutCoefficients`](@ref) for the given precipitation type and intensity in
-mm/h, under the chosen [`WashoutModel`](@ref).
+mm/h, under the chosen [`WashoutModel`](@ref) and for the given
+[`WashoutSpecies`](@ref) row.
 
 The table is defined only at the intensities in [`PRECIPITATION_RATES`](@ref);
 any other value throws. The tabulated points follow a power law in intensity
