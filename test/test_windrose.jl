@@ -47,6 +47,22 @@
         rose_m = WindRose(g, f, BlowingToward(); stability = m)
         @test stability_fraction(rose_m, 1, PASQUILL_D) == 1.0
         @test stability_fraction(rose_m, 2, PASQUILL_D) == 0.488
+        # Under BlowingFrom row 1 describes the wind from N, which blows
+        # towards S: the row moves to sector 9 with its frequency.
+        rose_from = WindRose(g, f, BlowingFrom(); stability = m)
+        @test stability_fraction(rose_from, 9, PASQUILL_D) == 1.0
+        @test stability_fraction(rose_from, 1, PASQUILL_D) == 0.488
+        # The same rose stated in either convention gives the same field.
+        skewed = collect(range(1.0, 2.0; length = 16))
+        skewed ./= sum(skewed)
+        rows = [m[opposite(g, k), j] for k in 1:16, j in 1:6]
+        from = WindRose(g, skewed, BlowingFrom(); stability = m)
+        toward = WindRose(
+            g, [skewed[opposite(g, k)] for k in 1:16], BlowingToward(); stability = rows,)
+        for (east, north) in ((0.0, -2000.0), (0.0, 2000.0), (1500.0, 500.0))
+            @test dilution_long_term(east, north, REFERENCE_SITE, from) ==
+                  dilution_long_term(east, north, REFERENCE_SITE, toward)
+        end
     end
 
     @testset "validation" begin

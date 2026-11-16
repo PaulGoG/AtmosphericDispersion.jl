@@ -42,7 +42,8 @@ in the sense given by `convention`, either `BlowingFrom()` or
 `stability` is the distribution over Pasquill classes *conditional on the
 sector*: either a `6`-element vector, when the stability distribution is taken
 to be the same in every sector, or an `nsectors(grid) × 6` matrix whose rows
-each sum to one. Column `i` corresponds to `PASQUILL_CLASSES[i]`.
+each sum to one. Row `k` belongs to sector `k` in the sense of `convention`, as
+`frequencies[k]` does, and column `i` corresponds to `PASQUILL_CLASSES[i]`.
 
 Whatever convention the input carries, a `WindRose` stores blowing-towards
 frequencies internally, so the formulae that consume it cannot be fed the wrong
@@ -87,14 +88,17 @@ struct WindRose{T<:AbstractFloat}
             _checkdistribution(view(s, k, :), "stability fractions of sector $k")
         end
 
-        return new{T}(grid, _toward(convention, grid, f), s)
+        return new{T}(grid, _toward(convention, grid, f), _toward(convention, grid, s))
     end
 end
 
-# Storage is always blowing-towards; a blowing-from rose is rotated by half a turn.
-_toward(::BlowingToward, ::SectorGrid, f::Vector) = f
+# Storage is always blowing-towards. A blowing-from rose is rotated by half a
+# turn: its frequencies, and the rows of its stability matrix with them.
+_toward(::BlowingToward, ::SectorGrid, f::VecOrMat) = f
 _toward(::BlowingFrom, grid::SectorGrid, f::Vector) = [f[opposite(grid, k)]
                                                        for k in 1:nsectors(grid)]
+_toward(::BlowingFrom, grid::SectorGrid, s::Matrix) = s[
+    [opposite(grid, k) for k in 1:nsectors(grid)], :,]
 
 function _stabilitymatrix(::Type{T}, stability::AbstractVector{<:Real}, n::Int) where {T}
     length(stability) == length(PASQUILL_CLASSES) || throw(
