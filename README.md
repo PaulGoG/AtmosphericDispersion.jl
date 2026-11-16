@@ -426,7 +426,7 @@ the mean wind by 1 % at 2 km. The details are in
   author  = {Gogîță, Paul-Adrian},
   title   = {AtmosphericDispersion.jl: Gaussian-plume atmospheric dispersion of stack releases},
   year    = {2026},
-  version = {1.0.1},
+  version = {1.1.0},
   url     = {https://github.com/PaulGoG/AtmosphericDispersion.jl}
 }
 ```

@@ -4,6 +4,70 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-11-16
+
+Corrections of the physics that 1.0.1 recorded as known limitations, each
+settled by the text of CNCAN NSR-23 or of the source it cites. Results of the
+reference case change, through the first item only.
+
+### Changed
+
+- The stable limits of the plume rise apply in the stable classes E and F
+  only. NSR-23 Eq. (18) gives the stable final rise "under atmospheric
+  stability conditions" and Eq. (19) the neutral one for the other classes,
+  and EPA ISC3 forms its stability parameter for E and F alone; earlier
+  versions, like the 2021 code, formed it from one temperature gradient in all
+  six classes, so that an inversion capped the rise in unstable air.
+  `[atmosphere] lapse_rate` is now the gradient of classes E and F. In the
+  reference case the effective heights of classes A to D are 130 to 153 m
+  instead of 106 to 112 m; χ/Q in the most exposed sector is 0.48 of its 1.0.1
+  value at 1 km, 0.64 at 2 km, 0.89 at 5 km, 0.96 at 10 km and 0.99 at 20 km;
+  and the class D ground-level maximum moves from 1.58 × 10⁻⁶ s m⁻³ at 2.15 km
+  to 9.9 × 10⁻⁷ at 2.85 km.
+- Washout acts for the travel time `x/u`, which is NSR-23's "period of time
+  during which the radioactive material is subjected to the process", on the
+  share `min(t_w/T_R, 1)` of the release that falls in the precipitation.
+  Earlier versions scavenged the whole release for the duration of the
+  precipitation, the same at every distance. `WashoutEvent` takes
+  `release_duration`, which the loader sets from `[release] duration`.
+- Wet deposition depletes its own column with the high coefficient it deposits
+  with and scales with the same share, so the deposit over the ground cannot
+  exceed the activity released into the precipitation and vanishes without
+  precipitation. NSR-23 Eqs. (38)–(39), which earlier versions followed,
+  deposited up to 1.8 times the release within 20 km.
+- The building that sets the wake is the tallest within three of its own
+  heights of the stack, as SRS-19 §3.3 takes the building that most influences
+  the dispersion. Earlier versions averaged every building with weights
+  inversely proportional to distance, so a low structure beside the stack
+  could cancel the wake of a tall one.
+- The wake widens a dispersion parameter by `√3` at most, the limit of NRC
+  XOQDOQ Eqs. (8) and (11) and of NSR-23 §5; `[buildings] broadening_limit`
+  sets it, and `inf` gives the unlimited form of SRS-19.
+- The Eimutis–Konicek σ_y and σ_z are limited to 1000 m, as in subroutine
+  POLYN of XOQDOQ and PAVAN.
+- Inside the balance band the combined plume rise is capped at the larger
+  final rise, not at the sum of the two, which NSR-23 §6.3(e) excludes; the
+  far-field rise no longer jumps at the edge of the band.
+- The sector-averaged form of an extended release is evaluated at the radial
+  distance of the receptor, as the long-term form already was, so it is
+  uniform along each arc.
+- The wind at the release height is held at 1 m/s from below
+  (EPA ISC3 §1.1.3); the neutral plume rise varies as `1/u`.
+
+### Added
+
+- `stability_parameter(site, class)` and `STABLE_CLASSES`;
+  `precipitation_fraction`; `MAXIMUM_WAKE_BROADENING`,
+  `EIMUTIS_KONICEK_CEILING` and `MINIMUM_WIND_SPEED`.
+
+### Not changed
+
+- A release entrained into the building cavity still receives the plume rise
+  from ground level. The review proposed suppressing it, but NSR-23 §6.2
+  prescribes the rise, and the buoyancy flux is not lost when the plume is
+  mixed into the cavity. The limitations page gives the size of the effect and
+  the pessimistic alternative of SRS-19.
+
 ## [1.0.1] - 2026-11-16
 
 Corrections from an independent review of the physics against the literature,
