@@ -381,8 +381,9 @@ than the travel time. The tests check it against an average over parcels
 released uniformly through the release, each exposed for the overlap of its
 transit with a precipitation fixed over the site: with 10⁶ s of precipitation
 in a 10⁷ s release the two agree to the edge effect, of order `(x/u)/t_w`. A
-precipitation that begins with the release leaves the most airborne; for
-`x/u ≤ t_w ≤ T_R` its scavenged share survives better than the form by the
+precipitation that begins with the release leaves the most airborne (one that
+ends with it, if it outlasts the release); for `x/u ≤ t_w ≤ T_R` its scavenged
+share survives better than the form by the
 relative amount `((exp(Λ x/u) − 1)/Λ − x/u)/t_w`, so the condition is
 `t_w ≫ (exp(Λ x/u) − 1)/Λ`, which reduces to `t_w ≫ x/u` only while `Λ x/u`
 is small. A shorter precipitation has no single answer, because the result
@@ -393,8 +394,8 @@ exposure at `t_w` is no bound either (0.85 in that case). Omitting washout
 bounds the airborne concentration for any timing, as EPA ISC3
 [EPA1995](@cite) §1.4 and IAEA SRS-19 [IAEA2001](@cite) §3.8 note. The package
 keeps the form, and `load_configuration` warns when, at the edge of the
-receptor grid in the slowest class, a precipitation beginning with the release
-would leave more than 10 % more airborne than the form. An hour of rain on HTO
+receptor grid in the slowest class, the precipitation so timed would leave
+more than 10 % more airborne than the form. An hour of rain on HTO
 through a one-hour release changes it by 2.5 % at 20 km; ten hours of snow at
 5 mm/h on the other species through a ten-hour release leave 0.040 airborne
 against 0.014.
@@ -408,9 +409,9 @@ share `f` instead, and does not deplete the column on its way to the receptor:
 `Λ_H f A D/u` per metre, the largest deposit a precipitation of duration `t_w`
 can lay at that distance, whenever and wherever it falls, since no more than
 `f A` passes while it falls and each becquerel deposits `Λ_H/u` per metre. A
-shower over the receptor alone deposits that much, spread across the plume
-with the meander of its own duration, which the `release_duration` keyword
-sets. Precipitation over the whole path depletes the plume
+shower over the receptor alone deposits that much when nothing else depletes
+the plume, spread across it with the meander of `min(t_w, T_R)`, which the
+`release_duration` keyword sets. Precipitation over the whole path depletes the plume
 first, to `exp(−Λ_H x/u)` of that value if it lasts long, and one that begins
 over a plume already airborne lies in between. Where `Λ_H x/u ≫ 1` the onset
 dominates: for snow on the other species at 1 mm/h (`Λ_H = 2 × 10⁻² s⁻¹`), 20 km

@@ -28,6 +28,16 @@
             @test downwash_height(stub, still) == 0
             @test wake_height(stub, still, BuildingEnvelope()) == 0
         end
+        # A trickle of efflux gives a stable rise of micrometres; the mean wind
+        # over so thin a layer is the wind at its base.
+        trickle = Site(; source = reference_stack(; exit_velocity = 1e-20), atmosphere = air)
+        for class in STABLE_CLASSES
+            @test stable_rise_wind_speed(trickle, class) ≈
+                  max(
+                wind_speed(air.reference_speed, release_height(trickle), air.surface,
+                    class,),
+                MINIMUM_WIND_SPEED,) rtol = 1e-6
+        end
     end
 
     @testset "wake height" begin
@@ -35,6 +45,29 @@
         @test wake_height(stack, air, BuildingEnvelope()) == downwash_height(stack, air)
         # A building taller than the stack traps the plume at ground level.
         @test wake_height(stack, air, tall) == 0
+        # Between one and two and a half building heights: entrained, by
+        # 1.5 h − 0.6 H₁ (NSR-23 Eq. (14)), only when the mean wind at the stack
+        # reaches 5 m/s.
+        mid = BuildingEnvelope([
+            Building(; east = 30.0, north = 0.0, height = 30.0, frontal_area = 900.0),
+        ])
+        light = reference_atmosphere(; reference_speed = 2.0)
+        windy = reference_atmosphere(; reference_speed = 8.0)
+        for a in (light, windy)
+            H₁ = downwash_height(stack, a)
+            @test 30 ≤ H₁ < 75
+            expected = mean_wind_speed(a, H₁) < WAKE_WIND_THRESHOLD ? H₁ :
+                       H₁ - (1.5 * 30 - 0.6 * H₁)
+            @test wake_height(stack, a, mid) ≈ expected
+        end
+        @test mean_wind_speed(light, downwash_height(stack, light)) < WAKE_WIND_THRESHOLD
+        @test mean_wind_speed(windy, downwash_height(stack, windy)) ≥ WAKE_WIND_THRESHOLD
+        # At 2.5 h the correction vanishes, so the boundary is continuous.
+        H₁ = downwash_height(stack, windy)
+        edge = BuildingEnvelope([
+            Building(; east = 30.0, north = 0.0, height = H₁ / 2.5, frontal_area = 900.0),
+        ])
+        @test wake_height(stack, windy, edge) ≈ H₁
     end
 
     @testset "transport wind is floored at the reference height" begin

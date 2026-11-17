@@ -405,10 +405,23 @@ end
         t["precipitation"]["rate"] = 5.0
         t["nuclide"]["washout_species"] = "other"
     end))
-    # The warning is formed for any finite input.
+    # Precipitation that outlasts the release leaves the most airborne when it
+    # ends with the release: 8000 s of that snow over a 3000 s release, which
+    # the form puts entirely in it.
+    snow(t) = (t["precipitation"]["type"] = "snow"; t["precipitation"]["rate"] = 5.0;
+        t["nuclide"]["washout_species"] = "other")
     @test_logs (:warn, r"washout_duration") configuration_from(withkey(t -> begin
-        t["grid"]["extent"] = 1e20
-        t["precipitation"]["washout_duration"] = 1e19
-        t["release"]["duration"] = 1e19
+        snow(t)
+        t["precipitation"]["washout_duration"] = 8000.0
+        t["release"]["duration"] = 3000.0
     end))
+    # The warning is formed for any finite input, also where the form underflows.
+    for (extent, t_w, T_R) in ((1e20, 1e19, 1e19), (1e20, 1e19, 1e18), (5e6, 1e6, 1e5))
+        @test_logs (:warn, r"washout_duration") configuration_from(withkey(t -> begin
+            snow(t)
+            t["grid"]["extent"] = extent
+            t["precipitation"]["washout_duration"] = t_w
+            t["release"]["duration"] = T_R
+        end))
+    end
 end

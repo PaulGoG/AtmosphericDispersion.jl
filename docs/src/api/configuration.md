@@ -117,9 +117,9 @@ to D take no stable limit whatever its value; see
 to each receptor, and the rest is not; zero, the reference value, turns
 washout and wet deposition off. The washout of the airborne plume is the limit
 of a precipitation much longer than the travel time, and the loader warns when,
-at `grid.extent` in the slowest class, a precipitation beginning with the
-release would leave more than 10 % more airborne than that form; wet deposition
-is the bound for any timing. See [`wet_depletion_factor`](@ref) and
+at `grid.extent` in the slowest class, the precipitation timed to leave the most
+airborne would leave more than 10 % more than that form; wet deposition is the
+bound for any timing. See [`wet_depletion_factor`](@ref) and
 [`wet_deposition`](@ref).
 
 ## The `[wind_rose]` table

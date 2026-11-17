@@ -313,6 +313,7 @@ function _plume_rise(
         rise::RiseCoefficients;
         stable_wind::Real = u,
 )
+    x ≥ 0 || throw(DomainError(x, "downwind distance cannot be negative"))
     buoyant = final_buoyant_rise(F, u, S, rise; stable_wind)
     momentum = final_momentum_rise(Fₘ, w₀, D, u, S, rise)
     total = buoyant + momentum

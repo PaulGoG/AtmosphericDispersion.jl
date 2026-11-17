@@ -71,6 +71,7 @@
             @test plume_rise(x, still, class) == 0
             @test effective_height(x, still, class) == release_height(still)
         end
+        @test_throws DomainError plume_rise(-1.0, still, PASQUILL_D)
     end
 
     # As for the dispersion parameters, reproduce the 2021 correlations

@@ -36,8 +36,8 @@ reference case change, through the first item only.
   release; pass `release_duration` for a shorter event. With `duration = 0`
   there is no wet deposition either.
 - Wet deposition takes the same share, undepleted on its way, which is the
-  largest deposit that share can lay at a receptor whenever and wherever the
-  precipitation falls; it vanishes without precipitation. NSR-23
+  largest deposit that share can lay at a given distance whenever and wherever
+  the precipitation falls; it vanishes without precipitation. NSR-23
   Eqs. (38)–(39), which earlier versions followed, deposited the whole
   release, up to 1.8 times over within 20 km, however short the
   precipitation.
@@ -72,8 +72,8 @@ reference case change, through the first item only.
 - `stability_parameter(site, class)` and `STABLE_CLASSES`;
   `precipitation_fraction`; `MAXIMUM_WAKE_BROADENING`,
   `EIMUTIS_KONICEK_CEILING` and `MINIMUM_WIND_SPEED`.
-- `load_configuration` warns when a precipitation beginning with the release
-  would leave more than 10 % more airborne at `grid.extent`, in the slowest
+- `load_configuration` warns when the precipitation timed to leave the most
+  airborne would leave more than 10 % more at `grid.extent`, in the slowest
   class, than the washout form. Durations, the released activity, the grid extent
   and the building entries must be finite, in the configuration, in
   `WashoutEvent` and in `Building`.
@@ -85,6 +85,9 @@ reference case change, through the first item only.
 - Stack downwash lowers the release height to ground level at most;
   `downwash_height` could return a negative height, and `wake_height` threw
   for a stack drawn down exactly to the ground with no building near it.
+- The mean wind over a layer a few micrometres thick lost its width to
+  cancellation, so `Site` failed to converge on the stable rise of a stack with
+  a trickle of efflux.
 
 ### Not changed
 

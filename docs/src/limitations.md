@@ -35,9 +35,9 @@ state: for `Λ = 10⁻³ s⁻¹`, 900 s of precipitation in a 3600 s release and
 20 km at 6 m/s, the surviving fraction lies between 0.47 and 0.92 by timing,
 against 0.76 from the form. Where `Λ x/u` is large the precipitation must
 outlast the travel time by far, `t_w ≫ (exp(Λ x/u) − 1)/Λ`.
-`load_configuration` warns when a precipitation beginning with the release,
-which leaves the most airborne, would leave more than 10 % more than the form
-at the edge of the receptor grid. Setting no washout bounds the air
+`load_configuration` warns when the precipitation timed to leave the most
+airborne, one that begins with the release or ends with it, would leave more
+than 10 % more than the form at the edge of the receptor grid. Setting no washout bounds the air
 concentration for any timing. Wet deposition is not affected: it is the bound
 for any timing.
 
@@ -70,12 +70,16 @@ These are the rules of NSR-23 §6.2, which the package follows.
   height zero, a release at ground level with no plume rise, the case for
   which NRC XOQDOQ and NSR-23 §5 state it. A plume with any rise, including one
   entrained into the cavity and released at ground level, is broadened without
-  limit, as NSR-23 Eq. (9) prescribes, since for it the limit would lower the
-  ground-level concentration. The limit binds while `σ < √(C A/2π)`: for the
-  60 m building of 3600 m² beside the reference stack, out to 0.54 km in class D
-  and 2.6 km in class F. There a stack with the smallest efflux, whose plume
-  rises, gives a lower concentration than one with none, at 200 m by a factor
-  of 2.0 in class D and 5.1 in class F.
+  limit, as NSR-23 Eq. (9) prescribes: once the plume stands above its vertical
+  spread the limit would lower the ground-level concentration, by a factor of 9
+  at 200 m for a plume at 50 m beside a 60 m building. Just above the ground it
+  would still raise it, so the concentration drops between no plume rise and
+  the smallest. The limit binds while `σ < √(C A/2π)`: for the 60 m building
+  of 3600 m² beside the reference stack, `σ_z` out to 0.54 km in class D and
+  2.6 km in class F, and `σ_y` out to 0.30 and 0.62 km. At 200 m a stack with
+  the smallest efflux gives a lower sector-averaged concentration than one with
+  none by a factor of 2.0 in class D and 5.1 in class F, and a lower centreline
+  value, where both parameters are limited, by 2.7 and 13.
 - The vicinity of a building is judged from the point given for it, which
   should be the point of the building nearest the stack; the package carries
   no footprint.

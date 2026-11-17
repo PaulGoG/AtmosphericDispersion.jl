@@ -153,12 +153,16 @@
             -Inf, Inf; rtol = 1e-10,)
         x5, _ = plume_frame(0.0, -5000.0, 0.0)
         @test across ≈ Λ * 0.25 * Q * decay_factor(x5, u, TRITIATED_WATER) / u rtol = 1e-8
-        # A meander of the hour the rain lasts spreads the same deposit wider.
-        wide, _ = quadgk(
-            e -> wet_deposition(e, -5000.0, site, PASQUILL_D, 0.0, TRITIATED_WATER;
-                activity = Q, washout = quarter, release_duration = 900.0,),
-            -Inf, Inf; rtol = 1e-10,)
+        # The meander of the 900 s the rain lasts spreads the same deposit
+        # wider: less on the axis than the ten-minute default, more far off it.
+        rained(e, T) = wet_deposition(e, -5000.0, site, PASQUILL_D, 0.0, TRITIATED_WATER;
+            activity = Q, washout = quarter, release_duration = T,)
+        wide, _ = quadgk(e -> rained(e, 900.0), -Inf, Inf; rtol = 1e-10)
         @test wide ≈ across rtol = 1e-8
+        far = 3 *
+              corrected_lateral_dispersion(5000.0, site, PASQUILL_D; release_duration = 900.0)
+        @test rained(0.0, 900.0) < rained(0.0, 600.0)
+        @test rained(far, 900.0) > rained(far, 600.0)
         @test_throws DomainError wet_deposition(
             0.0, -1000.0, site, PASQUILL_D, 0.0, TRITIATED_WATER;
             activity = Q, washout = quarter, release_duration = Inf,)

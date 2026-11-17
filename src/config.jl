@@ -386,9 +386,11 @@ const _WASHOUT_TIMING_TOLERANCE = 0.1
 
 # Washout of the airborne plume is the limit of a precipitation much longer than
 # the travel time, and the configuration does not say when the precipitation falls.
-# Warn when one beginning with the release, which leaves the most airborne, would
-# leave more than the tolerance above the form at grid.extent in the slowest class;
-# see wet_depletion_factor.
+# Of the timings that put the share min(t_w/T_R, 1) of the release in it, the one
+# that leaves the most airborne lasts min(t_w, T_R) from the start of the release
+# (one longer than the release ends with it, and what fell before does not count).
+# Warn when it would leave more than the tolerance above the form at grid.extent in
+# the slowest class; see wet_depletion_factor.
 function _check_washout_reach(
         site::Site,
         event::WashoutEvent,
@@ -401,11 +403,12 @@ function _check_washout_reach(
     slowest = minimum(c -> transport_wind_speed(site, c), PASQUILL_CLASSES)
     τx = extent / slowest
     form = wet_depletion_factor(extent, slowest, event, species)
-    early = _airborne_after_early_precipitation(τx, Λ, event.duration, release_duration)
+    t_w = min(event.duration, release_duration)
+    early = _airborne_after_early_precipitation(τx, Λ, t_w, release_duration)
     early > (1 + _WASHOUT_TIMING_TOLERANCE) * form || return nothing
     @warn "precipitation.washout_duration = $(event.duration) s: washout takes the " *
-          "precipitation to cover the path for much longer than the travel time; one " *
-          "beginning with the release would leave $(round(early; sigdigits = 3)) of " *
+          "precipitation to cover the path for much longer than the travel time; timed " *
+          "with the release it would leave $(round(early; sigdigits = 3)) of " *
           "the release airborne at grid.extent ($extent m) in the slowest class, " *
           "against $(round(form; sigdigits = 3)) from that form"
     return nothing

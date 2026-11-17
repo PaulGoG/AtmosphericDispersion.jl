@@ -51,6 +51,9 @@
         @test equivalent_area(BuildingEnvelope([p, q])) == 900.0
         @test equivalent_area(BuildingEnvelope([q, p])) == 900.0
         @test_throws ArgumentError BuildingEnvelope([p]; wake_coefficient = Inf)
+        # A building of zero height is never in the vicinity, even at the stack.
+        flat = Building(; east = 0.0, north = 0.0, height = 0.0, frontal_area = 5000.0)
+        @test equivalent_height(BuildingEnvelope([flat])) == 0
         # A stack on the building, as in SRS-19 Example IV-3.
         roof = Building(; east = 0.0, north = 0.0, height = 30.0, frontal_area = 5000.0)
         @test equivalent_height(BuildingEnvelope([roof])) == 30.0
@@ -113,6 +116,19 @@
         @test wake_broadened(10.0, 35.0, big) ≈ full - (35.0 - 20.0) / 30.0 * (full - 10.0)
         @test @inferred(wake_broadened(10.0f0, 0.0, big)) isa Float64
         @test @inferred(wake_broadened(10.0f0, 60.0, big)) isa Float64
+
+        # Through the dilution kernels: at 200 m in class D the limit raises the
+        # value of a ground-level plume and leaves a plume at 50 m untouched.
+        b60 = Building(; east = 25.0, north = 0.0, height = 60.0, frontal_area = 3600.0)
+        site(L) = Site(; source = REFERENCE_STACK, atmosphere = REFERENCE_AIR,
+            buildings = BuildingEnvelope([b60]; broadening_limit = L),)
+        for χ in (p -> dilution_extended(0.0, -200.0, p, PASQUILL_D, 0.0),
+            p -> dilution_instantaneous(0.0, -200.0, 0.0, p, PASQUILL_D, 0.0))
+            ground(L) = χ(PrescribedPlume(site(L); height = 0.0, wind = 4.0))
+            raised(L) = χ(PrescribedPlume(site(L); height = 50.0, wind = 4.0))
+            @test ground(sqrt(3)) > ground(Inf)
+            @test raised(sqrt(3)) == raised(Inf)
+        end
     end
 end
 

@@ -78,9 +78,10 @@ function layer_mean_wind_speed(
     a, b = float(z₁), float(z₂)
     a == b && return wind_speed(u₁₀, a, surface, class)
     m = profile_exponent(surface, class)
-    # ∫ (z/z_r)^m dz between two heights below the ceiling.
-    below(lo, hi) = REFERENCE_HEIGHT / (m + 1) *
-                    ((hi / REFERENCE_HEIGHT)^(m + 1) - (lo / REFERENCE_HEIGHT)^(m + 1))
+    # ∫ (z/z_r)^m dz between two heights below the ceiling, written with expm1 and
+    # log1p so that a thin layer does not lose its width to cancellation.
+    below(lo, hi) = REFERENCE_HEIGHT / (m + 1) * (lo / REFERENCE_HEIGHT)^(m + 1) *
+                    expm1((m + 1) * log1p((hi - lo) / lo))
     c = PROFILE_CEILING
     ceiling = (c / REFERENCE_HEIGHT)^m
     integral = if b ≤ c
