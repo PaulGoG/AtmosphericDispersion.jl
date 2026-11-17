@@ -115,8 +115,9 @@ to D take no stable limit whatever its value; see
 `washout_duration` is how long it rains or snows. That share of the release,
 `min(washout_duration/release.duration, 1)`, is scavenged for its travel time
 to each receptor, and the rest is not; zero, the reference value, turns
-washout and wet deposition off. The washout of the airborne plume is the limit
-of a precipitation much longer than the travel time, and the loader warns when,
+washout and wet deposition off. The washout of the airborne plume takes the
+material released into the precipitation to stay in it for its whole travel
+time, and the loader warns when,
 at `grid.extent` in the slowest class, the precipitation timed to leave the most
 airborne would leave more than 10 % more than that form; wet deposition is the
 bound for any timing. See [`wet_depletion_factor`](@ref) and

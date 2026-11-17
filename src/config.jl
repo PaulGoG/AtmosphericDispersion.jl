@@ -407,8 +407,8 @@ function _check_washout_reach(
     early = _airborne_after_early_precipitation(τx, Λ, t_w, release_duration)
     early > (1 + _WASHOUT_TIMING_TOLERANCE) * form || return nothing
     @warn "precipitation.washout_duration = $(event.duration) s: washout takes the " *
-          "precipitation to cover the path for much longer than the travel time; timed " *
-          "with the release it would leave $(round(early; sigdigits = 3)) of " *
+          "material released into the precipitation to stay in it for its whole travel " *
+          "time; timed with the release it would leave $(round(early; sigdigits = 3)) of " *
           "the release airborne at grid.extent ($extent m) in the slowest class, " *
           "against $(round(form; sigdigits = 3)) from that form"
     return nothing

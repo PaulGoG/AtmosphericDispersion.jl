@@ -192,6 +192,8 @@
         f, k = 2e4 / 1e5, 3e-4 * τx
         excess = (early(τx, 3e-4, 2e4, 1e5) - (1 - f)) / (f * exp(-k)) - 1
         @test excess ≈ (expm1(k) / 3e-4 - τx) / 2e4 rtol = 1e-10
+        # A duration too short to resolve against Λ is not scavenged.
+        @test early(τx, 5e-8, 1e-317, 1e-317) == 1
         # Precipitation lasting the release and the whole travel after it
         # scavenges every parcel for x/u: the form exactly.
         @test early(τx, 1e-3, 3000.0 + τx, 3000.0) ≈ exp(-1e-3 * τx) rtol = 1e-12

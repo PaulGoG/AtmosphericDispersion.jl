@@ -34,10 +34,12 @@ the site the result depends on when it falls, which a configuration does not
 state: for `Λ = 10⁻³ s⁻¹`, 900 s of precipitation in a 3600 s release and
 20 km at 6 m/s, the surviving fraction lies between 0.47 and 0.92 by timing,
 against 0.76 from the form. Where `Λ x/u` is large the precipitation must
-outlast the travel time by far, `t_w ≫ (exp(Λ x/u) − 1)/Λ`.
-`load_configuration` warns when the precipitation timed to leave the most
-airborne, one that begins with the release or ends with it, would leave more
-than 10 % more than the form at the edge of the receptor grid. Setting no washout bounds the air
+outlast the travel time by far, `min(t_w, T_R) ≫ (exp(Λ x/u) − 1)/Λ`, since
+what falls before or after the release scavenges nothing of it.
+`load_configuration` warns when, of the timings that hold the share `f` of the
+release, the one that leaves the most airborne (beginning with the release,
+or ending with it) would leave more than 10 % more than the form at the edge
+of the receptor grid. Setting no washout bounds the air
 concentration for any timing. Wet deposition is not affected: it is the bound
 for any timing.
 
@@ -70,16 +72,18 @@ These are the rules of NSR-23 §6.2, which the package follows.
   height zero, a release at ground level with no plume rise, the case for
   which NRC XOQDOQ and NSR-23 §5 state it. A plume with any rise, including one
   entrained into the cavity and released at ground level, is broadened without
-  limit, as NSR-23 Eq. (9) prescribes: once the plume stands above its vertical
-  spread the limit would lower the ground-level concentration, by a factor of 9
-  at 200 m for a plume at 50 m beside a 60 m building. Just above the ground it
-  would still raise it, so the concentration drops between no plume rise and
-  the smallest. The limit binds while `σ < √(C A/2π)`: for the 60 m building
-  of 3600 m² beside the reference stack, `σ_z` out to 0.54 km in class D and
-  2.6 km in class F, and `σ_y` out to 0.30 and 0.62 km. At 200 m a stack with
-  the smallest efflux gives a lower sector-averaged concentration than one with
-  none by a factor of 2.0 in class D and 5.1 in class F, and a lower centreline
-  value, where both parameters are limited, by 2.7 and 13.
+  limit, as NSR-23 Eq. (9) prescribes: for a plume well above the ground the
+  limit would lower the ground-level concentration, in class D by a factor of 9
+  in the sector average at 200 m for a plume at 50 m beside a 60 m building.
+  Below a height of two to four `σ_z` it would raise it, so the concentration
+  drops between no plume rise and the smallest. The limit binds while
+  `σ < √(C A/2π)`: for the 60 m building of 3600 m² beside the reference stack,
+  `σ_z` out to 0.54 km in class D and 2.6 km in class F, and, for a release of
+  ten minutes, `σ_y` out to 0.30 and 0.62 km (the meander of a longer release
+  widens `σ_y` past it). At 200 m a stack with the smallest efflux gives a lower
+  sector-averaged concentration than one with none by a factor of 2.0 in class
+  D and 5.1 in class F, and, for a ten-minute release, a lower centreline value
+  by 2.7 and 13.
 - The vicinity of a building is judged from the point given for it, which
   should be the point of the building nearest the stack; the package carries
   no footprint.

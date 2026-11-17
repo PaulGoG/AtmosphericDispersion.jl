@@ -4,7 +4,7 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 follows [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.0] - 2026-11-16
+## [1.1.0] - 2026-11-17
 
 Corrections of the physics that 1.0.1 recorded as known limitations, each
 settled by the text of CNCAN NSR-23 or of the source it cites. Results of the

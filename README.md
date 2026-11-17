@@ -289,7 +289,7 @@ What each component follows:
 | Dilution | instantaneous, sector-averaged with the constant of RG 1.111 or SRS-19, and long term over the rose |
 | Depletion and deposition | decay, dry deposition, NSR-23 Table 7 washout with Slinn's J^0.75 law and Ogram's snow scavenging of HTO, acting for the travel time on the share of the release in the precipitation; dry and wet deposition, the wet deposit the largest that share can lay at each distance; Safety Series 57 or Maxwell–Anspaugh resuspension |
 | `Site` and `PrescribedPlume` | the per-run precomputation, and a plume whose height, wind or σ a published benchmark states |
-| Quality | Aqua, ExplicitImports and, on the current Julia, JET in the suite; 7119 assertions; CI on the LTS and the current Julia, rerun monthly without a commit; the manual built with its doctests |
+| Quality | Aqua, ExplicitImports and, on the current Julia, JET in the suite; 7120 assertions; CI on the LTS and the current Julia, rerun monthly without a commit; the manual built with its doctests |
 
 Outside the scope of the package:
 
@@ -324,9 +324,9 @@ the numbers.
   the largest deposit the precipitation can lay at each distance, whenever it
   falls, so summed over the ground it exceeds the share released into it
   beyond `u/Λ`.
-- Washout of the airborne plume assumes the precipitation lasts much longer
-  than the travel time; for a shorter one the result depends on when it
-  falls, and the loader warns when the timing could raise the airborne
+- Washout of the airborne plume assumes that the material released into the
+  precipitation stays in it for its whole travel time; otherwise the result
+  depends on when the precipitation falls, and the loader warns when the timing could raise the airborne
   fraction at the edge of the grid by more than 10 %.
 - A deposition velocity above zero for HTO lowers the air concentration; with
   re-emission, zero is the conservative choice (Lee et al. 2012,

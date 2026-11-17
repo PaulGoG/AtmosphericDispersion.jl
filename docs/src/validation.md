@@ -380,13 +380,14 @@ The form is the limit of a precipitation that covers the path for much longer
 than the travel time. The tests check it against an average over parcels
 released uniformly through the release, each exposed for the overlap of its
 transit with a precipitation fixed over the site: with 10⁶ s of precipitation
-in a 10⁷ s release the two agree to the edge effect, of order `(x/u)/t_w`. A
-precipitation that begins with the release leaves the most airborne (one that
-ends with it, if it outlasts the release); for `x/u ≤ t_w ≤ T_R` its scavenged
-share survives better than the form by the
-relative amount `((exp(Λ x/u) − 1)/Λ − x/u)/t_w`, so the condition is
-`t_w ≫ (exp(Λ x/u) − 1)/Λ`, which reduces to `t_w ≫ x/u` only while `Λ x/u`
-is small. A shorter precipitation has no single answer, because the result
+in a 10⁷ s release the two agree to the edge effect, of order `(x/u)/t_w`. Of
+the timings that hold the share `f` of the release, a precipitation that begins
+with the release leaves the most airborne (one that ends with it, if it
+outlasts the release); for `x/u ≤ t_w ≤ T_R` its scavenged share survives
+better than the form by the relative amount `((exp(Λ x/u) − 1)/Λ − x/u)/t_w`.
+What falls outside the release scavenges nothing of it, so the condition is
+`min(t_w, T_R) ≫ (exp(Λ x/u) − 1)/Λ`, which reduces to `min(t_w, T_R) ≫ x/u`
+only while `Λ x/u` is small. A shorter precipitation has no single answer, because the result
 depends on when it falls. For `Λ_L = 10⁻³ s⁻¹`, 900 s of it in a 3600 s
 release and `x/u = 3333 s`, the surviving fraction is 0.92 if it falls at the
 start of the release and 0.47 at the end, and the form gives 0.76. Capping the

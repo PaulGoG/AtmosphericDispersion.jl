@@ -209,7 +209,9 @@ if it outlasts the release, the one that ends with it: each parcel is
 scavenged only until it arrives or the precipitation stops. For
 `x/u ≤ t_w ≤ T_R` the scavenged share then survives better than `exp(−Λ x/u)`
 by the relative amount `((exp(Λ x/u) − 1)/Λ − x/u)/t_w`, which is small only
-while `t_w ≫ (exp(Λ x/u) − 1)/Λ`, or `t_w ≫ x/u` where `Λ x/u ≪ 1`. A
+while `t_w ≫ (exp(Λ x/u) − 1)/Λ`, or `t_w ≫ x/u` where `Λ x/u ≪ 1`; for a
+precipitation longer than the release `T_R` takes the place of `t_w`, since
+what falls outside the release scavenges nothing of it. A
 precipitation within the release that begins later, while earlier material is
 airborne, removes more. For `Λ = 10⁻³ s⁻¹`, 900 s of
 precipitation in a 3600 s release and `x/u = 3333 s`, the surviving fraction is
@@ -257,7 +259,9 @@ wet_depletion_factor(
 function _airborne_after_early_precipitation(τx::Real, Λ::Real, t_w::Real, T_R::Real)
     a, b = max(0.0, t_w - T_R), float(t_w)
     c = min(b, τx)          # exposure grows with s up to τx, then stays there
-    rising = a < c ? (iszero(Λ) ? c - a : exp(-Λ * a) * -expm1(-Λ * (c - a)) / Λ) : 0.0
+    Λw = Λ * (c - a)        # zero for Λ = 0, or for a layer too thin to resolve
+    rising = a < c ? (iszero(Λw) ? (c - a) * exp(-Λ * a) : exp(-Λ * a) * -expm1(-Λw) / Λ) :
+             0.0
     flat = max(0.0, b - max(a, τx)) * exp(-Λ * τx)
     return (rising + flat + max(0.0, T_R - t_w)) / T_R
 end
